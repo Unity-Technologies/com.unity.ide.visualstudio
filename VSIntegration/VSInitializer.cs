@@ -1,24 +1,25 @@
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text.RegularExpressions;
 using Microsoft.Win32;
-using UnityEditor.Compilation;
-using UnityEditorInternal;
 using UnityEngine;
 
 namespace VisualStudioEditor
 {
     internal class VSInitiliazer
     {
-        public void Initialize(string editorPath)
+        public void Initialize(string editorPath, Dictionary<VisualStudioVersion, SyncVS.VisualStudioPath[]> installedVisualStudios)
         {
             switch (Application.platform) {
                 case RuntimePlatform.OSXEditor:
                     InitializeVSForMac(editorPath);
                     break;
                 case RuntimePlatform.WindowsEditor:
-                    InitializeVisualStudio(editorPath);
+                    InitializeVisualStudio(editorPath, installedVisualStudios);
                     break;
             }
         }
@@ -39,7 +40,7 @@ namespace VisualStudioEditor
             }
 
             //s_UnityVSBridgeToLoad = bridgeFile;
-            System.Reflection.Assembly.Load(bridgeFile);
+            AppDomain.CurrentDomain.Load(AssemblyName.GetAssemblyName(bridgeFile));
             //InternalEditorUtility.RegisterPrecompiledAssembly(Path.GetFileNameWithoutExtension(bridgeFile), bridgeFile);
         }
 
@@ -88,57 +89,98 @@ namespace VisualStudioEditor
             return true;
         }
 
-        static void InitializeVisualStudio(string externalEditor)
+        static void InitializeVisualStudio(string externalEditor, Dictionary<VisualStudioVersion, SyncVS.VisualStudioPath[]> installedVisualStudios)
         {
-            VisualStudioVersion vsVersion;
-            if (!IsVisualStudio(externalEditor, out vsVersion))
+            if (!externalEditor.Contains("2017"))
+            {
                 return;
+            }
 
-            //s_ShouldUnityVSBeActive = true;
-
+            FindVisualStudio(externalEditor, out var vsVersion, installedVisualStudios);
             var bridgeFile = GetVstuBridgeAssembly(vsVersion);
             if (bridgeFile == null)
             {
                 Console.WriteLine("Unable to find bridge dll in registry for Microsoft Visual Studio Tools for Unity for " + externalEditor);
                 return;
             }
-
             if (!File.Exists(bridgeFile))
             {
                 Console.WriteLine("Unable to find bridge dll on disk for Microsoft Visual Studio Tools for Unity for " + bridgeFile);
                 return;
             }
 
-            //s_UnityVSBridgeToLoad = bridgeFile;
-            System.Reflection.Assembly.Load(bridgeFile);
-            //InternalEditorUtility.RegisterPrecompiledAssembly(Path.GetFileNameWithoutExtension(bridgeFile), bridgeFile);
+            AppDomain.CurrentDomain.Load(AssemblyName.GetAssemblyName(bridgeFile));
         }
 
-        static bool IsVisualStudio(string externalEditor, out VisualStudioVersion vsVersion)
+        static string GetVstuBridgeAssembly(VisualStudioVersion version)
+        {
+            try
+            {
+                var vsVersion = string.Empty;
+
+                switch (version)
+                {
+                    // Starting with VS 15, the registry key is using the VS version
+                    // to avoid taking a dependency on the product name
+                    case VisualStudioVersion.VisualStudio2017:
+                        vsVersion = "15.0";
+                        break;
+                    // VS 2015 and under are still installed in the registry
+                    // using their project names
+                    case VisualStudioVersion.VisualStudio2015:
+                        vsVersion = "2015";
+                        break;
+                    case VisualStudioVersion.VisualStudio2013:
+                        vsVersion = "2013";
+                        break;
+                    case VisualStudioVersion.VisualStudio2012:
+                        vsVersion = "2012";
+                        break;
+                    case VisualStudioVersion.VisualStudio2010:
+                        vsVersion = "2010";
+                        break;
+                }
+
+                // search first for the current user with a fallback to machine wide setting
+                return GetVstuBridgePathFromRegistry(vsVersion, true)
+                    ?? GetVstuBridgePathFromRegistry(vsVersion, false);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        static string GetVstuBridgePathFromRegistry(string vsVersion, bool currentUser)
+        {
+            var registryKey = $@"{(currentUser ? "HKEY_CURRENT_USER" : "HKEY_LOCAL_MACHINE")}\Software\Microsoft\Microsoft Visual Studio {vsVersion} Tools for Unity";
+
+            return (string)Registry.GetValue(registryKey, "UnityExtensionPath", null);
+        }
+
+        static void FindVisualStudio(string externalEditor, out VisualStudioVersion vsVersion, Dictionary<VisualStudioVersion, SyncVS.VisualStudioPath[]> installedVisualStudios)
         {
             if (string.IsNullOrEmpty(externalEditor))
             {
                 vsVersion = VisualStudioVersion.Invalid;
-                return false;
+                return;
             }
 
             // If it's a VS found through envvars or the registry
-            var matches = SyncVS.InstalledVisualStudios.Where(kvp => kvp.Value.Any(v => v.Path.Equals(externalEditor, StringComparison.OrdinalIgnoreCase))).ToArray();
+            var matches = installedVisualStudios.Where(kvp => kvp.Value.Any(v => Path.GetFullPath(v.Path).Equals(Path.GetFullPath(externalEditor), StringComparison.OrdinalIgnoreCase))).ToArray();
             if (matches.Length > 0)
             {
                 vsVersion = matches[0].Key;
-                return true;
+                return;
             }
 
             // If it's a side-by-side VS selected manually
             if (externalEditor.EndsWith("devenv.exe", StringComparison.OrdinalIgnoreCase))
             {
-                if (TryGetVisualStudioVersion(externalEditor, out vsVersion))
-                    return true;
+                if (TryGetVisualStudioVersion(externalEditor, out vsVersion)) return;
             }
 
             vsVersion = VisualStudioVersion.Invalid;
-            return false;
         }
 
         static bool TryGetVisualStudioVersion(string externalEditor, out VisualStudioVersion vsVersion)
@@ -173,7 +215,7 @@ namespace VisualStudioEditor
         {
             try
             {
-                return new Version(System.Diagnostics.FileVersionInfo.GetVersionInfo(externalEditor).ProductVersion);
+                return new Version(FileVersionInfo.GetVersionInfo(externalEditor).ProductVersion);
             }
             catch (Exception)
             {
@@ -219,55 +261,6 @@ namespace VisualStudioEditor
                 return bridge;
 
             return null;
-        }
-
-        static string GetVstuBridgeAssembly(VisualStudioVersion version)
-        {
-            try
-            {
-                var vsVersion = string.Empty;
-
-                switch (version)
-                {
-                    // Starting with VS 15, the registry key is using the VS version
-                    // to avoid taking a dependency on the product name
-                    case VisualStudioVersion.VisualStudio2017:
-                        vsVersion = "15.0";
-                        break;
-
-                    // VS 2015 and under are still installed in the registry
-                    // using their project names
-                    case VisualStudioVersion.VisualStudio2015:
-                        vsVersion = "2015";
-                        break;
-                    case VisualStudioVersion.VisualStudio2013:
-                        vsVersion = "2013";
-                        break;
-                    case VisualStudioVersion.VisualStudio2012:
-                        vsVersion = "2012";
-                        break;
-                    case VisualStudioVersion.VisualStudio2010:
-                        vsVersion = "2010";
-                        break;
-                }
-
-                // search first for the current user with a fallback to machine wide setting
-                return GetVstuBridgePathFromRegistry(vsVersion, true)
-                    ?? GetVstuBridgePathFromRegistry(vsVersion, false);
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        static string GetVstuBridgePathFromRegistry(string vsVersion, bool currentUser)
-        {
-            var registryKey = string.Format(@"{0}\Software\Microsoft\Microsoft Visual Studio {1} Tools for Unity",
-                currentUser ? "HKEY_CURRENT_USER" : "HKEY_LOCAL_MACHINE",
-                vsVersion);
-
-            return (string)Registry.GetValue(registryKey, "UnityExtensionPath", null);
         }
     }
 }

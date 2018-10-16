@@ -3,9 +3,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using Microsoft.Win32;
 using UnityEditor;
-using UnityEditor.Compilation;
-using UnityEditor.VisualStudioIntegration;
 using UnityEngine;
 
 namespace VisualStudioEditor
@@ -44,28 +43,45 @@ namespace VisualStudioEditor
             "\n(This does work with Visual Studio Pro)"
         );
 
-        static string[] FindVisualStudioDevEnvPaths() // TODO: Use vswhere
+        static string VisualStudioVersionToNiceName(VisualStudioVersion version)
+        {
+            switch (version)
+            {
+                case VisualStudioVersion.Invalid: return "Invalid Version";
+                case VisualStudioVersion.VisualStudio2008: return "Visual Studio 2008";
+                case VisualStudioVersion.VisualStudio2010: return "Visual Studio 2010";
+                case VisualStudioVersion.VisualStudio2012: return "Visual Studio 2012";
+                case VisualStudioVersion.VisualStudio2013: return "Visual Studio 2013";
+                case VisualStudioVersion.VisualStudio2015: return "Visual Studio 2015";
+                case VisualStudioVersion.VisualStudio2017: return "Visual Studio 2017";
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(version), version, null);
+            }
+        }
+
+        static IEnumerable<string> FindVisualStudioDevEnvPaths()
         {
             var progpath = $"{Application.dataPath}/../Packages/com.unity.visualstudio_editor/VSIntegration/VSWhere/VSWhere.exe";
-            var exists = File.Exists(progpath);
             var process = new Process
             {
                 StartInfo = new ProcessStartInfo
                 {
                     FileName = progpath,
-                    Arguments = $"-products * -property productPath",
+                    Arguments = "-products * -property productPath",
                     UseShellExecute = false,
+                    CreateNoWindow = true,
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                 }
             };
 
             process.Start();
-            UnityEngine.Debug.Log("Out: \n" + process.StandardError.ReadToEnd());
-            UnityEngine.Debug.Log("Error: \n" + process.StandardOutput.ReadToEnd());
             process.WaitForExit();
 
-            return new string[0];
+            while (!process.StandardOutput.EndOfStream)
+            {
+                yield return process.StandardOutput.ReadLine();
+            }
         }
 
         static SyncVS()
@@ -83,12 +99,8 @@ namespace VisualStudioEditor
         }
 
         ScriptEditor.Installation m_Installation;
-        ProjectGenerationVS generation = new ProjectGenerationVS();
-        VSInitiliazer initiliazer = new VSInitiliazer();
-
-        public bool CustomArgumentsAllowed { get; }
-        public string DefaultArgument { get; }
-        public string Arguments { get; set; }
+        ProjectGenerationVS m_Generation = new ProjectGenerationVS();
+        VSInitiliazer m_Initiliazer = new VSInitiliazer();
 
         internal static Dictionary<VisualStudioVersion, VisualStudioPath[]> InstalledVisualStudios { get; private set; }
 
@@ -96,12 +108,11 @@ namespace VisualStudioEditor
         static bool IsWindows => !IsOSX && Path.DirectorySeparatorChar == '\\' && Environment.NewLine == "\r\n";
         static readonly GUIContent k_AddUnityProjeToSln = EditorGUIUtility.TrTextContent("Add .unityproj's to .sln");
 
-
         static string GetRegistryValue(string path, string key)
         {
             try
             {
-                return Microsoft.Win32.Registry.GetValue(path, key, null) as string;
+                return Registry.GetValue(path, key, null) as string;
             }
             catch (Exception)
             {
@@ -179,7 +190,7 @@ namespace VisualStudioEditor
                     return GetInstalledVisualStudios().Select(pair => new ScriptEditor.Installation
                     {
                         Path = pair.Value[0].Path,
-                        Name = pair.Key.ToString()
+                        Name = VisualStudioVersionToNiceName(pair.Key)
                     }).ToArray();
                 }
                 catch (Exception ex)
@@ -191,40 +202,30 @@ namespace VisualStudioEditor
             }
         }
 
-        public static string FindBestVisualStudio()
-        {
-            var vs = InstalledVisualStudios.OrderByDescending(kvp => kvp.Key).Select(kvp2 => kvp2.Value).FirstOrDefault();
-            return vs?.Last().Path;
-        }
-
         public class VisualStudio
         {
             public readonly string DevEnvPath;
             public readonly string Edition;
-            public readonly Version Version;
-            public readonly string[] Workloads;
 
-            internal VisualStudio(string devEnvPath, string edition, Version version, string[] workloads)
+            internal VisualStudio(string devEnvPath, string edition)
             {
                 DevEnvPath = devEnvPath;
                 Edition = edition;
-                Version = version;
-                Workloads = workloads;
             }
         }
 
         public static IEnumerable<VisualStudio> ParseRawDevEnvPaths(string[] rawDevEnvPaths)
         {
-            if (rawDevEnvPaths != null)
+            if (rawDevEnvPaths == null)
             {
-                for (int i = 0; i < rawDevEnvPaths.Length / 4; i++)
-                {
-                    yield return new VisualStudio(
-                        devEnvPath: rawDevEnvPaths[i * 4],
-                        edition: rawDevEnvPaths[i * 4 + 1],
-                        version: new Version(rawDevEnvPaths[i * 4 + 2]),
-                        workloads: rawDevEnvPaths[i * 4 + 3].Split('|'));
-                }
+                yield break;
+            }
+
+            foreach (var path in rawDevEnvPaths)
+            {
+                yield return new VisualStudio(
+                    path,
+                    path.Contains("2017") ? "2017" : "Unknown");
             }
         }
 
@@ -248,7 +249,7 @@ namespace VisualStudioEditor
                     try
                     {
                         // Try COMNTOOLS environment variable first
-                        if (findLegacyVisualStudio(version, versions)) continue;
+                        FindLegacyVisualStudio(version, versions);
                     }
                     catch
                     {
@@ -256,11 +257,10 @@ namespace VisualStudioEditor
                     }
                 }
 
-                var requiredWorkloads = new[] {"Microsoft.VisualStudio.Workload.ManagedGame"};
+                //var requiredWorkloads = new[] {"Microsoft.VisualStudio.Workload.ManagedGame"}; // TODO:
                 var raw = FindVisualStudioDevEnvPaths();
 
-                var visualStudioPaths = ParseRawDevEnvPaths(raw)
-                    .Where(vs => !requiredWorkloads.Except(vs.Workloads).Any()) // All required workloads must be present
+                var visualStudioPaths = ParseRawDevEnvPaths(raw.ToArray())
                     .Select(vs => new VisualStudioPath(vs.DevEnvPath, vs.Edition))
                     .ToArray();
 
@@ -273,56 +273,53 @@ namespace VisualStudioEditor
             return versions;
         }
 
-        static bool findLegacyVisualStudio(VisualStudioVersion version, Dictionary<VisualStudioVersion, VisualStudioPath[]> versions)
+        static void FindLegacyVisualStudio(VisualStudioVersion version, Dictionary<VisualStudioVersion, VisualStudioPath[]> versions)
         {
-            string key = Environment.GetEnvironmentVariable(string.Format("VS{0}0COMNTOOLS", (int)version));
+            string key = Environment.GetEnvironmentVariable($"VS{(int)version}0COMNTOOLS");
             if (!string.IsNullOrEmpty(key))
             {
                 string path = Path.Combine(key, "..", "IDE", "devenv.exe");
                 if (File.Exists(path))
                 {
-                    versions[version] = new[] { new VisualStudioPath(path) };
-                    return true;
+                    versions[version] = new[] { new VisualStudioPath(path, VisualStudioVersionToNiceName(version)) };
+                    return;
                 }
             }
 
             // Try the proper registry key
             key = GetRegistryValue(
-                string.Format(@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\VisualStudio\{0}.0", (int)version), "InstallDir");
+                $@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\VisualStudio\{(int)version}.0", "InstallDir");
 
             // Try to fallback to the 32bits hive
             if (string.IsNullOrEmpty(key))
                 key = GetRegistryValue(
-                    string.Format(@"HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\VisualStudio\{0}.0", (int)version), "InstallDir");
+                    $@"HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\VisualStudio\{(int)version}.0", "InstallDir");
 
             if (!string.IsNullOrEmpty(key))
             {
                 string path = Path.Combine(key, "devenv.exe");
                 if (File.Exists(path))
                 {
-                    versions[version] = new[] { new VisualStudioPath(path) };
-                    return true;
+                    versions[version] = new[] { new VisualStudioPath(path, VisualStudioVersionToNiceName(version)) };
+                    return;
                 }
             }
 
             // Fallback to debugger key
             key = GetRegistryValue(
-
                 // VS uses this key for the local debugger path
-                string.Format(@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\VisualStudio\{0}.0\Debugger", (int)version), "FEQARuntimeImplDll");
+                $@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\VisualStudio\{(int)version}.0\Debugger", "FEQARuntimeImplDll");
             if (!string.IsNullOrEmpty(key))
             {
                 string path = DeriveVisualStudioPath(key);
                 if (!string.IsNullOrEmpty(path) && File.Exists(path))
-                    versions[version] = new[] { new VisualStudioPath(DeriveVisualStudioPath(key)) };
+                    versions[version] = new[] { new VisualStudioPath(DeriveVisualStudioPath(key), VisualStudioVersionToNiceName(version)) };
             }
-
-            return false;
         }
 
         public bool TryGetInstallationForPath(string editorPath, out ScriptEditor.Installation installation)
         {
-            string lowerCasePath = editorPath.ToLower();
+            var lowerCasePath = editorPath.ToLower();
             if (lowerCasePath.EndsWith("vcsexpress.exe"))
             {
                 installation = new ScriptEditor.Installation
@@ -344,7 +341,7 @@ namespace VisualStudioEditor
                 m_Installation = installation;
                 return true;
             }
-            var filename = Path.GetFileName(lowerCasePath.Replace('\\', Path.DirectorySeparatorChar).Replace('/', Path.DirectorySeparatorChar))?.Replace(" ", "");
+            var filename = Path.GetFileName(lowerCasePath.Replace('\\', Path.DirectorySeparatorChar).Replace('/', Path.DirectorySeparatorChar)).Replace(" ", "");
 
             if (filename == "visualstudio.app" || lowerCasePath.Contains("monodevelop") || lowerCasePath.Contains("xamarinstudio") || lowerCasePath.Contains("xamarin studio"))
             {
@@ -357,7 +354,7 @@ namespace VisualStudioEditor
                 return true;
             }
 
-            installation = default(ScriptEditor.Installation);
+            installation = default;
             m_Installation = installation;
             return false;
         }
@@ -383,41 +380,52 @@ namespace VisualStudioEditor
 
         public void SyncIfNeeded(IEnumerable<string> affectedFiles, IEnumerable<string> reimportedFiles)
         {
-            generation.SyncIfNeeded(affectedFiles, reimportedFiles);
+            m_Generation.SyncIfNeeded(affectedFiles, reimportedFiles);
         }
 
         public void Sync()
         {
-            generation.Sync();
+            m_Generation.Sync();
         }
 
         public void Initialize(string editorInstallationPath)
         {
-            initiliazer.Initialize(editorInstallationPath);
+            m_Initiliazer.Initialize(editorInstallationPath, InstalledVisualStudios);
         }
 
         public bool OpenFileAtLine(string path, int line)
         {
             var progpath = $"{Application.dataPath}/../Packages/com.unity.visualstudio_editor/VSIntegration/COMIntegration/Debug/COMIntegration.exe";
-            var exists = File.Exists(progpath);
             var process = new Process
             {
                 StartInfo = new ProcessStartInfo
                 {
                     FileName = progpath,
-                    Arguments = $"\"{EditorPrefs.GetString("kScriptsDefaultApp")}\" \"{path}\" \"{generation.SolutionFile()}\" {line}",
+                    Arguments = $"\"{EditorPrefs.GetString("kScriptsDefaultApp")}\" \"{path}\" \"{m_Generation.SolutionFile()}\" {line}",
+                    CreateNoWindow = true,
                     UseShellExecute = false,
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                 }
             };
-
             var result = process.Start();
-            UnityEngine.Debug.Log("Out: \n" + process.StandardError.ReadToEnd());
-            UnityEngine.Debug.Log("Error: \n" + process.StandardOutput.ReadToEnd());
+
+            while (!process.StandardOutput.EndOfStream)
+            {
+                if (process.StandardOutput.ReadLine() == "displayProgressBar")
+                {
+                    EditorUtility.DisplayProgressBar("Opening Visual Studio", "Starting up Visual Studio, this might take some time.", .5f);
+                }
+
+                if (process.StandardOutput.ReadLine() == "clearprogressbar")
+                {
+                    EditorUtility.ClearProgressBar();
+                }
+            }
+
+            UnityEngine.Debug.Log("Error: \n" + process.StandardError.ReadToEnd());
             process.WaitForExit();
             return result;
         }
     }
-
 }
