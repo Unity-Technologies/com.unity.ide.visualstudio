@@ -16,6 +16,7 @@
 *.sln.docstates
 *.tgz
 
+
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 
@@ -68,7 +69,6 @@ StyleCopReport.xml
 *_i.c
 *_p.c
 *_h.h
-*.ilk
 *.obj
 *.iobj
 *.pch
@@ -80,7 +80,6 @@ StyleCopReport.xml
 *.sbr
 *.tlb
 *.tli
-*.tlh
 *.tmp
 *.tmp_proj
 *_wpftmp.csproj
@@ -434,6 +433,7 @@ ExportedObj/
 # Unity3D generated meta files
 *.pidb.meta
 *.pdb.meta
+*.tlog.meta
 
 # Unity3D generated file on crash reports
 sysinfo.txt
