@@ -1,3 +1,10 @@
 build.bat*
 *.tgz*
 *.DotSettings.user*
+*.h
+*.h.meta
+*.cpp
+*.cpp.meta
+*.tlh
+*.tlh.meta
+Editor/COMIntegration/COMIntegration.meta
