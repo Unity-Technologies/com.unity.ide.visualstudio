@@ -13,7 +13,6 @@ namespace VisualStudioEditor.Editor_spec
         [TestCase("/Applications/Unity/VisualStudio.app")]
         [TestCase("/Applications/Unity/Visual Studio.app")]
         [TestCase("/Applications/Unity/Visual Studio (Preview).app")]
-        [UnityPlatform(RuntimePlatform.OSXEditor)]
         public void OSXPathDiscovery(string path)
         {
             Discover(path);
@@ -37,7 +36,7 @@ namespace VisualStudioEditor.Editor_spec
                 new CodeEditor.Installation
                 {
                     Path = path,
-                    Name = path.Contains("Insiders") ? "Visual Studio Code Insiders" : "Visual Studio Code"
+                    Name = path
                 }
             });
 
