@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using NUnit.Framework;
 using Moq;
 using UnityEngine;
@@ -32,7 +33,8 @@ namespace VisualStudioEditor.Editor_spec
             var discovery = new Mock<IDiscovery>();
             var generator = new Mock<IGenerator>();
 
-            discovery.Setup(x => x.PathCallback()).Returns(new [] {
+            discovery.Setup(x => x.PathCallback()).Returns(new[]
+            {
                 new CodeEditor.Installation
                 {
                     Path = path,
@@ -45,6 +47,21 @@ namespace VisualStudioEditor.Editor_spec
             editor.TryGetInstallationForPath(path, out var installation);
 
             Assert.AreEqual(path, installation.Path);
+        }
+    }
+
+    [TestFixture]
+    public class ParseRawDevEnvPaths
+    {
+        [TestCase("path/to/2017/devenv.exe", VisualStudioVersion.VisualStudio2017)]
+        [TestCase("path/to/2019/devenv.exe", VisualStudioVersion.VisualStudio2019)]
+        public void OnlyOnePathExisting(string filePath, VisualStudioVersion version)
+        {
+            var versions = new Dictionary<VisualStudioVersion, string[]>();
+            VSEditor.ParseRawDevEnvPaths(new [] { filePath }, versions);
+
+            Assert.AreEqual(1, versions[version].Length);
+            Assert.AreEqual(1, versions.Count);
         }
     }
 }
