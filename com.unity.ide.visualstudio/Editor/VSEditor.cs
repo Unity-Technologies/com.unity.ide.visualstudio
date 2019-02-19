@@ -77,7 +77,7 @@ namespace VisualStudioEditor
             {
                 if (paths.Contains(current))
                 {
-                    editor.CreateIfDoesntExist();
+                    editor.Initialize(current);
                     return;
                 }
             }
@@ -357,6 +357,7 @@ namespace VisualStudioEditor
 
         public void Initialize(string editorInstallationPath)
         {
+            CreateIfDoesntExist();
             m_Initiliazer.Initialize(editorInstallationPath, InstalledVisualStudios);
         }
 
