@@ -365,7 +365,13 @@ namespace VisualStudioEditor
             var comAssetPath = AssetDatabase.FindAssets("COMIntegration a:packages").Select(AssetDatabase.GUIDToAssetPath).First(assetPath => assetPath.Contains("COMIntegration.exe"));
             UnityEditor.PackageManager.PackageInfo packageInfo = UnityEditor.PackageManager.PackageInfo.FindForAssetPath(comAssetPath);
             var progpath = packageInfo.resolvedPath + comAssetPath.Substring("Packages/com.unity.ide.visualstudio".Length);
-            var solution = GetSolutionFile(path); // TODO: If solution file doesn't exist resync.
+
+            var solution = GetSolutionFile(path);
+            if (solution == "")
+            {
+                m_Generation.Sync();
+                solution = GetSolutionFile(path);
+            }
             solution = solution == "" ? "" : $"\"{solution}\"";
             var process = new Process
             {
