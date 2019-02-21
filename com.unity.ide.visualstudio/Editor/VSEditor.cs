@@ -34,7 +34,11 @@ namespace VisualStudioEditor
 
         static IEnumerable<string> FindVisualStudioDevEnvPaths()
         {
-            var asset = AssetDatabase.FindAssets("VSWhere a:packages").Select(AssetDatabase.GUIDToAssetPath).First(assetPath => assetPath.Contains("vswhere.exe"));
+            string asset = AssetDatabase.FindAssets("VSWhere a:packages").Select(AssetDatabase.GUIDToAssetPath).FirstOrDefault(assetPath => assetPath.Contains("vswhere.exe"));
+            if (string.IsNullOrWhiteSpace(asset)) // This may be called too early where the asset database has not replicated this information yet.
+            {
+                yield return "";
+            }
             UnityEditor.PackageManager.PackageInfo packageInfo = UnityEditor.PackageManager.PackageInfo.FindForAssetPath(asset);
             var progpath = packageInfo.resolvedPath + asset.Substring("Packages/com.unity.ide.visualstudio".Length);
             var process = new Process
@@ -73,13 +77,10 @@ namespace VisualStudioEditor
             var editor = new VSEditor(new Discovery(), new ProjectGeneration());
             CodeEditor.Register(editor);
             var current = CodeEditor.CurrentEditorInstallation;
-            foreach (string[] paths in InstalledVisualStudios.Values)
+            if (editor.TryGetInstallationForPath(current, out var installation))
             {
-                if (paths.Contains(current))
-                {
-                    editor.Initialize(current);
-                    return;
-                }
+                editor.Initialize(current);
+                return;
             }
         }
 
@@ -366,6 +367,7 @@ namespace VisualStudioEditor
             var comAssetPath = AssetDatabase.FindAssets("COMIntegration a:packages").Select(AssetDatabase.GUIDToAssetPath).First(assetPath => assetPath.Contains("COMIntegration.exe"));
             UnityEditor.PackageManager.PackageInfo packageInfo = UnityEditor.PackageManager.PackageInfo.FindForAssetPath(comAssetPath);
             var progpath = packageInfo.resolvedPath + comAssetPath.Substring("Packages/com.unity.ide.visualstudio".Length);
+            var fileInfo = new FileInfo(path).FullName;
 
             var solution = GetSolutionFile(path);
             if (solution == "")
@@ -379,7 +381,7 @@ namespace VisualStudioEditor
                 StartInfo = new ProcessStartInfo
                 {
                     FileName = progpath,
-                    Arguments = $"\"{CodeEditor.CurrentEditorInstallation}\" \"{path}\" {solution} {line}",
+                    Arguments = $"\"{CodeEditor.CurrentEditorInstallation}\" \"{fileInfo}\" {solution} {line}",
                     CreateNoWindow = true,
                     UseShellExecute = false,
                     RedirectStandardOutput = true,
@@ -390,12 +392,13 @@ namespace VisualStudioEditor
 
             while (!process.StandardOutput.EndOfStream)
             {
-                if (process.StandardOutput.ReadLine() == "displayProgressBar")
+                var outputLine = process.StandardOutput.ReadLine();
+                if (outputLine == "displayProgressBar")
                 {
                     EditorUtility.DisplayProgressBar("Opening Visual Studio", "Starting up Visual Studio, this might take some time.", .5f);
                 }
 
-                if (process.StandardOutput.ReadLine() == "clearprogressbar")
+                if (outputLine == "clearprogressbar")
                 {
                     EditorUtility.ClearProgressBar();
                 }
