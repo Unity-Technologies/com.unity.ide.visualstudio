@@ -17,7 +17,8 @@
 *.tgz
 *.tgz.meta
 
- TestVSPackage/Assets/Plugins
+TestVSPackage/Assets/Plugins
+TestVSPackage/Assets/Plugins.meta
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs

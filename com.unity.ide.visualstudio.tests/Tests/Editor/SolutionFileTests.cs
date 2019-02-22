@@ -46,7 +46,7 @@ namespace VisualStudioEditor.Editor_spec
         }
 
         [Test]
-        public void HeaderFormat_MatchesVS2010()
+        public void HeaderFormat_MatchesVS2017()
         {
             string[] syncedSolutionText = File.ReadAllLines(s_SolutionFile);
 
