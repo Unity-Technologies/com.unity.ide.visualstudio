@@ -1,6 +1,6 @@
 {
     "name": "Unity.VisualStudio.EditorTests",
-    "references": [
+	"references": [
         "Unity.VisualStudio.Editor"
     ],
     "optionalUnityReferences": [
@@ -11,9 +11,11 @@
     ],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
-    "overrideReferences": false,
-    "precompiledReferences": [],
-    "autoReferenced": true,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "Moq.dll"
+    ],
+    "autoReferenced": false,
     "defineConstraints": [],
     "versionDefines": []
 }

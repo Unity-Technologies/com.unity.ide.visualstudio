@@ -37,7 +37,7 @@ namespace VisualStudioEditor
             string asset = AssetDatabase.FindAssets("VSWhere a:packages").Select(AssetDatabase.GUIDToAssetPath).FirstOrDefault(assetPath => assetPath.Contains("vswhere.exe"));
             if (string.IsNullOrWhiteSpace(asset)) // This may be called too early where the asset database has not replicated this information yet.
             {
-                yield return "";
+                yield break;
             }
             UnityEditor.PackageManager.PackageInfo packageInfo = UnityEditor.PackageManager.PackageInfo.FindForAssetPath(asset);
             var progpath = packageInfo.resolvedPath + asset.Substring("Packages/com.unity.ide.visualstudio".Length);
@@ -365,6 +365,10 @@ namespace VisualStudioEditor
         public bool OpenProject(string path, int line, int column)
         {
             var comAssetPath = AssetDatabase.FindAssets("COMIntegration a:packages").Select(AssetDatabase.GUIDToAssetPath).First(assetPath => assetPath.Contains("COMIntegration.exe"));
+            if (string.IsNullOrWhiteSpace(comAssetPath)) // This may be called too early where the asset database has not replicated this information yet.
+            {
+                return false;
+            }
             UnityEditor.PackageManager.PackageInfo packageInfo = UnityEditor.PackageManager.PackageInfo.FindForAssetPath(comAssetPath);
             var progpath = packageInfo.resolvedPath + comAssetPath.Substring("Packages/com.unity.ide.visualstudio".Length);
             var fileInfo = new FileInfo(path).FullName;
