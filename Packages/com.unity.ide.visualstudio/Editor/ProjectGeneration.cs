@@ -306,8 +306,6 @@ namespace VisualStudioEditor
                 {
                     // Find assembly the asset belongs to by adding script extension and using compilation pipeline.
                     var assemblyName = m_AssemblyNameProvider.GetAssemblyNameFromScriptPath(asset + ".cs");
-                    assemblyName = assemblyName ?? m_AssemblyNameProvider.GetAssemblyNameFromScriptPath(asset + ".js");
-                    assemblyName = assemblyName ?? m_AssemblyNameProvider.GetAssemblyNameFromScriptPath(asset + ".boo");
 
                     if (string.IsNullOrEmpty(assemblyName))
                     {

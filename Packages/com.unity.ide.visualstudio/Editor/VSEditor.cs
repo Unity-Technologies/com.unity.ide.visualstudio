@@ -363,6 +363,20 @@ namespace VisualStudioEditor
 
         public bool OpenProject(string path, int line, int column)
         {
+            if (IsOSX)
+            {
+                return OpenOSXApp(path, line, column);
+
+            }
+            if (IsWindows)
+            {
+                return OpenWindowsApp(path, line);
+            }
+            return false;
+        }
+
+        private bool OpenWindowsApp(string path, int line)
+        {
             var comAssetPath = AssetDatabase.FindAssets("COMIntegration a:packages").Select(AssetDatabase.GUIDToAssetPath).First(assetPath => assetPath.Contains("COMIntegration.exe"));
             if (string.IsNullOrWhiteSpace(comAssetPath)) // This may be called too early where the asset database has not replicated this information yet.
             {
@@ -418,6 +432,25 @@ namespace VisualStudioEditor
 
             process.WaitForExit();
             return result;
+        }
+
+        private bool OpenOSXApp(string path, int line, int column)
+        {
+            var solution = GetSolutionFile(path); // TODO: If solution file doesn't exist resync.
+            solution = solution == "" ? "" : $"\"{solution}\"";
+            var process = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = EditorPrefs.GetString("kScriptsDefaultApp"),
+                    Arguments = $"{solution} -l {line} \"{path}\"",
+                    UseShellExecute = true,
+                }
+            };
+
+            process.Start();
+
+            return true;
         }
 
         private string GetSolutionFile(string path)
