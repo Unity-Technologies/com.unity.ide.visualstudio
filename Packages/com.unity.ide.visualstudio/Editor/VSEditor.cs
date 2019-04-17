@@ -455,12 +455,12 @@ namespace VisualStudioEditor
 
             while (!process.StandardOutput.EndOfStream)
             {
-                Debug.Log(process.StandardOutput.ReadLine());
+                UnityEngine.Debug.Log(process.StandardOutput.ReadLine());
             }
             var errorOutput = process.StandardError.ReadToEnd();
             if (!string.IsNullOrEmpty(errorOutput))
             {
-                Debug.Log("Error: \n" + errorOutput);
+                UnityEngine.Debug.Log("Error: \n" + errorOutput);
             }
 
             return true;
