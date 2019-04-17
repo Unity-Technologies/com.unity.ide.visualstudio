@@ -438,17 +438,30 @@ namespace VisualStudioEditor
         {
             var solution = GetSolutionFile(path); // TODO: If solution file doesn't exist resync.
             solution = solution == "" ? "" : $"\"{solution}\"";
+            var pathArguments = path == "" ? "" : $"-l {line} \"{path}\"";
             var process = new Process
             {
                 StartInfo = new ProcessStartInfo
                 {
-                    FileName = EditorPrefs.GetString("kScriptsDefaultApp"),
-                    Arguments = $"{solution} -l {line} \"{path}\"",
-                    UseShellExecute = true,
+                    FileName = "open",
+                    Arguments = $"\"{EditorPrefs.GetString("kScriptsDefaultApp")}\" --args {solution} {pathArguments}",
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
                 }
             };
 
             process.Start();
+
+            while (!process.StandardOutput.EndOfStream)
+            {
+                Debug.Log(process.StandardOutput.ReadLine());
+            }
+            var errorOutput = process.StandardError.ReadToEnd();
+            if (!string.IsNullOrEmpty(errorOutput))
+            {
+                Debug.Log("Error: \n" + errorOutput);
+            }
 
             return true;
         }
