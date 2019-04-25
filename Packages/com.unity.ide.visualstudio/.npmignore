@@ -12,3 +12,8 @@ build.bat*
 Editor/AppleEventIntegration
 Editor/AppleEventIntegration.meta
 Editor/COMIntegration/COMIntegration.meta
+upm-ci~/**
+.Editor/**
+.yamato/**
+*.zip*
+TestRunnerOptions.json

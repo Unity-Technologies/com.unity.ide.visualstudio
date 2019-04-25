@@ -87,6 +87,7 @@ namespace VisualStudioEditor
             }
         }
 
+        const string unity_generate_all = "unity_generate_all_csproj";
         IDiscovery m_Discoverability;
         IGenerator m_Generation;
         CodeEditor.Installation m_Installation;
@@ -347,6 +348,14 @@ namespace VisualStudioEditor
                     k_AddUnityProjeToSln,
                     m_ExternalEditorSupportsUnityProj);
             }
+
+            var prevGenerate = EditorPrefs.GetBool(unity_generate_all, false);
+            var generateAll = EditorGUILayout.Toggle("Generate all .csproj files.", prevGenerate);
+            if (generateAll != prevGenerate)
+            {
+                EditorPrefs.SetBool(unity_generate_all, generateAll);
+            }
+            m_Generation.GenerateAll(generateAll);
         }
 
         public void SyncIfNeeded(string[] addedFiles, string[] deletedFiles, string[] movedFiles, string[] movedFromFiles, string[] importedFiles)
@@ -438,9 +447,9 @@ namespace VisualStudioEditor
         }
 
         [DllImport ("AppleEventIntegrationPlugin")]
-        private static extern void OpenVisualStudio(string appPath, string solutionPath, string filePath, int line, StringBuilder sb, int sbLength);
+        static extern void OpenVisualStudio(string appPath, string solutionPath, string filePath, int line, StringBuilder sb, int sbLength);
 
-        private bool OpenOSXApp(string path, int line, int column)
+        bool OpenOSXApp(string path, int line, int column)
         {
             string absolutePath = "";
             if (!string.IsNullOrWhiteSpace(path))
@@ -464,7 +473,7 @@ namespace VisualStudioEditor
             return true;
         }
 
-        private string GetSolutionFile(string path)
+        string GetSolutionFile(string path)
         {
             if (UnityEditor.Unsupported.IsDeveloperBuild())
             {
@@ -487,7 +496,7 @@ namespace VisualStudioEditor
             return "";
         }
 
-        private static string GetBaseUnityDeveloperFolder()
+        static string GetBaseUnityDeveloperFolder()
         {
             return Directory.GetParent(EditorApplication.applicationPath).Parent.Parent.FullName;
         }

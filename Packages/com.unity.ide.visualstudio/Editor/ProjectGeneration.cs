@@ -22,6 +22,7 @@ namespace VisualStudioEditor
         bool HasSolutionBeenGenerated();
         string SolutionFile();
         string ProjectDirectory { get; }
+        void GenerateAll(bool generateAll);
     }
 
     public interface IAssemblyNameProvider
@@ -105,10 +106,12 @@ namespace VisualStudioEditor
 
         string[] m_ProjectSupportedExtensions = new string[0];
         public string ProjectDirectory { get; }
+
         public TestSettings Settings { get; set; }
 
         readonly string m_ProjectName;
         readonly IAssemblyNameProvider m_AssemblyNameProvider;
+        bool m_ShouldGenerateAll;
 
         public ProjectGeneration() : this(Directory.GetParent(Application.dataPath).FullName,  new AssemblyNameProvider())
         {
@@ -122,6 +125,11 @@ namespace VisualStudioEditor
             ProjectDirectory = tempDirectory.Replace('\\', '/');
             m_ProjectName = Path.GetFileName(ProjectDirectory);
             m_AssemblyNameProvider = assemblyNameProvider;
+        }
+
+        public void GenerateAll(bool generateAll)
+        {
+            m_ShouldGenerateAll = generateAll;
         }
 
         /// <summary>
@@ -186,7 +194,7 @@ namespace VisualStudioEditor
             string extension = Path.GetExtension(file);
 
             // Exclude files coming from packages except if they are internalized.
-            if (IsInternalizedPackagePath(file))
+            if (!m_ShouldGenerateAll && IsInternalizedPackagePath(file))
             {
                 return false;
             }
@@ -306,7 +314,7 @@ namespace VisualStudioEditor
             foreach (string asset in m_AssemblyNameProvider.GetAllAssetPaths())
             {
                 // Exclude files coming from packages except if they are internalized.
-                if (IsInternalizedPackagePath(asset))
+                if (!m_ShouldGenerateAll && IsInternalizedPackagePath(asset))
                 {
                     continue;
                 }
