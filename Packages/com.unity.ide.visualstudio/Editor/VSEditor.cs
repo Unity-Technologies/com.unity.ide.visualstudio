@@ -3,11 +3,14 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
 using Microsoft.Win32;
 using UnityEditor;
 using UnityEngine;
 using Debug = System.Diagnostics.Debug;
 using Unity.CodeEditor;
+using System.Runtime.InteropServices;
+
 
 namespace VisualStudioEditor
 {
@@ -434,34 +437,74 @@ namespace VisualStudioEditor
             return result;
         }
 
+        [DllImport ("AppleEventIntegrationPlugin")]
+        private static extern void OpenVisualStudio(string appPath, string solutionPath, string filePath, int line, StringBuilder sb, int sbLength);
+
         private bool OpenOSXApp(string path, int line, int column)
         {
-            var solution = GetSolutionFile(path); // TODO: If solution file doesn't exist resync.
-            solution = solution == "" ? "" : $"\"{solution}\"";
-            var pathArguments = path == "" ? "" : $"-l {line} \"{path}\"";
-            var process = new Process
+            var comAssetPath = AssetDatabase.FindAssets("AppleEventIntegration a:packages").Select(AssetDatabase.GUIDToAssetPath).First(assetPath => assetPath.Contains(Path.Combine("Release","AppleEventIntegration")));
+            if (string.IsNullOrWhiteSpace(comAssetPath)) // This may be called too early where the asset database has not replicated this information yet.
             {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = "open",
-                    Arguments = $"\"{EditorPrefs.GetString("kScriptsDefaultApp")}\" --args {solution} {pathArguments}",
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                }
-            };
-
-            process.Start();
-
-            while (!process.StandardOutput.EndOfStream)
-            {
-                UnityEngine.Debug.Log(process.StandardOutput.ReadLine());
+                return false;
             }
-            var errorOutput = process.StandardError.ReadToEnd();
-            if (!string.IsNullOrEmpty(errorOutput))
+            UnityEditor.PackageManager.PackageInfo packageInfo = UnityEditor.PackageManager.PackageInfo.FindForAssetPath(comAssetPath);
+            var progpath = packageInfo.resolvedPath + comAssetPath.Substring("Packages/com.unity.ide.visualstudio".Length);
+
+            string absolutePath = "";
+            if (!string.IsNullOrWhiteSpace(path))
             {
-                UnityEngine.Debug.Log("Error: \n" + errorOutput);
+                absolutePath = Path.GetFullPath(path);
             }
+
+            var solution = GetSolutionFile(path);
+            if (solution == "")
+            {
+                m_Generation.Sync();
+                solution = GetSolutionFile(path);
+            }
+
+            StringBuilder sb = new StringBuilder(4096);
+
+            OpenVisualStudio(CodeEditor.CurrentEditorInstallation, solution, absolutePath, line, sb, sb.Capacity);
+
+            UnityEngine.Debug.Log(sb.ToString());
+
+            // UnityEngine.Debug.Log("Before process start");
+
+            // solution = solution == "" ? "" : $"\"{solution}\"";
+            // var process = new Process
+            // {
+            //     StartInfo = new ProcessStartInfo
+            //     {
+            //         FileName = progpath,
+            //         Arguments = $"\"{CodeEditor.CurrentEditorInstallation}\" \"{absolutePath}\" {solution} {line}",
+            //         // FileName = "/usr/bin/open",
+            //         // Arguments = "http://google.com"
+            //         // CreateNoWindow = true,
+            //         // UseShellExecute = false,
+            //         // RedirectStandardOutput = true,
+            //         // RedirectStandardError = true,
+            //     }
+            // };
+            // var result = process.Start();
+
+            // UnityEngine.Debug.Log("After process start");
+
+            // // while (!process.StandardOutput.EndOfStream)
+            // // {
+            // //     Console.WriteLine(process.StandardOutput.ReadLine());
+            // // }
+            // // var errorOutput = process.StandardError.ReadToEnd();
+            // // if (!string.IsNullOrEmpty(errorOutput))
+            // // {
+            // //     Console.WriteLine("Error: \n" + errorOutput);
+            // // }
+
+            // // UnityEngine.Debug.Log("Before process wait for exit");
+
+            // process.WaitForExit();
+
+            // // UnityEngine.Debug.Log("After process wait for exit");
 
             return true;
         }

@@ -7,4 +7,7 @@ build.bat*
 *.cpp.meta
 *.tlh
 *.tlh.meta
+*.mm
+*.mm.meta'
+Editor/AppleEventIntegration
 Editor/COMIntegration/COMIntegration.meta
