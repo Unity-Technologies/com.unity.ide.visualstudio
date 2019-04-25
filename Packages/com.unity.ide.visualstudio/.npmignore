@@ -10,4 +10,5 @@ build.bat*
 *.mm
 *.mm.meta'
 Editor/AppleEventIntegration
+Editor/AppleEventIntegration.meta
 Editor/COMIntegration/COMIntegration.meta
