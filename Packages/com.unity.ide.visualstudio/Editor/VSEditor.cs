@@ -442,14 +442,6 @@ namespace VisualStudioEditor
 
         private bool OpenOSXApp(string path, int line, int column)
         {
-            var comAssetPath = AssetDatabase.FindAssets("AppleEventIntegration a:packages").Select(AssetDatabase.GUIDToAssetPath).First(assetPath => assetPath.Contains(Path.Combine("Release","AppleEventIntegration")));
-            if (string.IsNullOrWhiteSpace(comAssetPath)) // This may be called too early where the asset database has not replicated this information yet.
-            {
-                return false;
-            }
-            UnityEditor.PackageManager.PackageInfo packageInfo = UnityEditor.PackageManager.PackageInfo.FindForAssetPath(comAssetPath);
-            var progpath = packageInfo.resolvedPath + comAssetPath.Substring("Packages/com.unity.ide.visualstudio".Length);
-
             string absolutePath = "";
             if (!string.IsNullOrWhiteSpace(path))
             {
