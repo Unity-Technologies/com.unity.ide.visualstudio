@@ -459,44 +459,7 @@ namespace VisualStudioEditor
 
             OpenVisualStudio(CodeEditor.CurrentEditorInstallation, solution, absolutePath, line, sb, sb.Capacity);
 
-            UnityEngine.Debug.Log(sb.ToString());
-
-            // UnityEngine.Debug.Log("Before process start");
-
-            // solution = solution == "" ? "" : $"\"{solution}\"";
-            // var process = new Process
-            // {
-            //     StartInfo = new ProcessStartInfo
-            //     {
-            //         FileName = progpath,
-            //         Arguments = $"\"{CodeEditor.CurrentEditorInstallation}\" \"{absolutePath}\" {solution} {line}",
-            //         // FileName = "/usr/bin/open",
-            //         // Arguments = "http://google.com"
-            //         // CreateNoWindow = true,
-            //         // UseShellExecute = false,
-            //         // RedirectStandardOutput = true,
-            //         // RedirectStandardError = true,
-            //     }
-            // };
-            // var result = process.Start();
-
-            // UnityEngine.Debug.Log("After process start");
-
-            // // while (!process.StandardOutput.EndOfStream)
-            // // {
-            // //     Console.WriteLine(process.StandardOutput.ReadLine());
-            // // }
-            // // var errorOutput = process.StandardError.ReadToEnd();
-            // // if (!string.IsNullOrEmpty(errorOutput))
-            // // {
-            // //     Console.WriteLine("Error: \n" + errorOutput);
-            // // }
-
-            // // UnityEngine.Debug.Log("Before process wait for exit");
-
-            // process.WaitForExit();
-
-            // // UnityEngine.Debug.Log("After process wait for exit");
+            Console.WriteLine(sb.ToString());
 
             return true;
         }
