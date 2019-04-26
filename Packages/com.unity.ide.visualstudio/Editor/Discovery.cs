@@ -1,4 +1,6 @@
 using System;
+using System.IO;
+using System.Collections.Generic;
 using System.Linq;
 using Unity.CodeEditor;
 using UnityEngine;
@@ -31,16 +33,34 @@ namespace VisualStudioEditor
         {
             try
             {
-                return VSEditor.GetInstalledVisualStudios().Select(pair => new CodeEditor.Installation
+                if (VSEditor.IsWindows)
                 {
-                    Path = pair.Value[0],
-                    Name = VisualStudioVersionToNiceName(pair.Key)
-                }).ToArray();
+                    return VSEditor.GetInstalledVisualStudios().Select(pair => new CodeEditor.Installation
+                    {
+                        Path = pair.Value[0],
+                        Name = VisualStudioVersionToNiceName(pair.Key)
+                    }).ToArray();
+                }
+                if (VSEditor.IsOSX)
+                {
+                    var installationList = new List<CodeEditor.Installation>();
+                    AddIfDirectoryExists("Visual Studio", "/Applications/Visual Studio.app", installationList);
+                    AddIfDirectoryExists("Visual Studio (Preview)", "/Applications/Visual Studio (Preview).app", installationList);
+                    return installationList.ToArray();
+                }
             }
             catch (Exception ex)
             {
                 Debug.Log($"Error detecting Visual Studio installations: {ex.Message}{Environment.NewLine}{ex.StackTrace}");
-                return new CodeEditor.Installation[0];
+            }
+            return new CodeEditor.Installation[0];
+        }
+
+        void AddIfDirectoryExists(string name, string path, List<CodeEditor.Installation> installations)
+        {
+            if (File.Exists(path))
+            {
+                installations.Add(new CodeEditor.Installation { Name = name, Path = path });
             }
         }
     }

@@ -102,8 +102,8 @@ namespace VisualStudioEditor
 
         internal static Dictionary<VisualStudioVersion, string[]> InstalledVisualStudios { get; private set; }
 
-        static bool IsOSX => Environment.OSVersion.Platform == PlatformID.Unix;
-        static bool IsWindows => !IsOSX && Path.DirectorySeparatorChar == '\\' && Environment.NewLine == "\r\n";
+        internal static bool IsOSX => Environment.OSVersion.Platform == PlatformID.Unix;
+        internal static bool IsWindows => !IsOSX && Path.DirectorySeparatorChar == '\\' && Environment.NewLine == "\r\n";
         static readonly GUIContent k_AddUnityProjeToSln = EditorGUIUtility.TrTextContent("Add .unityproj's to .sln");
 
         static string GetRegistryValue(string path, string key)
