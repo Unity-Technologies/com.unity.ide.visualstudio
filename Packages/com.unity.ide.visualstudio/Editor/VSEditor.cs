@@ -365,6 +365,7 @@ namespace VisualStudioEditor
 
         public void SyncAll()
         {
+            AssetDatabase.Refresh();
             m_Generation.Sync();
         }
 
