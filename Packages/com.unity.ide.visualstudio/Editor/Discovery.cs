@@ -58,7 +58,7 @@ namespace VisualStudioEditor
 
         void AddIfDirectoryExists(string name, string path, List<CodeEditor.Installation> installations)
         {
-            if (File.Exists(path))
+            if (Directory.Exists(path))
             {
                 installations.Add(new CodeEditor.Installation { Name = name, Path = path });
             }
