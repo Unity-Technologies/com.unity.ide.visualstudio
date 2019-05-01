@@ -92,7 +92,6 @@ namespace VisualStudioEditor
         IGenerator m_Generation;
         CodeEditor.Installation m_Installation;
         VSInitializer m_Initiliazer = new VSInitializer();
-        bool m_ExternalEditorSupportsUnityProj;
 
         public VSEditor(IDiscovery discovery, IGenerator projectGeneration)
         {
@@ -104,7 +103,6 @@ namespace VisualStudioEditor
 
         internal static bool IsOSX => Environment.OSVersion.Platform == PlatformID.Unix;
         internal static bool IsWindows => !IsOSX && Path.DirectorySeparatorChar == '\\' && Environment.NewLine == "\r\n";
-        static readonly GUIContent k_AddUnityProjeToSln = EditorGUIUtility.TrTextContent("Add .unityproj's to .sln");
 
         static string GetRegistryValue(string path, string key)
         {
@@ -340,13 +338,6 @@ namespace VisualStudioEditor
                 GUILayout.Label("", "CN EntryWarn");
                 GUILayout.Label(k_ExpressNotSupportedMessage, "WordWrappedLabel");
                 GUILayout.EndHorizontal();
-            }
-
-            if (m_Installation.Name.Equals("MonoDevelop"))
-            {
-                m_ExternalEditorSupportsUnityProj = EditorGUILayout.Toggle(
-                    k_AddUnityProjeToSln,
-                    m_ExternalEditorSupportsUnityProj);
             }
 
             var prevGenerate = EditorPrefs.GetBool(unity_generate_all, false);
