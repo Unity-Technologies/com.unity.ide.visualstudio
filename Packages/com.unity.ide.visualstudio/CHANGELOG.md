@@ -1,6 +1,6 @@
 # Code Editor Package for Visual Studio
 
-##[1.0.8] - 2019-03-05
+## [1.0.9] - 2019-03-05
 
 Updated MonoDevelop support, to pass correct arguments, and not import VSTU plugin
 Use release build of COMIntegration for Visual Studio
