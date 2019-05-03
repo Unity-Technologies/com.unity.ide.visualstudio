@@ -58,7 +58,7 @@ namespace VisualStudioEditor.Editor_spec
         public void OnlyOnePathExisting(string filePath, VisualStudioVersion version)
         {
             var versions = new Dictionary<VisualStudioVersion, string[]>();
-            VSEditor.ParseRawDevEnvPaths(new [] { filePath }, versions);
+            Discovery.ParseRawDevEnvPaths(new [] { filePath }, versions);
 
             Assert.AreEqual(1, versions[version].Length);
             Assert.AreEqual(1, versions.Count);
