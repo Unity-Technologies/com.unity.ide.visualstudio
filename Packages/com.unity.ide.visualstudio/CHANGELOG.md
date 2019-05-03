@@ -1,5 +1,11 @@
 # Code Editor Package for Visual Studio
 
+##[1.0.8] - 2019-03-05
+
+Updated MonoDevelop support, to pass correct arguments, and not import VSTU plugin
+Use release build of COMIntegration for Visual Studio
+
+
 ## [1.0.7] - 2019-04-30
 
 Ensure asset database is refreshed when generating csproj and solution files.
