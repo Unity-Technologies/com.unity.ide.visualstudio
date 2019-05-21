@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using NUnit.Framework;
@@ -13,7 +13,7 @@ namespace VisualStudioEditor
         [Test]
         public void Validate()
         {
-            Assert.True(ValidationSuite.ValidatePackage("com.unity.ide.visualstudio@1.0.10", ValidationType.LocalDevelopment));
+            Assert.True(ValidationSuite.ValidatePackage("com.unity.ide.visualstudio@1.0.11", ValidationType.LocalDevelopment));
         }
     }
 }
