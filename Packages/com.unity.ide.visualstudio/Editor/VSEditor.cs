@@ -113,8 +113,8 @@ namespace VisualStudioEditor
                 return true;
             }
 
-            if (lowerCasePath.Contains("monodevelop", StringComparison.OrdinalIgnoreCase)
-                || lowerCasePath.Replace(" ", "").Contains("xamarinstudio", StringComparison.OrdinalIgnoreCase))
+            if (lowerCasePath.Contains("monodevelop")
+                || lowerCasePath.Replace(" ", "").Contains("xamarinstudio"))
             {
                 installation = new CodeEditor.Installation
                 {
