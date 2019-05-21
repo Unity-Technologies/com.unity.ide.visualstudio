@@ -102,7 +102,7 @@ namespace VisualStudioEditor
 
             if (lowerCasePath.EndsWith("devenv.exe", StringComparison.OrdinalIgnoreCase)
                 || lowerCasePath.Replace(" ", "").EndsWith("visualstudio.app", StringComparison.OrdinalIgnoreCase)
-                || lowerCasePath.Replace(" ", "").EndsWith("visualstudio(preview).app.exe", StringComparison.OrdinalIgnoreCase))
+                || lowerCasePath.Replace(" ", "").EndsWith("visualstudio(preview).app", StringComparison.OrdinalIgnoreCase))
             {
                 installation = new CodeEditor.Installation
                 {
