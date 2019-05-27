@@ -1,5 +1,9 @@
 # Code Editor Package for Visual Studio
 
+## [1.1.0] - 2019-05-27
+
+Move internal extension handling to package.
+
 ## [1.0.11] - 2019-05-21
 
 Fix detection of visual studio for mac installation.
