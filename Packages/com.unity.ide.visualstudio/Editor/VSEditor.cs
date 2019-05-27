@@ -165,8 +165,24 @@ namespace VisualStudioEditor
             m_Initializer.Initialize(editorInstallationPath, InstalledVisualStudios);
         }
 
+        static bool SupportsExtension(string path)
+        {
+            var userExtensions = EditorSettings.projectGenerationUserExtensions;
+            var extensionStrings = userExtensions != null
+                ? userExtensions.ToList()
+                : new List<string> {"ts", "bjs", "javascript", "json", "html", "shader"};
+
+            extensionStrings.AddRange(new[] {"template", "compute", "cginc", "hlsl", "glslinc"});
+
+            return extensionStrings.Contains(Path.GetExtension(path));
+        }
+
         public bool OpenProject(string path, int line, int column)
         {
+            if (!SupportsExtension(path)) {
+                return false;
+            }
+
             if (m_Installation.Name == "MonoDevelop") {
                 return OpenAppMonoDev(path, line, column);
             }
