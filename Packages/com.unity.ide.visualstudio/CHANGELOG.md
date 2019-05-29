@@ -1,5 +1,9 @@
 # Code Editor Package for Visual Studio
 
+## [1.1.1] - 2019-05-29
+
+Fix Bridge assembly loading with non VS2017 editors
+
 ## [1.1.0] - 2019-05-27
 
 Move internal extension handling to package.
