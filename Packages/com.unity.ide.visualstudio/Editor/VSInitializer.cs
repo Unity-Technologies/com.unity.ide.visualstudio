@@ -95,11 +95,6 @@ namespace VisualStudioEditor
 
         static void InitializeVisualStudio(string externalEditor, Dictionary<VisualStudioVersion, string[]> installedVisualStudios)
         {
-            if (!externalEditor.Contains("2017"))
-            {
-                return;
-            }
-
             FindVisualStudio(externalEditor, out var vsVersion, installedVisualStudios);
             var bridgeFile = GetVstuBridgeAssembly(vsVersion);
             if (bridgeFile == null)
