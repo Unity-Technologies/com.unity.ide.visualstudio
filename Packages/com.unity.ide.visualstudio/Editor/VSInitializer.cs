@@ -13,6 +13,8 @@ namespace VisualStudioEditor
 {
     internal class VSInitializer
     {
+        public string BridgeFile { get; private set; }
+
         public void Initialize(string editorPath, Dictionary<VisualStudioVersion, string[]> installedVisualStudios)
         {
             switch (Application.platform) {
@@ -25,19 +27,19 @@ namespace VisualStudioEditor
             }
         }
 
-        static void InitializeVSForMac(string externalEditor)
+        void InitializeVSForMac(string externalEditor)
         {
             if (!IsVSForMac(externalEditor, out var vsfmVersion))
                 return;
 
-            var bridgeFile = GetVSForMacBridgeAssembly(externalEditor, vsfmVersion);
-            if (string.IsNullOrEmpty(bridgeFile) || !File.Exists(bridgeFile))
+            BridgeFile = GetVSForMacBridgeAssembly(externalEditor, vsfmVersion);
+            if (string.IsNullOrEmpty(BridgeFile) || !File.Exists(BridgeFile))
             {
                 Debug.Log("Unable to find Tools for Unity bridge dll for Visual Studio for Mac " + externalEditor);
                 return;
             }
 
-            AppDomain.CurrentDomain.Load(AssemblyName.GetAssemblyName(bridgeFile));
+            AppDomain.CurrentDomain.Load(AssemblyName.GetAssemblyName(BridgeFile));
         }
 
         static bool IsVisualStudioForMac(string path)
@@ -93,22 +95,22 @@ namespace VisualStudioEditor
             return true;
         }
 
-        static void InitializeVisualStudio(string externalEditor, Dictionary<VisualStudioVersion, string[]> installedVisualStudios)
+        void InitializeVisualStudio(string externalEditor, Dictionary<VisualStudioVersion, string[]> installedVisualStudios)
         {
             FindVisualStudio(externalEditor, out var vsVersion, installedVisualStudios);
-            var bridgeFile = GetVstuBridgeAssembly(vsVersion);
-            if (bridgeFile == null)
+            BridgeFile = GetVstuBridgeAssembly(vsVersion);
+            if (BridgeFile == null)
             {
                 Debug.Log("Unable to find bridge dll in registry for Microsoft Visual Studio Tools for Unity for " + externalEditor);
                 return;
             }
-            if (!File.Exists(bridgeFile))
+            if (!File.Exists(BridgeFile))
             {
-                Debug.Log("Unable to find bridge dll on disk for Microsoft Visual Studio Tools for Unity for " + bridgeFile);
+                Debug.Log("Unable to find bridge dll on disk for Microsoft Visual Studio Tools for Unity for " + BridgeFile);
                 return;
             }
 
-            AppDomain.CurrentDomain.Load(AssemblyName.GetAssemblyName(bridgeFile));
+            AppDomain.CurrentDomain.Load(AssemblyName.GetAssemblyName(BridgeFile));
         }
 
         static string GetVstuBridgeAssembly(VisualStudioVersion version)

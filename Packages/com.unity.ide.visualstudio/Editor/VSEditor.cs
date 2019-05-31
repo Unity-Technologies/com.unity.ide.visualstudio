@@ -35,6 +35,8 @@ namespace VisualStudioEditor
             "\n(This does work with Visual Studio Pro)"
         );
 
+        static bool? s_IsUnityVSEnabled;
+
         static VSEditor()
         {
             try
@@ -132,6 +134,8 @@ namespace VisualStudioEditor
 
         public void OnGUI()
         {
+            GUILayout.Label(CalculateVSTULabel(m_Initializer.BridgeFile));
+
             if (m_Installation.Name.Equals("VSExpress"))
             {
                 GUILayout.BeginHorizontal(EditorStyles.helpBox);
@@ -147,6 +151,42 @@ namespace VisualStudioEditor
                 EditorPrefs.SetBool(unity_generate_all, generateAll);
             }
             m_Generation.GenerateAll(generateAll);
+        }
+
+        static string CalculateVSTULabel(string vsBridge)
+        {
+            if (!IsUnityVSEnabled(vsBridge))
+                return "Bridge not loaded";
+
+            var assembly = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a => GetAssemblyLocation(a) == vsBridge);
+            if (assembly == null)
+                return "Bridge not loaded";
+
+            var sb = new StringBuilder("Microsoft Visual Studio Tools for Unity ");
+            sb.Append(assembly.GetName().Version);
+            sb.Append(" enabled");
+
+            return sb.ToString();
+        }
+
+        static bool IsUnityVSEnabled(string vsBridge)
+        {
+            if (!s_IsUnityVSEnabled.HasValue)
+                s_IsUnityVSEnabled = AppDomain.CurrentDomain.GetAssemblies().Any(a => GetAssemblyLocation(a) == vsBridge);
+
+            return s_IsUnityVSEnabled.Value;
+        }
+
+        static string GetAssemblyLocation(System.Reflection.Assembly a)
+        {
+            try
+            {
+                return a.Location;
+            }
+            catch (NotSupportedException)
+            {
+                return null;
+            }
         }
 
         public void SyncIfNeeded(string[] addedFiles, string[] deletedFiles, string[] movedFiles, string[] movedFromFiles, string[] importedFiles)
