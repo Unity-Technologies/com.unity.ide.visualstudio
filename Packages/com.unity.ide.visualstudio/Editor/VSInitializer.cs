@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Text.RegularExpressions;
 using Microsoft.Win32;
 using UnityEngine;
+using UnityEditor;
 using Debug = UnityEngine.Debug;
 
 namespace VisualStudioEditor
@@ -39,7 +40,7 @@ namespace VisualStudioEditor
                 return;
             }
 
-            AppDomain.CurrentDomain.Load(AssemblyName.GetAssemblyName(BridgeFile));
+            LoadAssembly(BridgeFile);
         }
 
         static bool IsVisualStudioForMac(string path)
@@ -110,7 +111,17 @@ namespace VisualStudioEditor
                 return;
             }
 
-            AppDomain.CurrentDomain.Load(AssemblyName.GetAssemblyName(BridgeFile));
+            LoadAssembly(BridgeFile);
+        }
+        
+        static void LoadAssembly(string filename) 
+        {
+            var assembly = AppDomain.CurrentDomain.Load(AssemblyName.GetAssemblyName(filename));
+            var autoInitTypes = assembly.GetTypes().Where(t => t.GetCustomAttributes(typeof(InitializeOnLoadAttribute)).Any());
+            foreach(var type in autoInitTypes)
+            {
+                System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(type.TypeHandle);
+            }
         }
 
         static string GetVstuBridgeAssembly(VisualStudioVersion version)
