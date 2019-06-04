@@ -10,7 +10,7 @@ using UnityEngine;
 using Debug = System.Diagnostics.Debug;
 using Unity.CodeEditor;
 using System.Runtime.InteropServices;
-
+using System.Reflection;
 
 namespace VisualStudioEditor
 {
@@ -34,8 +34,6 @@ namespace VisualStudioEditor
             "You can still use it by manually opening the Visual Studio project file, but Unity cannot automatically open files for you when you doubleclick them. " +
             "\n(This does work with Visual Studio Pro)"
         );
-
-        static bool? s_IsUnityVSEnabled;
 
         static VSEditor()
         {
@@ -66,11 +64,25 @@ namespace VisualStudioEditor
         IGenerator m_Generation;
         CodeEditor.Installation m_Installation;
         VSInitializer m_Initializer = new VSInitializer();
+        Lazy<string> m_LazyVSTULabel;
 
         public VSEditor(IDiscovery discovery, IGenerator projectGeneration)
         {
             m_Discoverability = discovery;
             m_Generation = projectGeneration;
+
+            m_LazyVSTULabel = new Lazy<string>(() =>
+            {
+                var assembly = m_Initializer.GetBridgeAssembly();
+                if (assembly == null)
+                    return "Bridge not loaded";
+
+                var sb = new StringBuilder("Microsoft Visual Studio Tools for Unity ");
+                sb.Append(assembly.GetName().Version);
+                sb.Append(" enabled");
+
+                return sb.ToString();
+            });
         }
 
         internal static Dictionary<VisualStudioVersion, string[]> InstalledVisualStudios { get; private set; }
@@ -134,7 +146,7 @@ namespace VisualStudioEditor
 
         public void OnGUI()
         {
-            GUILayout.Label(CalculateVSTULabel(m_Initializer.BridgeFile));
+            GUILayout.Label(m_LazyVSTULabel.Value);
 
             if (m_Installation.Name.Equals("VSExpress"))
             {
@@ -153,45 +165,29 @@ namespace VisualStudioEditor
             m_Generation.GenerateAll(generateAll);
         }
 
-        static string CalculateVSTULabel(string vsBridge)
-        {
-            if (!IsUnityVSEnabled(vsBridge))
-                return "Bridge not loaded";
-
-            var assembly = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a => GetAssemblyLocation(a) == vsBridge);
-            if (assembly == null)
-                return "Bridge not loaded";
-
-            var sb = new StringBuilder("Microsoft Visual Studio Tools for Unity ");
-            sb.Append(assembly.GetName().Version);
-            sb.Append(" enabled");
-
-            return sb.ToString();
-        }
-
-        static bool IsUnityVSEnabled(string vsBridge)
-        {
-            if (!s_IsUnityVSEnabled.HasValue)
-                s_IsUnityVSEnabled = AppDomain.CurrentDomain.GetAssemblies().Any(a => GetAssemblyLocation(a) == vsBridge);
-
-            return s_IsUnityVSEnabled.Value;
-        }
-
-        static string GetAssemblyLocation(System.Reflection.Assembly a)
-        {
-            try
-            {
-                return a.Location;
-            }
-            catch (NotSupportedException)
-            {
-                return null;
-            }
-        }
-
         public void SyncIfNeeded(string[] addedFiles, string[] deletedFiles, string[] movedFiles, string[] movedFromFiles, string[] importedFiles)
         {
             m_Generation.SyncIfNeeded(addedFiles.Union(deletedFiles).Union(movedFiles).Union(movedFromFiles), importedFiles);
+            InvokeOnAssemblyProcessor("OnPostprocessAllAssets", new object[] { importedFiles, deletedFiles, movedFiles, movedFromFiles });
+        }
+
+        private void InvokeOnAssemblyProcessor(string methodName, object[] arguments)
+        {
+            var types = m_Initializer?.GetBridgeAssembly()?
+                .GetTypes()
+                .Where(x => typeof(AssetPostprocessor).IsAssignableFrom(x) && !x.IsInterface && !x.IsAbstract);
+
+            if (types == null)
+                return;
+
+            foreach (var type in types)
+            {
+                var method = type.GetMethod(methodName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+                if (method == null)
+                    continue;
+
+                method.Invoke(null, arguments);
+            }
         }
 
         public void SyncAll()
