@@ -219,7 +219,7 @@ namespace VisualStudioEditor
 
         public bool OpenProject(string path, int line, int column)
         {
-            if (!SupportsExtension(path)) {
+            if (!string.IsNullOrEmpty(path) && !SupportsExtension(path)) {
                 return false;
             }
 
