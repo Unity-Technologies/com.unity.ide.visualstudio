@@ -120,7 +120,7 @@ namespace VisualStudioEditor.Editor_spec
 
             string GetSolutionGUID(string projectName)
             {
-                return SolutionGuidGenerator.GuidForSolution(projectName, "cs");
+                return SolutionGuidGenerator.GuidForSolution(projectName, ScriptingLanguage.CSharp);
             }
 
             synchronizer.Sync();
