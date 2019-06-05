@@ -4,10 +4,8 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
-using Microsoft.Win32;
 using UnityEditor;
 using UnityEngine;
-using Debug = System.Diagnostics.Debug;
 using Unity.CodeEditor;
 using System.Runtime.InteropServices;
 using System.Reflection;
@@ -201,25 +199,32 @@ namespace VisualStudioEditor
             m_Initializer.Initialize(editorInstallationPath, InstalledVisualStudios);
         }
 
-        static bool SupportsExtension(string path)
+        bool IsSupportedPath(string path)
         {
-            var userExtensions = EditorSettings.projectGenerationUserExtensions;
-            var extensionStrings = userExtensions != null
-                ? userExtensions.ToList()
-                : new List<string> {"cs", "ts", "bjs", "javascript", "json", "html", "shader"};
+            // Path is empty with "Open C# Project", as we only want to open the solution without specific files
+            if (string.IsNullOrEmpty(path))
+                return true;
 
-            extensionStrings.AddRange(new[] {"template", "compute", "cginc", "hlsl", "glslinc"});
+            // cs, uxml, uss, shader, compute, cginc, hlsl, glslinc, template are part of Unity builtin extensions
+            // txt, xml, fnt, cd are -often- par of Unity user extensions
+            // asdmdef is mandatory included
+            if (m_Generation.IsSupportedFile(path))
+                return true;
+                
+            // extra extensions here if needed...
 
-            return extensionStrings.Contains(Path.GetExtension(path));
+            return false;
         }
 
         public bool OpenProject(string path, int line, int column)
         {
-            if (!string.IsNullOrEmpty(path) && !SupportsExtension(path)) {
+            if (!IsSupportedPath(path))
+            {
                 return false;
             }
 
-            if (m_Installation.Name == "MonoDevelop") {
+            if (m_Installation.Name == "MonoDevelop")
+            {
                 return OpenAppMonoDev(path, line, column);
             }
 
