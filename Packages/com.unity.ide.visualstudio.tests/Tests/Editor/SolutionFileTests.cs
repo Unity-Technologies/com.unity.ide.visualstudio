@@ -46,14 +46,15 @@ namespace VisualStudioEditor.Editor_spec
         }
 
         [Test]
-        public void HeaderFormat_MatchesVS2017()
+        public void HeaderFormatMatches()
         {
             string[] syncedSolutionText = File.ReadAllLines(s_SolutionFile);
 
             Assert.IsTrue(syncedSolutionText.Length >= 4);
             Assert.AreEqual(@"", syncedSolutionText[0]);
-            Assert.AreEqual(@"Microsoft Visual Studio Solution File, Format Version 11.00", syncedSolutionText[1]);
-            Assert.AreEqual(@"# Visual Studio 2010", syncedSolutionText[2]);
+            // Do not include VS version specifics, as it will change depending on the Bridge edition
+            Assert.IsTrue(syncedSolutionText[1].Contains(@"Microsoft Visual Studio Solution File, Format Version "));
+            Assert.IsTrue(syncedSolutionText[2].Contains(@"# Visual Studio "));
             Assert.IsTrue(syncedSolutionText[3].StartsWith("Project(\"{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}\")"));
         }
 
@@ -120,17 +121,18 @@ namespace VisualStudioEditor.Editor_spec
 
             string GetSolutionGUID(string projectName)
             {
-                return SolutionGuidGenerator.GuidForSolution(projectName, "cs");
+                return SolutionGuidGenerator.GuidForSolution(projectName, ScriptingLanguage.CSharp);
             }
 
             synchronizer.Sync();
 
             // solutionguid, solutionname, projectguid
+            // Do not include VS version specifics, as it will change depending on the Bridge edition
             var solutionExpected = string.Join("\r\n", new[]
             {
                 @"",
-                @"Microsoft Visual Studio Solution File, Format Version 11.00",
-                @"# Visual Studio 2010",
+                @"Microsoft Visual Studio Solution File, Format Version ",
+                @"# Visual Studio ",
                 @"Project(""{{{0}}}"") = ""{2}"", ""{2}.csproj"", ""{{{1}}}""",
                 @"EndProject",
                 @"Global",
@@ -157,7 +159,13 @@ namespace VisualStudioEditor.Editor_spec
                 GetProjectGUID("Assembly2"),
                 "Assembly2");
 
-            Assert.AreEqual(solutionTemplate, syncPaths[synchronizer.SolutionFile()]);
+            string[] expected = solutionTemplate.Split( new char[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
+            string[] actual = syncPaths[synchronizer.SolutionFile()].Split(new char[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
+
+            for (int i = 0; i < expected.Length; i++)
+            {
+                Assert.IsTrue(actual[i].Contains(expected[i]), "Index {0} [{1}]!=[{2}]", i, actual[i], expected[i]);
+            }
         }
     }
 }

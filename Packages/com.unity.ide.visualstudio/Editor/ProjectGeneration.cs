@@ -16,6 +16,12 @@ using UnityEngine;
 
 namespace VisualStudioEditor
 {
+    public enum ScriptingLanguage
+    {
+        None,
+        CSharp
+    }
+
     public interface IGenerator {
         bool SyncIfNeeded(IEnumerable<string> affectedFiles, IEnumerable<string> reimportedFiles);
         void Sync();
@@ -23,6 +29,7 @@ namespace VisualStudioEditor
         string SolutionFile();
         string ProjectDirectory { get; }
         void GenerateAll(bool generateAll);
+        bool IsSupportedFile(string path);
     }
 
     public interface IAssemblyNameProvider
@@ -63,30 +70,9 @@ namespace VisualStudioEditor
 
     public class ProjectGeneration : IGenerator
     {
-        enum ScriptingLanguage
-        {
-            None,
-            CSharp
-        }
-
         public static readonly string MSBuildNamespaceUri = "http://schemas.microsoft.com/developer/msbuild/2003";
 
         const string k_WindowsNewline = "\r\n";
-
-        /// <summary>
-        /// Map source extensions to ScriptingLanguages
-        /// </summary>
-        static readonly Dictionary<string, ScriptingLanguage> k_BuiltinSupportedExtensions = new Dictionary<string, ScriptingLanguage>
-        {
-            { "cs", ScriptingLanguage.CSharp },
-            { "uxml", ScriptingLanguage.None },
-            { "uss", ScriptingLanguage.None },
-            { "shader", ScriptingLanguage.None },
-            { "compute", ScriptingLanguage.None },
-            { "cginc", ScriptingLanguage.None },
-            { "hlsl", ScriptingLanguage.None },
-            { "glslinc", ScriptingLanguage.None }
-        };
 
         string m_SolutionProjectEntryTemplate = string.Join("\r\n",
             @"Project(""{{{0}}}"") = ""{1}"", ""{2}"", ""{{{3}}}""",
@@ -105,6 +91,8 @@ namespace VisualStudioEditor
             RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
         string[] m_ProjectSupportedExtensions = new string[0];
+        string[] m_BuiltinSupportedExtensions = new string[0];
+
         public string ProjectDirectory { get; }
 
         public TestSettings Settings { get; set; }
@@ -125,6 +113,8 @@ namespace VisualStudioEditor
             ProjectDirectory = tempDirectory.Replace('\\', '/');
             m_ProjectName = Path.GetFileName(ProjectDirectory);
             m_AssemblyNameProvider = assemblyNameProvider;
+
+            SetupProjectSupportedExtensions();
         }
 
         public void GenerateAll(bool generateAll)
@@ -187,60 +177,65 @@ namespace VisualStudioEditor
         void SetupProjectSupportedExtensions()
         {
             m_ProjectSupportedExtensions = EditorSettings.projectGenerationUserExtensions;
+            m_BuiltinSupportedExtensions = EditorSettings.projectGenerationBuiltinExtensions;
         }
 
         bool ShouldFileBePartOfSolution(string file)
         {
-            string extension = Path.GetExtension(file);
-
             // Exclude files coming from packages except if they are internalized.
             if (!m_ShouldGenerateAll && IsInternalizedPackagePath(file))
             {
                 return false;
             }
 
-            // Dll's are not scripts but still need to be included..
-            if (extension == ".dll")
-                return true;
-
-            if (file.ToLower().EndsWith(".asmdef"))
-                return true;
-
-            return IsSupportedExtension(extension);
+            return IsSupportedFile(file);
         }
 
-        bool IsSupportedExtension(string extension)
+        static string GetExtensionWithoutDot(string path)
         {
-            extension = extension.TrimStart('.');
-            if (k_BuiltinSupportedExtensions.ContainsKey(extension))
+            // Prevent re-processing and information loss
+            if (!Path.HasExtension(path))
+                return path;
+
+            return Path
+                .GetExtension(path)
+                .TrimStart('.')
+                .ToLower();
+        }
+
+        public bool IsSupportedFile(string path)
+        {
+            var extension = GetExtensionWithoutDot(path);
+
+            // Dll's are not scripts but still need to be included
+            if (extension == "dll")
                 return true;
+
+            if (extension == "asmdef")
+                return true;
+
+            if (m_BuiltinSupportedExtensions.Contains(extension))
+                return true;
+
             if (m_ProjectSupportedExtensions.Contains(extension))
                 return true;
+
             return false;
         }
 
         static ScriptingLanguage ScriptingLanguageFor(Assembly island)
         {
-            return ScriptingLanguageFor(GetExtensionOfSourceFiles(island.sourceFiles));
+            var files = island.sourceFiles;
+
+            if (files.Length == 0)
+                return ScriptingLanguage.None;
+
+            return ScriptingLanguageFor(files[0]);
         }
 
-        static string GetExtensionOfSourceFiles(string[] files)
+        static ScriptingLanguage ScriptingLanguageFor(string path)
         {
-            return files.Length > 0 ? GetExtensionOfSourceFile(files[0]) : "NA";
-        }
-
-        static string GetExtensionOfSourceFile(string file)
-        {
-            var ext = Path.GetExtension(file).ToLower();
-            ext = ext.Substring(1); //strip dot
-            return ext;
-        }
-
-        static ScriptingLanguage ScriptingLanguageFor(string extension)
-        {
-            return k_BuiltinSupportedExtensions.TryGetValue(extension.TrimStart('.'), out var result)
-                ? result
-                : ScriptingLanguage.None;
+            return GetExtensionWithoutDot(path) == "cs" ? ScriptingLanguage.CSharp : ScriptingLanguage.None;
         }
 
         static List<Type> SafeGetTypes(System.Reflection.Assembly a)
@@ -319,8 +314,7 @@ namespace VisualStudioEditor
                     continue;
                 }
 
-                string extension = Path.GetExtension(asset);
-                if (IsSupportedExtension(extension) && ScriptingLanguage.None == ScriptingLanguageFor(extension))
+                if (IsSupportedFile(asset) && ScriptingLanguage.None == ScriptingLanguageFor(asset))
                 {
                     // Find assembly the asset belongs to by adding script extension and using compilation pipeline.
                     var assemblyName = m_AssemblyNameProvider.GetAssemblyNameFromScriptPath(asset + ".cs");
@@ -837,7 +831,7 @@ namespace VisualStudioEditor
 
         string SolutionGuid(Assembly island)
         {
-            return SolutionGuidGenerator.GuidForSolution(m_ProjectName, GetExtensionOfSourceFiles(island.sourceFiles));
+            return SolutionGuidGenerator.GuidForSolution(m_ProjectName, ScriptingLanguageFor(island));
         }
 
         static string ProjectFooter()
@@ -858,11 +852,13 @@ namespace VisualStudioEditor
             return ComputeGuidHashFor(projectName + "salt");
         }
 
-        public static string GuidForSolution(string projectName, string sourceFileExtension)
+        public static string GuidForSolution(string projectName, ScriptingLanguage language)
         {
-            if (sourceFileExtension.ToLower() == "cs")
+            if (language == ScriptingLanguage.CSharp)
+            {
                 // GUID for a C# class library: http://www.codeproject.com/Reference/720512/List-of-Visual-Studio-Project-Type-GUIDs
                 return "FAE04EC0-301F-11D3-BF4B-00C04F79EFBC";
+            }
 
             return ComputeGuidHashFor(projectName);
         }
