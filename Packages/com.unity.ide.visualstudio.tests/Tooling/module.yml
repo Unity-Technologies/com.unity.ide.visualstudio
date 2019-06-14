@@ -1,0 +1,21 @@
+name: Visual Studio 2019 Professional
+
+args:
+  vs_components:
+    - Component.UnityEngine.x64
+
+tasks:
+  - name: "Visual Studio 2019 Download"
+    package:
+      type: file
+      url: http://artifactory-slo.bf.unity3d.com:80/artifactory/core-automation-cache/tools/vs-installer/vs_professional_2019.exe
+      filename: vs_professional_2019.exe
+      checksum: a3208759fbe097fb3d86459a0a65e19a8490300ee1b6df9877aca5cf29a80d8b
+      checksumtype: SHA256
+
+  - name: "Install Visual Studio 2019"
+    command:
+      shell: cmd
+      inline: |
+        C:/Windows/Temp/vs_professional_2019.exe --quiet --norestart --add {{range $key, $value := .Args.vs_components}}{{$value -}};{{end}}
+
