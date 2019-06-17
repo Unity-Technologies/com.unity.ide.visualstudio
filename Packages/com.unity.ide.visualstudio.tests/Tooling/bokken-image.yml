@@ -5,7 +5,7 @@ machine:
 tasks:
 
   - module: ide-vs-2012
-    src: 
+    src: https://github.cds.internal.unity3d.com/unity/com.unity.ide.visualstudio/blob/qa-tooling/Packages/com.unity.ide.visualstudio.tests/Tooling/module.yml
 
   - name: "Install Python"
     command:
