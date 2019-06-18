@@ -1,12 +1,12 @@
 bokken_template_version: 2017-06-01
 
-name: "VS2012VSTU"
-description: Tooling for the scripting team - VS 2012
+name: "VS2015VSTU"
+description: Tooling for the scripting team - VS 2015
 
 resources:
 
   - name: cpu
     type: Unity::VM
-    image: sdet/scripting-toolbox-vs2012:latest
+    image: sdet/scripting-toolbox-vs2015:latest
     flavor: b1.large   # cannot use smaller for windows VMs
     num_instances: 1
