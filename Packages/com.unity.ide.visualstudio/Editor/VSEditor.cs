@@ -4,13 +4,11 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
-using Microsoft.Win32;
 using UnityEditor;
 using UnityEngine;
-using Debug = System.Diagnostics.Debug;
 using Unity.CodeEditor;
 using System.Runtime.InteropServices;
-
+using System.Reflection;
 
 namespace VisualStudioEditor
 {
@@ -64,11 +62,25 @@ namespace VisualStudioEditor
         IGenerator m_Generation;
         CodeEditor.Installation m_Installation;
         VSInitializer m_Initializer = new VSInitializer();
+        Lazy<string> m_LazyVSTULabel;
 
         public VSEditor(IDiscovery discovery, IGenerator projectGeneration)
         {
             m_Discoverability = discovery;
             m_Generation = projectGeneration;
+
+            m_LazyVSTULabel = new Lazy<string>(() =>
+            {
+                var assembly = m_Initializer.GetBridgeAssembly();
+                if (assembly == null)
+                    return "Bridge not loaded";
+
+                var sb = new StringBuilder("Microsoft Visual Studio Tools for Unity ");
+                sb.Append(assembly.GetName().Version);
+                sb.Append(" enabled");
+
+                return sb.ToString();
+            });
         }
 
         internal static Dictionary<VisualStudioVersion, string[]> InstalledVisualStudios { get; private set; }
@@ -132,6 +144,8 @@ namespace VisualStudioEditor
 
         public void OnGUI()
         {
+            GUILayout.Label(m_LazyVSTULabel.Value);
+
             if (m_Installation.Name.Equals("VSExpress"))
             {
                 GUILayout.BeginHorizontal(EditorStyles.helpBox);
@@ -152,6 +166,26 @@ namespace VisualStudioEditor
         public void SyncIfNeeded(string[] addedFiles, string[] deletedFiles, string[] movedFiles, string[] movedFromFiles, string[] importedFiles)
         {
             m_Generation.SyncIfNeeded(addedFiles.Union(deletedFiles).Union(movedFiles).Union(movedFromFiles), importedFiles);
+            InvokeOnAssemblyProcessor("OnPostprocessAllAssets", new object[] { importedFiles, deletedFiles, movedFiles, movedFromFiles });
+        }
+
+        private void InvokeOnAssemblyProcessor(string methodName, object[] arguments)
+        {
+            var types = m_Initializer?.GetBridgeAssembly()?
+                .GetTypes()
+                .Where(x => typeof(AssetPostprocessor).IsAssignableFrom(x) && !x.IsInterface && !x.IsAbstract);
+
+            if (types == null)
+                return;
+
+            foreach (var type in types)
+            {
+                var method = type.GetMethod(methodName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+                if (method == null)
+                    continue;
+
+                method.Invoke(null, arguments);
+            }
         }
 
         public void SyncAll()
@@ -165,25 +199,32 @@ namespace VisualStudioEditor
             m_Initializer.Initialize(editorInstallationPath, InstalledVisualStudios);
         }
 
-        static bool SupportsExtension(string path)
+        bool IsSupportedPath(string path)
         {
-            var userExtensions = EditorSettings.projectGenerationUserExtensions;
-            var extensionStrings = userExtensions != null
-                ? userExtensions.ToList()
-                : new List<string> {"cs", "ts", "bjs", "javascript", "json", "html", "shader"};
+            // Path is empty with "Open C# Project", as we only want to open the solution without specific files
+            if (string.IsNullOrEmpty(path))
+                return true;
 
-            extensionStrings.AddRange(new[] {"template", "compute", "cginc", "hlsl", "glslinc"});
+            // cs, uxml, uss, shader, compute, cginc, hlsl, glslinc, template are part of Unity builtin extensions
+            // txt, xml, fnt, cd are -often- par of Unity user extensions
+            // asdmdef is mandatory included
+            if (m_Generation.IsSupportedFile(path))
+                return true;
+                
+            // extra extensions here if needed...
 
-            return extensionStrings.Contains(Path.GetExtension(path));
+            return false;
         }
 
         public bool OpenProject(string path, int line, int column)
         {
-            if (!SupportsExtension(path)) {
+            if (!IsSupportedPath(path))
+            {
                 return false;
             }
 
-            if (m_Installation.Name == "MonoDevelop") {
+            if (m_Installation.Name == "MonoDevelop")
+            {
                 return OpenAppMonoDev(path, line, column);
             }
 
