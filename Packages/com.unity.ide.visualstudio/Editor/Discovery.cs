@@ -31,47 +31,33 @@ namespace VisualStudioEditor
 		{
 			installation = null;
 
-			if (string.IsNullOrEmpty(editorPath) || !File.Exists(editorPath))
+			if (string.IsNullOrEmpty(editorPath))
 				return false;
 
-			if (VisualStudioEditor.IsWindows && Regex.IsMatch(editorPath, "devenv.exe$", RegexOptions.IgnoreCase))
+			string fvi = null;
+			if (File.Exists(editorPath) && VisualStudioEditor.IsWindows && Regex.IsMatch(editorPath, "devenv.exe$", RegexOptions.IgnoreCase))
 			{
-				var vi = FileVersionInfo.GetVersionInfo(editorPath);
-				installation = new VisualStudioInstallation()
-				{
-					IsPrerelease = vi.IsPreRelease,
-					Name = vi.FileDescription,
-					Path = editorPath,
-					Version = new Version(vi.ProductVersion)
-				};
-				return true;
+				fvi = editorPath;
 			}
 
-			if (VisualStudioEditor.IsOSX && Regex.IsMatch(editorPath, "Visual\\s?Studio(?!.*Code.*).*.app$", RegexOptions.IgnoreCase))
+			if (Directory.Exists(editorPath) && VisualStudioEditor.IsOSX && Regex.IsMatch(editorPath, "Visual\\s?Studio(?!.*Code.*).*.app$", RegexOptions.IgnoreCase))
 			{
-				var plist = Path.Combine(editorPath, "Contents/Info.plist");
-				if (!File.Exists(plist))
-					return false;
-
-				var file = File.ReadAllText(plist);
-
-				const string versionStringRegex = @"\<key\>CFBundleShortVersionString\</key\>\s+\<string\>(?<version>\d+\.\d+\.\d+\.\d+?)\</string\>";
-				var versionMatch = Regex.Match(file, versionStringRegex);
-				var versionGroup = versionMatch.Groups["version"];
-				if (!versionGroup.Success)
-					return false;
-
-				installation = new VisualStudioInstallation()
-				{
-					IsPrerelease = editorPath.ToLower().Contains("preview"),
-					Name = "Visual Studio",
-					Path = editorPath,
-					Version = new Version(versionGroup.Value)
-				};
-				return true;
+				fvi = Path.Combine(editorPath, "Contents", "Resources", "lib", "monodevelop", "bin", "VisualStudio.exe");
 			}
 
-			return false;
+			if (fvi == null || !File.Exists(fvi))
+				return false;
+
+			var vi = FileVersionInfo.GetVersionInfo(fvi);
+			var version = new Version(vi.ProductVersion);
+			installation = new VisualStudioInstallation()
+			{
+				IsPrerelease = vi.IsPreRelease || editorPath.ToLower().Contains("preview"),
+				Name = $"{vi.FileDescription} [{version.ToString(3)}]",
+				Path = editorPath,
+				Version = version
+			};
+			return true;
 		}
 
 		#region VsWhere Json Schema
