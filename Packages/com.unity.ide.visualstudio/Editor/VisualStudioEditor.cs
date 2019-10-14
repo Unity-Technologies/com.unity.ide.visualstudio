@@ -138,7 +138,10 @@ namespace VisualStudioEditor
 
 		private bool OpenWindowsApp(string path, int line)
 		{
-			var progpath = Utility.FindAssetFullPath("COMIntegration a:packages", "COMIntegration.dom");
+			var progpath = Utility
+				.FindAssetFullPath("COMIntegration a:packages", "COMIntegration.dom")
+				.FirstOrDefault();
+
 			if (string.IsNullOrWhiteSpace(progpath))
 				return false;
 

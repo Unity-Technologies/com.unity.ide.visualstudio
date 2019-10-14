@@ -5,19 +5,17 @@ namespace VisualStudioEditor
 {
 	public static class Utility
 	{
-		public static string FindAssetFullPath(string assetfilter, string filefilter)
+		public static string[] FindAssetFullPath(string assetfilter, string filefilter)
 		{
-			var asset = AssetDatabase.FindAssets(assetfilter)
+			return AssetDatabase.FindAssets(assetfilter)
 				.Select(AssetDatabase.GUIDToAssetPath)
-				.FirstOrDefault(assetPath => assetPath.Contains(filefilter));
-
-			if (string.IsNullOrWhiteSpace(asset)) 
-				return null;
-
-			var packageInfo = UnityEditor.PackageManager.PackageInfo.FindForAssetPath(asset);
-			var progpath = packageInfo.resolvedPath + asset.Substring(packageInfo.assetPath.Length);
-
-			return progpath;
+				.Where(assetPath => assetPath.Contains(filefilter))
+				.Select(asset =>
+				 {
+					 var packageInfo = UnityEditor.PackageManager.PackageInfo.FindForAssetPath(asset);
+					 return packageInfo.resolvedPath + asset.Substring(packageInfo.assetPath.Length);
+				 })
+				.ToArray();
 		}
 
 		public static string FileNameWithoutExtension(string path)

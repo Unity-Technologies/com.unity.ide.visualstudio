@@ -623,7 +623,6 @@ namespace VisualStudioEditor
                 projectType + ":" + (int)projectType,
                 EditorUserBuildSettings.activeBuildTarget + ":" + (int)EditorUserBuildSettings.activeBuildTarget,
                 Application.unityVersion,
-                Utility.FindAssetFullPath("Analyzers a:packages", "Microsoft.Unity.Analyzers.dll")
             };
 
             try
@@ -764,13 +763,6 @@ namespace VisualStudioEditor
                 @"  </PropertyGroup>"
             };
 
-            var analyzer = new[]
-            {
-                @"  <ItemGroup>",
-                @"    <Analyzer Include=""{16}"" />",
-                @"  </ItemGroup>"
-            };
-
             var itemGroupStart = new[]
             {
                 @"  <ItemGroup>"
@@ -791,20 +783,25 @@ namespace VisualStudioEditor
 
             var lines = header
                 .Concat(forceExplicitReferences)
-                .Concat(flavoring);
+                .Concat(flavoring)
+                .ToList();
 
             // Only add analyzer block for compatible Visual Studio
             if (CodeEditor.CurrentEditor is VisualStudioEditor editor && editor.TryGetVisualStudioInstallationForPath(CodeEditor.CurrentEditorInstallation, out var installation))
             {
                 if (installation.SupportsAnalyzers)
-                    lines = lines.Concat(analyzer);
+                {
+                    lines.Add(@"  <ItemGroup>");
+                    var analyzers = Utility.FindAssetFullPath("Analyzers a:packages", ".Analyzers.dll");
+                    foreach (var analyzer in analyzers)
+                        lines.Add(string.Format(@"    <Analyzer Include=""{0}"" />", analyzer));
+                    lines.Add(@"  </ItemGroup>");
+                }
             }
 
-            lines = lines
+            return string.Join("\r\n", lines
                 .Concat(itemGroupStart)
-                .Concat(footer);
-
-            return string.Join("\r\n", lines.ToArray());
+                .Concat(footer));
         }
 
         void SyncSolution(IEnumerable<Assembly> islands)

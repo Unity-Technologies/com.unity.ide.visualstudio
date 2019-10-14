@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
+using System.Linq;
 
 namespace VisualStudioEditor
 {
@@ -107,7 +108,12 @@ namespace VisualStudioEditor
 
 		private static IEnumerable<VisualStudioInstallation> QueryVsWhere()
 		{
-			var progpath = Utility.FindAssetFullPath("VSWhere a:packages", "vswhere.exe");
+			var progpath = Utility
+				.FindAssetFullPath("VSWhere a:packages", "vswhere.exe")
+				.FirstOrDefault();
+
+			if (string.IsNullOrWhiteSpace(progpath))
+				return Enumerable.Empty<VisualStudioInstallation>();
 
 			var process = new Process
 			{
@@ -132,8 +138,7 @@ namespace VisualStudioEditor
 				process.WaitForExit();
 
 				var result = VsWhereResult.FromJson(json);
-				return result
-					.ToVisualStudioInstallations();
+				return result.ToVisualStudioInstallations();
 			}
 		}
 	}
