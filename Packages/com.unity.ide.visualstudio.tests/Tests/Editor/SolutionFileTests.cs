@@ -30,7 +30,7 @@ namespace VisualStudioEditor.Editor_spec
 
         [SetUp]
         public void SetUp() {
-            var codeEditor = new VSEditor(new Mock<IDiscovery>().Object, new ProjectGeneration());
+            var codeEditor = new VisualStudioEditor();
             codeEditor.CreateIfDoesntExist();
         }
 

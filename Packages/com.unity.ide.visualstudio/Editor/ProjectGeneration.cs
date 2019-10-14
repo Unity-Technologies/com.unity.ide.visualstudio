@@ -6,11 +6,10 @@ using System.Security;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Xml;
+using Unity.CodeEditor;
 using UnityEditor;
 using UnityEditor.Compilation;
 using UnityEditor.PackageManager;
-using UnityEditor.Scripting.Compilers;
 using UnityEditorInternal;
 using UnityEngine;
 
@@ -605,6 +604,8 @@ namespace VisualStudioEditor
             var targetFrameworkVersion = "v4.7.1";
             var targetLanguageVersion = "latest";
 
+            var projectType = ProjectTypeOf(island.outputPath);
+
             var arguments = new object[]
             {
                 toolsVersion, productVersion, ProjectGuid(island.outputPath),
@@ -617,7 +618,12 @@ namespace VisualStudioEditor
                 targetFrameworkVersion,
                 targetLanguageVersion,
                 baseDirectory,
-                island.compilerOptions.AllowUnsafeCode | responseFilesData.Any(x => x.Unsafe)
+                island.compilerOptions.AllowUnsafeCode | responseFilesData.Any(x => x.Unsafe),
+                // flavoring
+                projectType + ":" + (int)projectType,
+                EditorUserBuildSettings.activeBuildTarget + ":" + (int)EditorUserBuildSettings.activeBuildTarget,
+                Application.unityVersion,
+                Utility.FindAssetFullPath("Analyzers a:packages", "Microsoft.Unity.Analyzers.dll")
             };
 
             try
@@ -628,6 +634,29 @@ namespace VisualStudioEditor
             {
                 throw new NotSupportedException("Failed creating c# project because the c# project header did not have the correct amount of arguments, which is " + arguments.Length);
             }
+        }
+
+        private enum ProjectType
+        {
+            GamePlugins = 3,
+            Game = 1,
+            EditorPlugins = 7,
+            Editor = 5,
+        }
+
+        private static ProjectType ProjectTypeOf(string fileName)
+        {
+            var plugins = fileName.Contains("firstpass");
+            var editor = fileName.Contains("Editor");
+
+            if (plugins && editor)
+                return ProjectType.EditorPlugins;
+            if (plugins)
+                return ProjectType.GamePlugins;
+            if (editor)
+                return ProjectType.Editor;
+
+            return ProjectType.Game;
         }
 
         static string GetSolutionText()
@@ -724,6 +753,24 @@ namespace VisualStudioEditor
                 @"  </PropertyGroup>"
             };
 
+            var flavoring = new[]
+            {
+                @"  <PropertyGroup>",
+                @"    <ProjectTypeGuids>{{E097FAD1-6243-4DAD-9C02-E9B9EFC3FFC1}};{{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}}</ProjectTypeGuids>",
+                @"    <UnityProjectGenerator>Package</UnityProjectGenerator>",
+                @"    <UnityProjectType>{13}</UnityProjectType>",
+                @"    <UnityBuildTarget>{14}</UnityBuildTarget>",
+                @"    <UnityVersion>{15}</UnityVersion>",
+                @"  </PropertyGroup>"
+            };
+
+            var analyzer = new[]
+            {
+                @"  <ItemGroup>",
+                @"    <Analyzer Include=""{16}"" />",
+                @"  </ItemGroup>"
+            };
+
             var itemGroupStart = new[]
             {
                 @"  <ItemGroup>"
@@ -742,8 +789,22 @@ namespace VisualStudioEditor
                 @""
             };
 
-            var text = header.Concat(forceExplicitReferences).Concat(itemGroupStart).Concat(footer).ToArray();
-            return string.Join("\r\n", text);
+            var lines = header
+                .Concat(forceExplicitReferences)
+                .Concat(flavoring);
+
+            // Only add analyzer block for compatible Visual Studio
+            if (CodeEditor.CurrentEditor is VisualStudioEditor editor && editor.TryGetVisualStudioInstallationForPath(CodeEditor.CurrentEditorInstallation, out var installation))
+            {
+                if (installation.SupportsAnalyzers)
+                    lines = lines.Concat(analyzer);
+            }
+
+            lines = lines
+                .Concat(itemGroupStart)
+                .Concat(footer);
+
+            return string.Join("\r\n", lines.ToArray());
         }
 
         void SyncSolution(IEnumerable<Assembly> islands)

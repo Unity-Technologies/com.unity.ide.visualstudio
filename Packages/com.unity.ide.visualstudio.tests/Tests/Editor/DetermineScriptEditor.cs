@@ -21,7 +21,7 @@ namespace VisualStudioEditor.Editor_spec
 
         [TestCase(@"C:\Program Files (x86)\Microsoft Visual Studio 10.0\Common7\IDE\devenv.exe")]
         [TestCase(@"C:\Program Files (x86)\Microsoft Visual Studio 12.0\Common7\IDE\devenv.exe")]
-        [TestCase(@"C:\Program Files (x86)\Microsoft Visual Studio Express\VCSExpress.exe")]
+        //[TestCase(@"C:\Program Files (x86)\Microsoft Visual Studio Express\VCSExpress.exe")]
         [UnityPlatform(RuntimePlatform.WindowsEditor)]
         public void WindowsPathDiscovery(string path)
         {
@@ -30,19 +30,9 @@ namespace VisualStudioEditor.Editor_spec
 
         static void Discover(string path)
         {
-            var discovery = new Mock<IDiscovery>();
             var generator = new Mock<IGenerator>();
 
-            discovery.Setup(x => x.PathCallback()).Returns(new[]
-            {
-                new CodeEditor.Installation
-                {
-                    Path = path,
-                    Name = path
-                }
-            });
-
-            var editor = new VSEditor(discovery.Object, generator.Object);
+            var editor = new VisualStudioEditor();
 
             editor.TryGetInstallationForPath(path, out var installation);
 
@@ -50,7 +40,9 @@ namespace VisualStudioEditor.Editor_spec
         }
     }
 
-    [TestFixture]
+	// No more used, given we use VSWhere to know VS version and product path, no need to parse the path anymore
+
+    /*[TestFixture]
     public class ParseRawDevEnvPaths
     {
         [TestCase("path/to/2017/devenv.exe", VisualStudioVersion.VisualStudio2017)]
@@ -63,5 +55,5 @@ namespace VisualStudioEditor.Editor_spec
             Assert.AreEqual(1, versions[version].Length);
             Assert.AreEqual(1, versions.Count);
         }
-    }
+    }*/
 }

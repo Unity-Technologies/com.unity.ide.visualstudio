@@ -1,0 +1,236 @@
+using System;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Text;
+using UnityEditor;
+using UnityEngine;
+using Unity.CodeEditor;
+using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
+
+namespace VisualStudioEditor
+{
+	[InitializeOnLoad]
+	public class VisualStudioEditor : IExternalCodeEditor
+	{
+		private static readonly VisualStudioInstallation[] _installations;
+
+		internal static bool IsOSX => Application.platform == RuntimePlatform.OSXEditor;
+		internal static bool IsWindows => !IsOSX && Path.DirectorySeparatorChar == '\\' && Environment.NewLine == "\r\n";
+
+		CodeEditor.Installation[] IExternalCodeEditor.Installations => _installations
+			.Select(i => i.ToCodeEditorInstallation())
+			.ToArray(); 
+
+		private readonly IGenerator _generator = new ProjectGeneration();
+
+		static VisualStudioEditor()
+		{
+			try
+			{
+				_installations = Discovery
+					.GetVisualStudioInstallations()
+					.ToArray();
+			}
+			catch (Exception ex)
+			{
+				UnityEngine.Debug.Log($@"Error detecting Visual Studio installations: {ex}");
+				_installations = Array.Empty<VisualStudioInstallation>();
+			}
+
+			CodeEditor.Register(new VisualStudioEditor());
+		}
+
+		public void CreateIfDoesntExist()
+		{
+			if (!_generator.HasSolutionBeenGenerated())
+				_generator.Sync();
+		}
+
+		public void Initialize(string editorInstallationPath)
+		{
+		}
+
+		internal bool TryGetVisualStudioInstallationForPath(string editorPath, out VisualStudioInstallation installation)
+		{
+			// lookup for well known installations
+			foreach (var candidate in _installations)
+			{
+				if (!string.Equals(Path.GetFullPath(editorPath), Path.GetFullPath(candidate.Path), StringComparison.OrdinalIgnoreCase))
+					continue;
+
+				installation = candidate;
+				return true;
+			}
+
+			return Discovery.TryDiscoverInstallation(editorPath, out installation);
+		}
+
+		public bool TryGetInstallationForPath(string editorPath, out CodeEditor.Installation installation)
+		{
+			var result = TryGetVisualStudioInstallationForPath(editorPath, out var vsi);
+			installation = vsi == null ? default : vsi.ToCodeEditorInstallation();
+			return result;
+		}
+
+		public void OnGUI()
+		{
+			const string unity_generate_all = "unity_generate_all_csproj";
+
+			GUILayout.BeginHorizontal();
+			GUILayout.FlexibleSpace();
+			var version = Assembly.GetExecutingAssembly().GetName().Version;
+			GUILayout.Label("Visual Studio Tools for Unity (Plugin) v" + version);
+			GUILayout.EndHorizontal();
+
+			var prevGenerate = EditorPrefs.GetBool(unity_generate_all, false);
+			var generateAll = EditorGUILayout.Toggle("Generate all .csproj files.", prevGenerate);
+			if (generateAll != prevGenerate)
+			{
+				EditorPrefs.SetBool(unity_generate_all, generateAll);
+			}
+
+			_generator.GenerateAll(generateAll);
+		}
+
+		public void SyncIfNeeded(string[] addedFiles, string[] deletedFiles, string[] movedFiles, string[] movedFromFiles, string[] importedFiles)
+		{
+			_generator.SyncIfNeeded(addedFiles.Union(deletedFiles).Union(movedFiles).Union(movedFromFiles), importedFiles);
+			// TODO handle pdb/mdb generation
+		}
+
+		public void SyncAll()
+		{
+			AssetDatabase.Refresh();
+			_generator.Sync();
+		}
+
+		bool IsSupportedPath(string path)
+		{
+			// Path is empty with "Open C# Project", as we only want to open the solution without specific files
+			if (string.IsNullOrEmpty(path))
+				return true;
+
+			// cs, uxml, uss, shader, compute, cginc, hlsl, glslinc, template are part of Unity builtin extensions
+			// txt, xml, fnt, cd are -often- par of Unity user extensions
+			// asdmdef is mandatory included
+			if (_generator.IsSupportedFile(path))
+				return true;
+
+			return false;
+		}
+
+		public bool OpenProject(string path, int line, int column)
+		{
+			if (!IsSupportedPath(path))
+				return false;
+
+			if (IsOSX)
+				return OpenOSXApp(path, line, column);
+
+			if (IsWindows)
+				return OpenWindowsApp(path, line);
+
+			return false;
+		}
+
+		private bool OpenWindowsApp(string path, int line)
+		{
+			var progpath = Utility.FindAssetFullPath("COMIntegration a:packages", "COMIntegration.dom");
+			if (string.IsNullOrWhiteSpace(progpath))
+				return false;
+
+			string absolutePath = "";
+			if (!string.IsNullOrWhiteSpace(path))
+			{
+				absolutePath = Path.GetFullPath(path);
+			}
+
+			var solution = GetOrGenerateSolutionFile(path);
+			solution = solution == "" ? "" : $"\"{solution}\"";
+			var process = new Process
+			{
+				StartInfo = new ProcessStartInfo
+				{
+					FileName = progpath,
+					Arguments = $"\"{CodeEditor.CurrentEditorInstallation}\" \"{absolutePath}\" {solution} {line}",
+					CreateNoWindow = true,
+					UseShellExecute = false,
+					RedirectStandardOutput = true,
+					RedirectStandardError = true,
+				}
+			};
+			var result = process.Start();
+
+			while (!process.StandardOutput.EndOfStream)
+			{
+				var outputLine = process.StandardOutput.ReadLine();
+				if (outputLine == "displayProgressBar")
+				{
+					EditorUtility.DisplayProgressBar("Opening Visual Studio", "Starting up Visual Studio, this might take some time.", .5f);
+				}
+
+				if (outputLine == "clearprogressbar")
+				{
+					EditorUtility.ClearProgressBar();
+				}
+			}
+
+			var errorOutput = process.StandardError.ReadToEnd();
+			if (!string.IsNullOrEmpty(errorOutput))
+			{
+				Console.WriteLine("Error: \n" + errorOutput);
+			}
+
+			process.WaitForExit();
+			return result;
+		}
+
+		[DllImport("AppleEventIntegrationPlugin")]
+		static extern void OpenVisualStudio(string appPath, string solutionPath, string filePath, int line, StringBuilder sb, int sbLength);
+
+		bool OpenOSXApp(string path, int line, int column)
+		{
+			string absolutePath = "";
+			if (!string.IsNullOrWhiteSpace(path))
+			{
+				absolutePath = Path.GetFullPath(path);
+			}
+
+			string solution = GetOrGenerateSolutionFile(path);
+
+			StringBuilder sb = new StringBuilder(4096);
+
+			OpenVisualStudio(CodeEditor.CurrentEditorInstallation, solution, absolutePath, line, sb, sb.Capacity);
+
+			Console.WriteLine(sb.ToString());
+
+			return true;
+		}
+
+		private string GetOrGenerateSolutionFile(string path)
+		{
+			var solution = GetSolutionFile(path);
+			if (solution == "")
+			{
+				_generator.Sync();
+				solution = GetSolutionFile(path);
+			}
+
+			return solution;
+		}
+
+		string GetSolutionFile(string path)
+		{
+			var solutionFile = _generator.SolutionFile();
+			if (File.Exists(solutionFile))
+			{
+				return solutionFile;
+			}
+
+			return "";
+		}
+	}
+}
