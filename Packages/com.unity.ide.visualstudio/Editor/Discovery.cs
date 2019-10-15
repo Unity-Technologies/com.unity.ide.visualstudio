@@ -38,11 +38,13 @@ namespace VisualStudioEditor
 			string fvi = null;
 			if (File.Exists(editorPath) && VisualStudioEditor.IsWindows && Regex.IsMatch(editorPath, "devenv.exe$", RegexOptions.IgnoreCase))
 			{
+				// On windows we use the executable directly, so we can query extra information
 				fvi = editorPath;
 			}
 
 			if (Directory.Exists(editorPath) && VisualStudioEditor.IsOSX && Regex.IsMatch(editorPath, "Visual\\s?Studio(?!.*Code.*).*.app$", RegexOptions.IgnoreCase))
 			{
+				// On Mac we use the .app folder, so we need to access to main assembly
 				fvi = Path.Combine(editorPath, "Contents", "Resources", "lib", "monodevelop", "bin", "VisualStudio.exe");
 			}
 
