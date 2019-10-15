@@ -2,13 +2,11 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Text;
 using UnityEditor;
 using UnityEngine;
 using Unity.CodeEditor;
 using System.Runtime.InteropServices;
-using System.Text.RegularExpressions;
 
 namespace VisualStudioEditor
 {
@@ -81,8 +79,16 @@ namespace VisualStudioEditor
 
 			GUILayout.BeginHorizontal();
 			GUILayout.FlexibleSpace();
-			var version = Assembly.GetExecutingAssembly().GetName().Version;
-			GUILayout.Label("Visual Studio Tools for Unity (Plugin) v" + version);
+
+			var package = UnityEditor.PackageManager.PackageInfo.FindForAssembly(GetType().Assembly);
+
+			var style = new GUIStyle
+			{
+				richText = true,
+				margin = new RectOffset(0, 4, 0, 0)
+			};
+
+			GUILayout.Label($"<size=10><color=grey>{package.displayName} v{package.version} enabled</color></size>", style);
 			GUILayout.EndHorizontal();
 
 			var prevGenerate = EditorPrefs.GetBool(unity_generate_all, false);
