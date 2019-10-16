@@ -5,6 +5,7 @@ using System.IO;
 using UnityEditor.Compilation;
 using UnityEngine;
 using System.Collections.Generic;
+using Microsoft.VisualStudio.Editor;
 
 namespace VisualStudioEditor.Editor_spec
 {

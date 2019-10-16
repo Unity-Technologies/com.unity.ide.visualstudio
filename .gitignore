@@ -5,6 +5,10 @@
 Library
 Logs
 ValidationSuiteResults
-
 Assets/Plugins**
 obj/
+/*.csproj
+/*.sln
+/Temp
+*.bak
+*.bak.meta

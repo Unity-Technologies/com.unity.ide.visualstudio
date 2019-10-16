@@ -1,7 +1,7 @@
 ﻿using System;
 using Unity.CodeEditor;
 
-namespace VisualStudioEditor
+namespace Microsoft.VisualStudio.Editor
 {
 	internal class VisualStudioInstallation
 	{

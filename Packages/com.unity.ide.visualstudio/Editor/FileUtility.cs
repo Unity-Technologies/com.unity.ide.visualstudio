@@ -1,11 +1,17 @@
+using System.IO;
 using System.Linq;
 using UnityEditor;
+using UnityEngine;
 
-namespace VisualStudioEditor
+namespace Microsoft.VisualStudio.Editor
 {
-	public static class Utility
+	internal static class FileUtility
 	{
-		public static string[] FindAssetFullPath(string assetfilter, string filefilter)
+		public const char WinSeparator = '\\';
+		public const char UnixSeparator = '/';
+
+		// Safe for packages as we use packageInfo.resolvedPath, so this should work in library package cache as well
+		public static string[] FindPackageAssetFullPath(string assetfilter, string filefilter)
 		{
 			return AssetDatabase.FindAssets(assetfilter)
 				.Select(AssetDatabase.GUIDToAssetPath)
@@ -13,9 +19,23 @@ namespace VisualStudioEditor
 				.Select(asset =>
 				 {
 					 var packageInfo = UnityEditor.PackageManager.PackageInfo.FindForAssetPath(asset);
-					 return packageInfo.resolvedPath + asset.Substring(packageInfo.assetPath.Length);
+					 return Normalize(packageInfo.resolvedPath + asset.Substring(packageInfo.assetPath.Length));
 				 })
 				.ToArray();
+		}
+
+		public static string GetAssetFullPath(string asset)
+		{
+			var basePath = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
+			return Path.GetFullPath(Path.Combine(basePath, Normalize(asset)));
+		}
+
+		public static string Normalize(string path)
+		{
+			if (VisualStudioEditor.IsWindows)
+				return path.Replace(UnixSeparator, WinSeparator);
+
+			return path;
 		}
 
 		public static string FileNameWithoutExtension(string path)

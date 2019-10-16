@@ -5,6 +5,7 @@ using UnityEngine;
 using UnityEngine.TestTools;
 using UnityEditor;
 using Unity.CodeEditor;
+using Microsoft.VisualStudio.Editor;
 
 namespace VisualStudioEditor.Editor_spec
 {
@@ -32,7 +33,7 @@ namespace VisualStudioEditor.Editor_spec
         {
             var generator = new Mock<IGenerator>();
 
-            var editor = new VisualStudioEditor();
+            var editor = new Microsoft.VisualStudio.Editor.VisualStudioEditor();
 
             editor.TryGetInstallationForPath(path, out var installation);
 

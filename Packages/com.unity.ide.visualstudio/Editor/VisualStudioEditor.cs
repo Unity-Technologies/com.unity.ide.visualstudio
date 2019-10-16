@@ -8,7 +8,7 @@ using UnityEngine;
 using Unity.CodeEditor;
 using System.Runtime.InteropServices;
 
-namespace VisualStudioEditor
+namespace Microsoft.VisualStudio.Editor
 {
 	[InitializeOnLoad]
 	public class VisualStudioEditor : IExternalCodeEditor
@@ -34,7 +34,7 @@ namespace VisualStudioEditor
 			}
 			catch (Exception ex)
 			{
-				UnityEngine.Debug.Log($@"Error detecting Visual Studio installations: {ex}");
+				UnityEngine.Debug.Log($"Error detecting Visual Studio installations: {ex}");
 				_installations = Array.Empty<VisualStudioInstallation>();
 			}
 
@@ -104,7 +104,15 @@ namespace VisualStudioEditor
 		public void SyncIfNeeded(string[] addedFiles, string[] deletedFiles, string[] movedFiles, string[] movedFromFiles, string[] importedFiles)
 		{
 			_generator.SyncIfNeeded(addedFiles.Union(deletedFiles).Union(movedFiles).Union(movedFromFiles), importedFiles);
-			// TODO handle pdb/mdb generation
+
+			foreach (var file in importedFiles.Where(a => Path.GetExtension(a) == ".pdb"))
+			{
+				var pdbFile = FileUtility.GetAssetFullPath(file);
+				if (Symbols.IsPortableSymbolFile(pdbFile))
+					continue;
+
+				UnityEngine.Debug.LogWarning($"Unity is only able to load mdb or portable-pdb symbols. {file} is using a legacy pdb format.");
+			}
 		}
 
 		public void SyncAll()
@@ -144,8 +152,8 @@ namespace VisualStudioEditor
 
 		private bool OpenWindowsApp(string path, int line)
 		{
-			var progpath = Utility
-				.FindAssetFullPath("COMIntegration a:packages", "COMIntegration.dom")
+			var progpath = FileUtility
+				.FindPackageAssetFullPath("COMIntegration a:packages", "COMIntegration.dom")
 				.FirstOrDefault();
 
 			if (string.IsNullOrWhiteSpace(progpath))

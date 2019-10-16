@@ -13,7 +13,7 @@ using UnityEditor.PackageManager;
 using UnityEditorInternal;
 using UnityEngine;
 
-namespace VisualStudioEditor
+namespace Microsoft.VisualStudio.Editor
 {
     public enum ScriptingLanguage
     {
@@ -323,7 +323,7 @@ namespace VisualStudioEditor
                         continue;
                     }
 
-                    assemblyName = Utility.FileNameWithoutExtension(assemblyName);
+                    assemblyName = FileUtility.FileNameWithoutExtension(assemblyName);
 
                     if (!stringBuilders.TryGetValue(assemblyName, out var projectBuilder))
                     {
@@ -510,7 +510,7 @@ namespace VisualStudioEditor
                 }
             }
 
-            var assemblyName = Utility.FileNameWithoutExtension(assembly.outputPath);
+            var assemblyName = FileUtility.FileNameWithoutExtension(assembly.outputPath);
 
             // Append additional non-script files that should be included in project generation.
             if (allAssetsProjectParts.TryGetValue(assemblyName, out var additionalAssetsForProject))
@@ -577,14 +577,14 @@ namespace VisualStudioEditor
             var escapedFullPath = SecurityElement.Escape(fullReference);
             escapedFullPath = escapedFullPath.Replace("\\", "/");
             escapedFullPath = escapedFullPath.Replace("\\\\", "/");
-            projectBuilder.Append(" <Reference Include=\"").Append(Utility.FileNameWithoutExtension(escapedFullPath)).Append("\">").Append(k_WindowsNewline);
+            projectBuilder.Append(" <Reference Include=\"").Append(FileUtility.FileNameWithoutExtension(escapedFullPath)).Append("\">").Append(k_WindowsNewline);
             projectBuilder.Append(" <HintPath>").Append(escapedFullPath).Append("</HintPath>").Append(k_WindowsNewline);
             projectBuilder.Append(" </Reference>").Append(k_WindowsNewline);
         }
 
         public string ProjectFile(Assembly assembly)
         {
-            return Path.Combine(ProjectDirectory, $"{Utility.FileNameWithoutExtension(assembly.outputPath)}.csproj");
+            return Path.Combine(ProjectDirectory, $"{FileUtility.FileNameWithoutExtension(assembly.outputPath)}.csproj");
         }
 
         public string SolutionFile()
@@ -613,7 +613,7 @@ namespace VisualStudioEditor
                 InternalEditorUtility.GetEditorAssemblyPath(),
                 string.Join(";", new[] { "DEBUG", "TRACE" }.Concat(EditorUserBuildSettings.activeScriptCompilationDefines).Concat(island.defines).Concat(responseFilesData.SelectMany(x => x.Defines)).Distinct().ToArray()),
                 MSBuildNamespaceUri,
-                Utility.FileNameWithoutExtension(island.outputPath),
+                FileUtility.FileNameWithoutExtension(island.outputPath),
                 EditorSettings.projectGenerationRootNamespace,
                 targetFrameworkVersion,
                 targetLanguageVersion,
@@ -792,7 +792,7 @@ namespace VisualStudioEditor
                 if (installation.SupportsAnalyzers)
                 {
                     lines.Add(@"  <ItemGroup>");
-                    var analyzers = Utility.FindAssetFullPath("Analyzers a:packages", ".Analyzers.dll");
+                    var analyzers = FileUtility.FindPackageAssetFullPath("Analyzers a:packages", ".Analyzers.dll");
                     foreach (var analyzer in analyzers)
                         lines.Add(string.Format(@"    <Analyzer Include=""{0}"" />", analyzer));
                     lines.Add(@"  </ItemGroup>");
@@ -834,7 +834,7 @@ namespace VisualStudioEditor
         {
             var projectEntries = islands.Select(i => string.Format(
                 m_SolutionProjectEntryTemplate,
-                SolutionGuid(i), Utility.FileNameWithoutExtension(i.outputPath), Path.GetFileName(ProjectFile(i)), ProjectGuid(i.outputPath)
+                SolutionGuid(i), FileUtility.FileNameWithoutExtension(i.outputPath), Path.GetFileName(ProjectFile(i)), ProjectGuid(i.outputPath)
             ));
 
             return string.Join(k_WindowsNewline, projectEntries.ToArray());
@@ -884,7 +884,7 @@ namespace VisualStudioEditor
 
         string ProjectGuid(string assembly)
         {
-            return SolutionGuidGenerator.GuidForProject(m_ProjectName + Utility.FileNameWithoutExtension(assembly));
+            return SolutionGuidGenerator.GuidForProject(m_ProjectName + FileUtility.FileNameWithoutExtension(assembly));
         }
 
         string SolutionGuid(Assembly island)

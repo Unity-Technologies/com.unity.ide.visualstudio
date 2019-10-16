@@ -6,7 +6,7 @@ using System.Diagnostics;
 using System.Text.RegularExpressions;
 using System.Linq;
 
-namespace VisualStudioEditor
+namespace Microsoft.VisualStudio.Editor
 {
 	internal static class Discovery
 	{
@@ -110,8 +110,8 @@ namespace VisualStudioEditor
 
 		private static IEnumerable<VisualStudioInstallation> QueryVsWhere()
 		{
-			var progpath = Utility
-				.FindAssetFullPath("VSWhere a:packages", "vswhere.exe")
+			var progpath = FileUtility
+				.FindPackageAssetFullPath("VSWhere a:packages", "vswhere.exe")
 				.FirstOrDefault();
 
 			if (string.IsNullOrWhiteSpace(progpath))
