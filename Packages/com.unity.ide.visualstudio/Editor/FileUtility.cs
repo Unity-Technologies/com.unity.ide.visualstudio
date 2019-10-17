@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using System.Linq;
 using UnityEditor;
@@ -36,6 +37,17 @@ namespace Microsoft.VisualStudio.Editor
 				return path.Replace(UnixSeparator, WinSeparator);
 
 			return path;
+		}
+
+		internal static bool IsFileInProjectDirectory(string fileName)
+		{
+			var basePath = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
+			fileName = Normalize(fileName);
+
+			if (!Path.IsPathRooted(fileName))
+				fileName = Path.Combine(basePath, fileName);
+
+			return string.Equals(Path.GetDirectoryName(fileName), basePath, StringComparison.OrdinalIgnoreCase);
 		}
 
 		public static string FileNameWithoutExtension(string path)
