@@ -40,8 +40,7 @@ namespace Microsoft.VisualStudio.Editor.Messaging
 			}
 			catch (SocketException se)
 			{
-				if (MessagerException != null)
-					MessagerException(this, new ExceptionEventArgs(se));
+				MessagerException?.Invoke(this, new ExceptionEventArgs(se));
 
 				BeginReceiveMessage();
 			}
@@ -68,8 +67,7 @@ namespace Microsoft.VisualStudio.Editor.Messaging
 				if (message != null)
 				{
 					message.Origin = (IPEndPoint)endPoint;
-					if (ReceiveMessage != null)
-						ReceiveMessage(this, new MessageEventArgs(message));
+					ReceiveMessage?.Invoke(this, new MessageEventArgs(message));
 				}
 			}
 			catch (ObjectDisposedException)
@@ -86,8 +84,7 @@ namespace Microsoft.VisualStudio.Editor.Messaging
 
 		private void RaiseMessagerException(Exception e)
 		{
-			if (MessagerException != null)
-				MessagerException(this, new ExceptionEventArgs(e));
+			MessagerException?.Invoke(this, new ExceptionEventArgs(e));
 		}
 
 		private static Message MessageFor(MessageType type, string value)
@@ -112,8 +109,7 @@ namespace Microsoft.VisualStudio.Editor.Messaging
 			}
 			catch (SocketException se)
 			{
-				if (MessagerException != null)
-					MessagerException(this, new ExceptionEventArgs(se));
+				MessagerException?.Invoke(this, new ExceptionEventArgs(se));
 			}
 		}
 
@@ -131,8 +127,7 @@ namespace Microsoft.VisualStudio.Editor.Messaging
 			}
 			catch (SocketException se)
 			{
-				if (MessagerException != null)
-					MessagerException(this, new ExceptionEventArgs(se));
+				MessagerException?.Invoke(this, new ExceptionEventArgs(se));
 			}
 			catch (ObjectDisposedException)
 			{

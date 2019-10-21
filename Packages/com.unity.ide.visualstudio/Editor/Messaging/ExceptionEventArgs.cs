@@ -4,7 +4,7 @@ namespace Microsoft.VisualStudio.Editor.Messaging
 {
 	internal class ExceptionEventArgs
 	{
-		public Exception Exception { get; private set; }
+		public Exception Exception { get; }
 
 		public ExceptionEventArgs(Exception exception)
 		{

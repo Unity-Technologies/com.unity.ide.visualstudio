@@ -2,16 +2,14 @@
 {
 	internal class MessageEventArgs
 	{
-		private readonly Message _message;
-
 		public Message Message
 		{
-			get { return _message; }
+			get;
 		}
 
 		public MessageEventArgs(Message message)
 		{
-			_message = message;
+			Message = message;
 		}
 	}
 }

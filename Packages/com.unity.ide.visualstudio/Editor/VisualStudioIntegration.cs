@@ -134,10 +134,7 @@ namespace Microsoft.VisualStudio.Editor
 
 		private static void Refresh()
 		{
-			RunOnceOnUpdate(() =>
-			{
-				AssetDatabase.Refresh();
-			});
+			RunOnceOnUpdate(AssetDatabase.Refresh);
 		}
 
 		private static void OnMessage(Message message)
@@ -157,8 +154,7 @@ namespace Microsoft.VisualStudio.Editor
 
 		private static void Answer(IPEndPoint targetEndPoint, MessageType answerType, string answerValue)
 		{
-			if (_messager != null)
-				_messager.SendMessage(targetEndPoint, answerType, answerValue);
+			_messager?.SendMessage(targetEndPoint, answerType, answerValue);
 		}
 
 		private static void Shutdown()
