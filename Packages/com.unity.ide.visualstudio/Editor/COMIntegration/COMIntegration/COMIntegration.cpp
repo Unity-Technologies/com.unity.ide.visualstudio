@@ -16,18 +16,103 @@
 const int kDefaultPathBufferSize = MAX_PATH * 4;
 static std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
 
-#define RETRY_INTERVAL_MS 50
-#define TIMEOUT_MS 120000
+#define RETRY_INTERVAL_MS 101
+#define TIMEOUT_MS 10000
 
 #define RETURN_ON_FAIL(expression) \
-    result = ( expression );    \
-    if ( FAILED( result ) )     \
-    {                           \
-        std::cout << #expression" result = 0x" << std::hex << result << std::endl;  \
-        ClearProgressbar();     \
-        return false;           \
-    }                           \
-    else // To prevent danging else condition
+	result = ( expression );	\
+	if ( FAILED( result ) )		\
+	{							\
+		std::cout << #expression" result = 0x" << std::hex << result << std::endl;  \
+		ClearProgressbar();	 	\
+		return false;			\
+	}							\
+	else // To prevent danging else condition
+
+// Often a DTE call made to Visual Studio can fail after Visual Studio has just started. Usually the
+// return value will be RPC_E_CALL_REJECTED, meaning that Visual Studio is probably busy on another
+// thread. This types filter the RPC messages and retries to send the message until VS accepts it.
+class CRetryMessageFilterBase : public IMessageFilter
+{
+private:
+	static bool ShouldRetryCall(DWORD dwTickCount, DWORD dwRejectType)
+	{
+		if (dwRejectType == SERVERCALL_RETRYLATER || dwRejectType == SERVERCALL_REJECTED)
+			return dwTickCount < TIMEOUT_MS;
+
+		return false;
+	}
+
+protected:
+	win::ComPtr<IMessageFilter> currentFilter;
+
+public:
+	// IUnknown methods
+	IFACEMETHODIMP QueryInterface(REFIID riid, void** ppv)
+	{
+		static const QITAB qit[] =
+		{
+			QITABENT(CRetryMessageFilterBase, IMessageFilter),
+			{ 0 },
+		};
+		return QISearch(this, qit, riid, ppv);
+	}
+
+	IFACEMETHODIMP_(ULONG) AddRef()
+	{
+		return 0;
+	}
+
+	IFACEMETHODIMP_(ULONG) Release()
+	{
+		return 0;
+	}
+
+	DWORD STDMETHODCALLTYPE HandleInComingCall(DWORD dwCallType, HTASK htaskCaller, DWORD dwTickCount, LPINTERFACEINFO lpInterfaceInfo)
+	{
+		if (currentFilter)
+			return currentFilter->HandleInComingCall(dwCallType, htaskCaller, dwTickCount, lpInterfaceInfo);
+
+		return SERVERCALL_ISHANDLED;
+	}
+
+	DWORD STDMETHODCALLTYPE RetryRejectedCall(HTASK htaskCallee, DWORD dwTickCount, DWORD dwRejectType)
+	{
+		if (ShouldRetryCall(dwTickCount, dwRejectType))
+			return RETRY_INTERVAL_MS;
+
+		if (currentFilter)
+			return currentFilter->RetryRejectedCall(htaskCallee, dwTickCount, dwRejectType);
+
+		return (DWORD)-1;
+	}
+
+	DWORD STDMETHODCALLTYPE MessagePending(HTASK htaskCallee, DWORD dwTickCount, DWORD dwPendingType)
+	{
+		if (currentFilter)
+			return currentFilter->MessagePending(htaskCallee, dwTickCount, dwPendingType);
+
+		return PENDINGMSG_WAITDEFPROCESS;
+	}
+};
+
+class CRetryMessageFilter :
+	public CRetryMessageFilterBase
+{
+public:
+	CRetryMessageFilter()
+	{
+		HRESULT hr = CoRegisterMessageFilter(this, &currentFilter);
+		_ASSERT(SUCCEEDED(hr));
+	}
+
+	~CRetryMessageFilter()
+	{
+		win::ComPtr<IMessageFilter> messageFilter;
+		HRESULT hr = CoRegisterMessageFilter(currentFilter, &messageFilter);
+		_ASSERT(SUCCEEDED(hr));
+	}
+};
 
 template<typename TSourceString, typename TDestString>
 inline void ConvertUnityPathName(const TSourceString& utf8, TDestString& widePath)
@@ -80,16 +165,16 @@ inline std::wstring QuoteString(const std::wstring& str)
 }
 
 void ConvertSeparatorsToWindows(wchar_t *pathName) {
-    while (*pathName != L'\0') {
-        if (*pathName == L'/')
-            *pathName = L'\\';
-        ++pathName;
-    }
+	while (*pathName != L'\0') {
+		if (*pathName == L'/')
+			*pathName = L'\\';
+		++pathName;
+	}
 }
 
 void ConvertUnityPathName(const char *utf8, wchar_t *outBuffer, int outBufferSize) {
-    UTF8ToWide(utf8, outBuffer, outBufferSize);
-    ConvertSeparatorsToWindows(outBuffer);
+	UTF8ToWide(utf8, outBuffer, outBufferSize);
+	ConvertSeparatorsToWindows(outBuffer);
 }
 
 static bool BeginsWith(const std::string& str, const std::string& prefix)
@@ -183,14 +268,14 @@ static bool StartVisualStudioProcess(const std::string &vsExe, const std::string
 	std::cout << "Starting Visual Studio process with: " << converter.to_bytes(commandLine) << std::endl;
 
 	result = CreateProcessW(
-		vsFullPath,     // Full path to VS, must not be quoted
-		commandLineBuffer, // Command line, as passed as argv, separate arguments must be quoted if they contain spaces
-		nullptr,        // Process handle not inheritable
-		nullptr,        // Thread handle not inheritable
-		FALSE,          // Set handle inheritance to FALSE
-		0,              // No creation flags
-		nullptr,        // Use parent's environment block
-		startingDirectory.c_str(),     // starting directory set to the VS directory
+		vsFullPath,					// Full path to VS, must not be quoted
+		commandLineBuffer,			// Command line, as passed as argv, separate arguments must be quoted if they contain spaces
+		nullptr,					// Process handle not inheritable
+		nullptr,					// Thread handle not inheritable
+		FALSE,						// Set handle inheritance to FALSE
+		0,							// No creation flags
+		nullptr,					// Use parent's environment block
+		startingDirectory.c_str(),	// starting directory set to the VS directory
 		&si,
 		&pi);
 
@@ -364,6 +449,8 @@ bool HaveRunningVSProOpenFile(const win::ComPtr<EnvDTE::_DTE> &dte, const std::s
 	BStrHolder bstrKind(converter.from_bytes(EnvDTE::vsViewKindPrimary).c_str());
 	win::ComPtr<EnvDTE::Window> window = nullptr;
 
+	CRetryMessageFilter retryMessageFilter;
+
 	if (!_filename.empty()) {
 		std::cout << "Getting operations API from the Visual Studio session." << std::endl;
 
@@ -425,6 +512,8 @@ bool VSPro_OpenFile_COM(
 	if (!dte) {
 		std::cout << "No appropriate running Visual Studio session not found, creating a new one." << std::endl;
 
+		CRetryMessageFilter retryMessageFilter;
+
 		//DisplayProgressbar("Opening Visual Studio", "Starting up Visual Studio, this might take some time.", .5f, true);
 		std::cout << "displayProgressBar" << std::endl;
 
@@ -449,6 +538,8 @@ bool VSPro_OpenFile_COM(
 			if (dte)
 				break;
 
+			std::cout << "Retrying to acquire DTE" << std::endl;
+
 			Sleep(RETRY_INTERVAL_MS);
 			timeWaited += RETRY_INTERVAL_MS;
 		}
@@ -460,9 +551,9 @@ bool VSPro_OpenFile_COM(
 
 		std::cout << "Waiting for the newly launched Visual Studio session to be ready." << std::endl;
 
-		EnvDTE::Window *window = nullptr;
+		//EnvDTE::Window *window = nullptr;
 
-		RETURN_ON_FAIL(dte->get_MainWindow(&window));
+		//RETURN_ON_FAIL(dte->get_MainWindow(&window));
 	}
 	else {
 		std::cout << "Using the existing Visual Studio session." << std::endl;
