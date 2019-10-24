@@ -51,12 +51,16 @@ namespace Microsoft.VisualStudio.Editor
 			if (fvi == null || !File.Exists(fvi))
 				return false;
 
+			// VS preview are not using the isPrerelease flag so far
+			// On Windows FileDescription contains "Preview", but not on Mac
 			var vi = FileVersionInfo.GetVersionInfo(fvi);
 			var version = new Version(vi.ProductVersion);
+			var isPrerelease = vi.IsPreRelease || string.Concat(editorPath, "/" + vi.FileDescription).ToLower().Contains("preview");
+
 			installation = new VisualStudioInstallation()
 			{
-				IsPrerelease = vi.IsPreRelease || editorPath.ToLower().Contains("preview"),
-				Name = $"{vi.FileDescription} [{version.ToString(3)}]",
+				IsPrerelease = isPrerelease,
+				Name = $"{vi.FileDescription}{(isPrerelease && VisualStudioEditor.IsOSX ? " Preview" : string.Empty)} [{version.ToString(3)}]",
 				Path = editorPath,
 				Version = version
 			};
