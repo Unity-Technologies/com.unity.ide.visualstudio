@@ -33,10 +33,13 @@ namespace Microsoft.VisualStudio.Editor
 
 		public static string Normalize(string path)
 		{
-			if (VisualStudioEditor.IsWindows)
-				return path.Replace(UnixSeparator, WinSeparator);
+			if (string.IsNullOrEmpty(path))
+				return path;
 
-			return path;
+			if (Path.DirectorySeparatorChar == WinSeparator)
+				path = path.Replace(UnixSeparator, WinSeparator);
+
+			return path.Replace(string.Concat(WinSeparator, WinSeparator), WinSeparator.ToString());
 		}
 
 		internal static bool IsFileInProjectDirectory(string fileName)

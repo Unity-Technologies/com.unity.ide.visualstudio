@@ -165,8 +165,15 @@ namespace Microsoft.VisualStudio.Editor
 				absolutePath = Path.GetFullPath(path);
 			}
 
+			// We remove all invalid chars from the solution filename, but we cannot prevent the user from using a specific path for the Unity project
+			// So process the fullpath to make it compatible with VS
 			var solution = GetOrGenerateSolutionFile(path);
-			solution = solution == "" ? "" : $"\"{solution}\"";
+			if (!string.IsNullOrWhiteSpace(solution))
+			{
+				solution = $"\"{solution}\"";
+				solution = solution.Replace("^", "^^");
+			}
+
 			var process = new Process
 			{
 				StartInfo = new ProcessStartInfo

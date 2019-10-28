@@ -571,12 +571,25 @@ namespace Microsoft.VisualStudio.Editor
             return projectBuilder.ToString();
         }
 
-        static void AppendReference(string fullReference, StringBuilder projectBuilder)
+        static string XmlFilename(string path)
         {
-            //replace \ with / and \\ with /
-            var escapedFullPath = SecurityElement.Escape(fullReference);
-            escapedFullPath = escapedFullPath.Replace("\\", "/");
-            escapedFullPath = escapedFullPath.Replace("\\\\", "/");
+            if (string.IsNullOrEmpty(path))
+                return path;
+
+            path = path.Replace(@"%", "%25");
+            path = path.Replace(@";", "%3b");
+
+            return XmlEscape(path);
+        }
+
+        static string XmlEscape(string s)
+        {
+            return SecurityElement.Escape(s);
+        }
+
+        void AppendReference(string fullReference, StringBuilder projectBuilder)
+        {
+            var escapedFullPath = EscapedRelativePathFor(fullReference);
             projectBuilder.Append(" <Reference Include=\"").Append(FileUtility.FileNameWithoutExtension(escapedFullPath)).Append("\">").Append(k_WindowsNewline);
             projectBuilder.Append(" <HintPath>").Append(escapedFullPath).Append("</HintPath>").Append(k_WindowsNewline);
             projectBuilder.Append(" </Reference>").Append(k_WindowsNewline);
@@ -587,9 +600,10 @@ namespace Microsoft.VisualStudio.Editor
             return Path.Combine(ProjectDirectory, $"{FileUtility.FileNameWithoutExtension(assembly.outputPath)}.csproj");
         }
 
+        private static readonly Regex InvalidCharactersRegexPattern = new Regex(@"/|\?|:|&|\\|\*|""|<|>|\||#|%|\^|;");
         public string SolutionFile()
         {
-            return Path.Combine(ProjectDirectory, $"{m_ProjectName}.sln");
+            return Path.Combine(FileUtility.Normalize(ProjectDirectory), $"{InvalidCharactersRegexPattern.Replace(m_ProjectName,"_")}.sln");
         }
 
         string ProjectHeader(
@@ -609,8 +623,8 @@ namespace Microsoft.VisualStudio.Editor
             var arguments = new object[]
             {
                 toolsVersion, productVersion, ProjectGuid(island.outputPath),
-                InternalEditorUtility.GetEngineAssemblyPath(),
-                InternalEditorUtility.GetEditorAssemblyPath(),
+                XmlFilename(FileUtility.Normalize(InternalEditorUtility.GetEngineAssemblyPath())),
+                XmlFilename(FileUtility.Normalize(InternalEditorUtility.GetEditorAssemblyPath())),
                 string.Join(";", new[] { "DEBUG", "TRACE" }.Concat(EditorUserBuildSettings.activeScriptCompilationDefines).Concat(island.defines).Concat(responseFilesData.SelectMany(x => x.Defines)).Distinct().ToArray()),
                 MSBuildNamespaceUri,
                 FileUtility.FileNameWithoutExtension(island.outputPath),
@@ -694,7 +708,7 @@ namespace Microsoft.VisualStudio.Editor
             @"");
         }
 
-        static string GetProjectHeaderTemplate()
+        string GetProjectHeaderTemplate()
         {
             var header = new[]
             {
@@ -792,7 +806,7 @@ namespace Microsoft.VisualStudio.Editor
                     lines.Add(@"  <ItemGroup>");
                     var analyzers = FileUtility.FindPackageAssetFullPath("Analyzers a:packages", ".Analyzers.dll");
                     foreach (var analyzer in analyzers)
-                        lines.Add(string.Format(@"    <Analyzer Include=""{0}"" />", analyzer));
+                        lines.Add(string.Format(@"    <Analyzer Include=""{0}"" />", EscapedRelativePathFor(analyzer)));
                     lines.Add(@"  </ItemGroup>");
                 }
             }
@@ -921,35 +935,27 @@ namespace Microsoft.VisualStudio.Editor
 
         string EscapedRelativePathFor(string file)
         {
-            var projectDir = ProjectDirectory.Replace('/', '\\');
-            file = file.Replace('/', '\\');
+            var projectDir = FileUtility.Normalize(ProjectDirectory);
+            file = FileUtility.Normalize(file);
             var path = SkipPathPrefix(file, projectDir);
 
             var packageInfo = m_AssemblyNameProvider.FindForAssetPath(path.Replace('\\', '/'));
             if (packageInfo != null) {
                 // We have to normalize the path, because the PackageManagerRemapper assumes
                 // dir seperators will be os specific.
-                var absolutePath = Path.GetFullPath(NormalizePath(path)).Replace('/', '\\');
+                var absolutePath = Path.GetFullPath(FileUtility.Normalize(path));
                 path = SkipPathPrefix(absolutePath, projectDir);
             }
 
-            return SecurityElement.Escape(path);
+            return XmlFilename(path);
         }
 
         static string SkipPathPrefix(string path, string prefix)
         {
-            if (path.Replace("\\","/").StartsWith($"{prefix}/"))
+            if (path.StartsWith($"{prefix}") && (path.Length > prefix.Length))
                 return path.Substring(prefix.Length + 1);
             return path;
         }
-
-        static string NormalizePath(string path)
-        {
-            if (Path.DirectorySeparatorChar == '\\')
-                return path.Replace('/', Path.DirectorySeparatorChar);
-            return path.Replace('\\', Path.DirectorySeparatorChar);
-        }
-
 
         string ProjectGuid(string assembly)
         {
