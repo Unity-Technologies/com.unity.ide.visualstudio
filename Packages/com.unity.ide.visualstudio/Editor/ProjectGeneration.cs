@@ -503,7 +503,7 @@ namespace Microsoft.VisualStudio.Editor
                 var fullFile = EscapedRelativePathFor(file);
                 if (".dll" != extension)
                 {
-                    projectBuilder.Append("     <Compile Include=\"").Append(fullFile).Append("\" />").Append(k_WindowsNewline);
+                    projectBuilder.Append("    <Compile Include=\"").Append(fullFile).Append("\" />").Append(k_WindowsNewline);
                 }
                 else
                 {
@@ -700,6 +700,7 @@ namespace Microsoft.VisualStudio.Editor
         {
             return string.Join("\r\n",
             @"  <Import Project=""$(MSBuildToolsPath)\Microsoft.CSharp.targets"" />",
+            @"  <Target Name=""GenerateTargetFrameworkMonikerAttribute"" />",
             @"  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. ",
             @"       Other similar extension points exist, see Microsoft.Common.targets.",
             @"  <Target Name=""BeforeBuild"">",
