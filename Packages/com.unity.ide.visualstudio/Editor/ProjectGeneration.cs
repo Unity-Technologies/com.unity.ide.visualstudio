@@ -604,7 +604,7 @@ namespace Microsoft.VisualStudio.Editor
             return Path.Combine(ProjectDirectory, $"{FileUtility.FileNameWithoutExtension(assembly.outputPath)}.csproj");
         }
 
-        private static readonly Regex InvalidCharactersRegexPattern = new Regex(@"/|\?|:|&|\\|\*|""|<|>|\||#|%|\^|;");
+        private static readonly Regex InvalidCharactersRegexPattern = new Regex(@"\?|&|\*|""|<|>|\||#|%|\^|;" + (VisualStudioEditor.IsWindows ? "" : "|:"));
         public string SolutionFile()
         {
             return Path.Combine(FileUtility.Normalize(ProjectDirectory), $"{InvalidCharactersRegexPattern.Replace(m_ProjectName,"_")}.sln");
@@ -815,6 +815,9 @@ namespace Microsoft.VisualStudio.Editor
 
         void SyncSolution(IEnumerable<Assembly> islands)
         {
+            if (InvalidCharactersRegexPattern.IsMatch(ProjectDirectory))
+                Debug.LogWarning("Project path contains special characters, which can be an issue when opening Visual Studio");
+
             var solutionFile = SolutionFile();
             var previousSolution = File.Exists(solutionFile) ? SolutionParser.ParseSolutionFile(solutionFile) : null;
             SyncSolutionFileIfNotChanged(solutionFile, SolutionText(islands, previousSolution));
