@@ -493,6 +493,7 @@ namespace Microsoft.VisualStudio.Editor
             var references = new List<string>();
             var projectReferences = new List<Match>();
 
+            projectBuilder.Append(@"  <ItemGroup>").Append(k_WindowsNewline);
             foreach (string file in assembly.sourceFiles)
             {
                 if (!ShouldFileBePartOfSolution(file))
@@ -509,9 +510,11 @@ namespace Microsoft.VisualStudio.Editor
                     references.Add(fullFile);
                 }
             }
+            projectBuilder.Append(@"  </ItemGroup>").Append(k_WindowsNewline);
 
             var assemblyName = FileUtility.FileNameWithoutExtension(assembly.outputPath);
 
+            projectBuilder.Append(@"  <ItemGroup>").Append(k_WindowsNewline);
             // Append additional non-script files that should be included in project generation.
             if (allAssetsProjectParts.TryGetValue(assemblyName, out var additionalAssetsForProject))
                 projectBuilder.Append(additionalAssetsForProject);
@@ -551,11 +554,11 @@ namespace Microsoft.VisualStudio.Editor
             {
                 AppendReference(reference, projectBuilder);
             }
+            projectBuilder.Append(@"  </ItemGroup>").Append(k_WindowsNewline);
 
             if (0 < projectReferences.Count)
             {
-                projectBuilder.AppendLine("  </ItemGroup>");
-                projectBuilder.AppendLine("  <ItemGroup>");
+                projectBuilder.Append(@"  <ItemGroup>").Append(k_WindowsNewline);
                 foreach (Match reference in projectReferences)
                 {
                     var referencedProject = reference.Groups["project"].Value;
@@ -563,8 +566,9 @@ namespace Microsoft.VisualStudio.Editor
                     projectBuilder.Append("    <ProjectReference Include=\"").Append(referencedProject).Append(GetProjectExtension()).Append("\">").Append(k_WindowsNewline);
                     projectBuilder.Append("      <Project>{").Append(ProjectGuid(Path.Combine("Temp", reference.Groups["project"].Value + ".dll"))).Append("}</Project>").Append(k_WindowsNewline);
                     projectBuilder.Append("      <Name>").Append(referencedProject).Append("</Name>").Append(k_WindowsNewline);
-                    projectBuilder.AppendLine("    </ProjectReference>");
+                    projectBuilder.Append("    </ProjectReference>").Append(k_WindowsNewline);
                 }
+                projectBuilder.Append(@"  </ItemGroup>").Append(k_WindowsNewline);
             }
 
             projectBuilder.Append(ProjectFooter());
@@ -590,9 +594,9 @@ namespace Microsoft.VisualStudio.Editor
         void AppendReference(string fullReference, StringBuilder projectBuilder)
         {
             var escapedFullPath = EscapedRelativePathFor(fullReference);
-            projectBuilder.Append(" <Reference Include=\"").Append(FileUtility.FileNameWithoutExtension(escapedFullPath)).Append("\">").Append(k_WindowsNewline);
-            projectBuilder.Append(" <HintPath>").Append(escapedFullPath).Append("</HintPath>").Append(k_WindowsNewline);
-            projectBuilder.Append(" </Reference>").Append(k_WindowsNewline);
+            projectBuilder.Append("    <Reference Include=\"").Append(FileUtility.FileNameWithoutExtension(escapedFullPath)).Append("\">").Append(k_WindowsNewline);
+            projectBuilder.Append("      <HintPath>").Append(escapedFullPath).Append("</HintPath>").Append(k_WindowsNewline);
+            projectBuilder.Append("    </Reference>").Append(k_WindowsNewline);
         }
 
         public string ProjectFile(Assembly assembly)
@@ -695,7 +699,6 @@ namespace Microsoft.VisualStudio.Editor
         static string GetProjectFooterTemplate()
         {
             return string.Join("\r\n",
-            @"  </ItemGroup>",
             @"  <Import Project=""$(MSBuildToolsPath)\Microsoft.CSharp.targets"" />",
             @"  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. ",
             @"       Other similar extension points exist, see Microsoft.Common.targets.",
@@ -775,13 +778,9 @@ namespace Microsoft.VisualStudio.Editor
                 @"  </PropertyGroup>"
             };
 
-            var itemGroupStart = new[]
-            {
-                @"  <ItemGroup>"
-            };
-
             var footer = new[]
             {
+                @"  <ItemGroup>",
                 @"    <Reference Include=""UnityEngine"">",
                 @"      <HintPath>{3}</HintPath>",
                 @"    </Reference>",
@@ -789,7 +788,6 @@ namespace Microsoft.VisualStudio.Editor
                 @"      <HintPath>{4}</HintPath>",
                 @"    </Reference>",
                 @"  </ItemGroup>",
-                @"  <ItemGroup>",
                 @""
             };
 
@@ -812,7 +810,6 @@ namespace Microsoft.VisualStudio.Editor
             }
 
             return string.Join("\r\n", lines
-                .Concat(itemGroupStart)
                 .Concat(footer));
         }
 
