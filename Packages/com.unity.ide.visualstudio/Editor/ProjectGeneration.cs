@@ -802,11 +802,14 @@ namespace Microsoft.VisualStudio.Editor
             {
                 if (installation.SupportsAnalyzers)
                 {
-                    lines.Add(@"  <ItemGroup>");
-                    var analyzers = FileUtility.FindPackageAssetFullPath("Analyzers a:packages", ".Analyzers.dll");
-                    foreach (var analyzer in analyzers)
-                        lines.Add(string.Format(@"    <Analyzer Include=""{0}"" />", EscapedRelativePathFor(analyzer)));
-                    lines.Add(@"  </ItemGroup>");
+                    var analyzers = installation.GetAnalyzers();
+                    if (analyzers != null && analyzers.Length > 0)
+                    {
+                        lines.Add(@"  <ItemGroup>");
+                        foreach (var analyzer in analyzers)
+                            lines.Add(string.Format(@"    <Analyzer Include=""{0}"" />", EscapedRelativePathFor(analyzer)));
+                        lines.Add(@"  </ItemGroup>");
+                    }
                 }
             }
 
