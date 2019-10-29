@@ -1,4 +1,4 @@
-﻿namespace Microsoft.VisualStudio.Editor.Messaging
+﻿namespace Microsoft.Unity.VisualStudio.Editor.Messaging
 {
 	internal enum MessageType
 	{

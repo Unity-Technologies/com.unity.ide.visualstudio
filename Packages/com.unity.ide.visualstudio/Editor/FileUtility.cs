@@ -4,7 +4,7 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
-namespace Microsoft.VisualStudio.Editor
+namespace Microsoft.Unity.VisualStudio.Editor
 {
 	internal static class FileUtility
 	{

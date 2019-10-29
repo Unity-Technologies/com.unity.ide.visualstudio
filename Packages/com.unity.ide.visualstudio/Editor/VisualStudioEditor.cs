@@ -8,7 +8,7 @@ using UnityEngine;
 using Unity.CodeEditor;
 using System.Runtime.InteropServices;
 
-namespace Microsoft.VisualStudio.Editor
+namespace Microsoft.Unity.VisualStudio.Editor
 {
 	[InitializeOnLoad]
 	public class VisualStudioEditor : IExternalCodeEditor

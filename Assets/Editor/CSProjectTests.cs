@@ -5,7 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Xml;
-using Microsoft.VisualStudio.Editor;
+using Microsoft.Unity.VisualStudio.Editor;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;

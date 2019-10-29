@@ -13,7 +13,7 @@ using UnityEditor.PackageManager;
 using UnityEditorInternal;
 using UnityEngine;
 
-namespace Microsoft.VisualStudio.Editor
+namespace Microsoft.Unity.VisualStudio.Editor
 {
     public enum ScriptingLanguage
     {

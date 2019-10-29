@@ -1,7 +1,7 @@
 ﻿using System.Globalization;
 using System.Net;
 
-namespace Microsoft.VisualStudio.Editor.Messaging
+namespace Microsoft.Unity.VisualStudio.Editor.Messaging
 {
 	internal class Message
 	{

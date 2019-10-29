@@ -1,4 +1,4 @@
-﻿namespace Microsoft.VisualStudio.Editor
+﻿namespace Microsoft.Unity.VisualStudio.Editor
 {
 	internal class Solution
 	{

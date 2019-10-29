@@ -2,7 +2,7 @@
 using System.Net;
 using System.Net.Sockets;
 
-namespace Microsoft.VisualStudio.Editor.Messaging
+namespace Microsoft.Unity.VisualStudio.Editor.Messaging
 {
 	internal class UdpSocket : Socket
 	{

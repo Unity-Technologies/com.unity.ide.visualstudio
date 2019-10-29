@@ -6,7 +6,7 @@ using System.IO;
 using System.Linq;
 using UnityEditor.Compilation;
 using UnityEngine;
-using Microsoft.VisualStudio.Editor;
+using Microsoft.Unity.VisualStudio.Editor;
 
 namespace VisualStudioEditor.Editor_spec
 {
@@ -31,7 +31,7 @@ namespace VisualStudioEditor.Editor_spec
 
         [SetUp]
         public void SetUp() {
-            var codeEditor = new Microsoft.VisualStudio.Editor.VisualStudioEditor();
+            var codeEditor = new Microsoft.Unity.VisualStudio.Editor.VisualStudioEditor();
             codeEditor.CreateIfDoesntExist();
         }
 

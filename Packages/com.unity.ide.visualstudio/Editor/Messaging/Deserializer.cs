@@ -1,7 +1,7 @@
 ﻿using System.IO;
 using System.Text;
 
-namespace Microsoft.VisualStudio.Editor.Messaging
+namespace Microsoft.Unity.VisualStudio.Editor.Messaging
 {
 	internal class Deserializer
 	{

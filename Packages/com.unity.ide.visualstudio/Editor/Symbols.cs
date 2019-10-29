@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 
-namespace Microsoft.VisualStudio.Editor
+namespace Microsoft.Unity.VisualStudio.Editor
 {
 	internal static class Symbols
 	{

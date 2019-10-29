@@ -6,7 +6,7 @@ using System.Diagnostics;
 using System.Text.RegularExpressions;
 using System.Linq;
 
-namespace Microsoft.VisualStudio.Editor
+namespace Microsoft.Unity.VisualStudio.Editor
 {
 	internal static class Discovery
 	{

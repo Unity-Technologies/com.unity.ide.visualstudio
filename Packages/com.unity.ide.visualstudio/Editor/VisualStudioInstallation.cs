@@ -4,7 +4,7 @@ using Microsoft.Win32;
 using Unity.CodeEditor;
 using IOPath = System.IO.Path;
 
-namespace Microsoft.VisualStudio.Editor
+namespace Microsoft.Unity.VisualStudio.Editor
 {
 	internal class VisualStudioInstallation
 	{

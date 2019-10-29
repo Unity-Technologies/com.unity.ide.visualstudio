@@ -2,12 +2,12 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
-using Microsoft.VisualStudio.Editor.Messaging;
+using Microsoft.Unity.VisualStudio.Editor.Messaging;
 using UnityEditor;
 using UnityEngine;
-using MessageType = Microsoft.VisualStudio.Editor.Messaging.MessageType;
+using MessageType = Microsoft.Unity.VisualStudio.Editor.Messaging.MessageType;
 
-namespace Microsoft.VisualStudio.Editor
+namespace Microsoft.Unity.VisualStudio.Editor
 {
 	[InitializeOnLoad]
 	internal class VisualStudioIntegration
