@@ -20,12 +20,24 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 			if (VisualStudioEditor.IsOSX)
 			{
-				if (TryDiscoverInstallation("/Applications/Visual Studio.app", out var installation))
-					yield return installation;
-
-				if (TryDiscoverInstallation("/Applications/Visual Studio (Preview).app", out installation))
-					yield return installation;
+				var candidates = Directory.EnumerateDirectories("/Applications", "*.app");
+				foreach (var candidate in candidates)
+				{
+					if (TryDiscoverInstallation(candidate, out var installation))
+						yield return installation;
+				}
 			}
+		}
+
+		private static bool IsCandidateToDiscovery(string path)
+		{
+			if (File.Exists(path) && VisualStudioEditor.IsWindows && Regex.IsMatch(path, "devenv.exe$", RegexOptions.IgnoreCase))
+				return true;
+
+			if (Directory.Exists(path) && VisualStudioEditor.IsOSX && Regex.IsMatch(path, "Visual\\s?Studio(?!.*Code.*).*.app$", RegexOptions.IgnoreCase))
+				return true;
+
+			return false;
 		}
 
 		public static bool TryDiscoverInstallation(string editorPath, out VisualStudioInstallation installation)
@@ -35,20 +47,17 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			if (string.IsNullOrEmpty(editorPath))
 				return false;
 
-			string fvi = null;
-			if (File.Exists(editorPath) && VisualStudioEditor.IsWindows && Regex.IsMatch(editorPath, "devenv.exe$", RegexOptions.IgnoreCase))
-			{
-				// On windows we use the executable directly, so we can query extra information
-				fvi = editorPath;
-			}
+			if (!IsCandidateToDiscovery(editorPath))
+				return false;
 
-			if (Directory.Exists(editorPath) && VisualStudioEditor.IsOSX && Regex.IsMatch(editorPath, "Visual\\s?Studio(?!.*Code.*).*.app$", RegexOptions.IgnoreCase))
-			{
-				// On Mac we use the .app folder, so we need to access to main assembly
+			// On windows we use the executable directly, so we can query extra information
+			var fvi = editorPath;
+
+			// On Mac we use the .app folder, so we need to access to main assembly
+			if (VisualStudioEditor.IsOSX)
 				fvi = Path.Combine(editorPath, "Contents", "Resources", "lib", "monodevelop", "bin", "VisualStudio.exe");
-			}
-
-			if (fvi == null || !File.Exists(fvi))
+			
+			if (!File.Exists(fvi))
 				return false;
 
 			// VS preview are not using the isPrerelease flag so far
