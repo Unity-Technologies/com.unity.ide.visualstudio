@@ -826,8 +826,8 @@ namespace Microsoft.VisualStudio.Editor
 
         string SolutionText(IEnumerable<Assembly> islands, Solution previousSolution = null)
         {
-            var fileversion = "11.00";
-            var vsversion = "2010";
+            const string fileversion = "12.00";
+            const string vsversion = "15";
 
             var relevantIslands = RelevantIslandsForMode(islands);
             var generatedProjects = ToProjectEntries(relevantIslands);
