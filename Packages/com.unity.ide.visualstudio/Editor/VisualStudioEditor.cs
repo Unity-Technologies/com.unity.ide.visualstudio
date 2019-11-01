@@ -70,6 +70,11 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		{
 			var result = TryGetVisualStudioInstallationForPath(editorPath, out var vsi);
 			installation = vsi == null ? default : vsi.ToCodeEditorInstallation();
+
+			switch (result)
+			{}
+
+
 			return result;
 		}
 
