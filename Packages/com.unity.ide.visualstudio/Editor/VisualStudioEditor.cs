@@ -222,8 +222,8 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			return result;
 		}
 
-		[DllImport("AppleEventIntegrationPlugin")]
-		static extern void OpenVisualStudio(string appPath, string solutionPath, string filePath, int line, StringBuilder sb, int sbLength);
+		[DllImport("AppleEventIntegration")]
+		static extern bool OpenVisualStudio(string appPath, string solutionPath, string filePath, int line);
 
 		bool OpenOSXApp(string path, int line, int column)
 		{
@@ -234,14 +234,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			}
 
 			string solution = GetOrGenerateSolutionFile(path);
-
-			StringBuilder sb = new StringBuilder(4096);
-
-			OpenVisualStudio(CodeEditor.CurrentEditorInstallation, solution, absolutePath, line, sb, sb.Capacity);
-
-			Console.WriteLine(sb.ToString());
-
-			return true;
+			return OpenVisualStudio(CodeEditor.CurrentEditorInstallation, solution, absolutePath, line);
 		}
 
 		private string GetOrGenerateSolutionFile(string path)
