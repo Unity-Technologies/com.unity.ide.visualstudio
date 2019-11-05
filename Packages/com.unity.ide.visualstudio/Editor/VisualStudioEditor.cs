@@ -75,11 +75,6 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		{
 			var result = TryGetVisualStudioInstallationForPath(editorPath, out var vsi);
 			installation = vsi == null ? default : vsi.ToCodeEditorInstallation();
-
-			switch (result)
-			{}
-
-
 			return result;
 		}
 
@@ -163,7 +158,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		private bool OpenWindowsApp(string path, int line)
 		{
 			var progpath = FileUtility
-				.FindPackageAssetFullPath("COMIntegration a:packages", "COMIntegration.dom")
+				.FindPackageAssetFullPath("COMIntegration a:packages", "COMIntegration.exe")
 				.FirstOrDefault();
 
 			if (string.IsNullOrWhiteSpace(progpath))
