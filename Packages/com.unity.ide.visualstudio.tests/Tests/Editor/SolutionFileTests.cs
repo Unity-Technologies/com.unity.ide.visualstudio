@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using UnityEditor.Compilation;
 using UnityEngine;
+using Microsoft.Unity.VisualStudio.Editor;
 
 namespace VisualStudioEditor.Editor_spec
 {
@@ -30,7 +31,7 @@ namespace VisualStudioEditor.Editor_spec
 
         [SetUp]
         public void SetUp() {
-            var codeEditor = new VSEditor(new Mock<IDiscovery>().Object, new ProjectGeneration());
+            var codeEditor = new Microsoft.Unity.VisualStudio.Editor.VisualStudioEditor();
             codeEditor.CreateIfDoesntExist();
         }
 
