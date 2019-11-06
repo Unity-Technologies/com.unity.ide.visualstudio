@@ -103,7 +103,7 @@ public class SimpleCSharpScript : MonoBehaviour
             DateTime lastWritten = File.GetLastWriteTime(m_CsProjPath);
 
             string csprojContents = File.ReadAllText(m_CsProjPath);
-            StringAssert.Contains(@"Assets\SimpleCSharpScript.cs", csprojContents);
+            StringAssert.Contains($"Assets{Path.DirectorySeparatorChar}SimpleCSharpScript.cs", csprojContents);
             Assert.AreEqual(lastWritten, File.GetLastWriteTime(m_CsProjPath));
         }
 
@@ -118,7 +118,7 @@ public class SimpleCSharpScript : MonoBehaviour
             m_ProjectGeneration.Sync();
 
             string csprojContents = File.ReadAllText(m_CsProjPath);
-            StringAssert.Contains(@"Assets\SimpleCSharpScript.cs", csprojContents);
+            StringAssert.Contains($"Assets{Path.DirectorySeparatorChar}SimpleCSharpScript.cs", csprojContents);
         }
 
         [UnityTest]
@@ -137,7 +137,7 @@ public class SimpleCSharpScript : MonoBehaviour
             var csProj = XMLUtilities.FromFile(m_CsProjPath);
 
             XMLUtilities.AssertCompileItemsMatchExactly(csProj, new [] { "SimpleCSharpScript.cs" });
-            XMLUtilities.AssertNonCompileItemsMatchExactly(csProj, new [] { "text.txt", "ClassDiagram1.cd", "Test.shader" });
+            XMLUtilities.AssertNonCompileItemsMatchExactly(csProj, new [] { "text.txt", "ClassDiagram1.cd", "Test.shader", "Dummy.dll" });
         }
 
         [UnityTest]
@@ -323,7 +323,7 @@ public class SimpleCSharpScript : MonoBehaviour
             m_ProjectGeneration.Sync();
 
             string csprojContents = File.ReadAllText(m_CsProjPath);
-            StringAssert.DoesNotContain("Assets/Native.dll", csprojContents);
+            StringAssert.DoesNotContain($"Assets{Path.DirectorySeparatorChar}Native.dll", csprojContents);
         }
 
         [UnityTest]
@@ -345,7 +345,7 @@ public class SimpleCSharpScript : MonoBehaviour
             m_ProjectGeneration.Sync();
 
             string csprojContents = File.ReadAllText(m_CsProjPath);
-            StringAssert.Contains("Assets\\imported.cs", csprojContents);
+            StringAssert.Contains($"Assets{Path.DirectorySeparatorChar}imported.cs", csprojContents);
         }
 
         [UnityTest]
@@ -358,8 +358,8 @@ public class SimpleCSharpScript : MonoBehaviour
             yield return new RecompileScripts(true);
             m_ProjectGeneration.Sync();
 
-            var oldScriptFile = "Assets\\old.cs";
-            var newScriptFile = "Assets\\new.cs";
+            var oldScriptFile = $"Assets{Path.DirectorySeparatorChar}old.cs";
+            var newScriptFile = $"Assets{Path.DirectorySeparatorChar}new.cs";
             string csprojContents = File.ReadAllText(m_CsProjPath);
 
             StringAssert.Contains(oldScriptFile, csprojContents);
@@ -371,8 +371,8 @@ public class SimpleCSharpScript : MonoBehaviour
             yield return new RecompileScripts(true);
             m_ProjectGeneration.Sync();
 
-            oldScriptFile = "Assets\\old.cs";
-            newScriptFile = "Assets\\new.cs";
+            oldScriptFile = $"Assets{Path.DirectorySeparatorChar}old.cs";
+            newScriptFile = $"Assets{Path.DirectorySeparatorChar}new.cs";
             csprojContents = File.ReadAllText(m_CsProjPath);
             StringAssert.DoesNotContain(oldScriptFile, csprojContents);
             StringAssert.Contains(newScriptFile, csprojContents);
@@ -390,7 +390,7 @@ public class SimpleCSharpScript : MonoBehaviour
             var dir = Directory.GetParent(Application.dataPath).FullName;
             m_CsProjPath = Path.Combine(dir, "Assembly-CSharp.csproj");
 
-            var scriptAsset = "Assets\\deleted.cs";
+            var scriptAsset = $"Assets{Path.DirectorySeparatorChar}deleted.cs";
             var csprojContents = File.ReadAllText(m_CsProjPath);
             StringAssert.Contains(scriptAsset, csprojContents);
 
@@ -399,7 +399,7 @@ public class SimpleCSharpScript : MonoBehaviour
             yield return new RecompileScripts(true);
             m_ProjectGeneration.Sync();
 
-            scriptAsset = "Assets\\deleted.cs";
+            scriptAsset = $"Assets{Path.DirectorySeparatorChar}deleted.cs";
             csprojContents = File.ReadAllText(m_CsProjPath);
             StringAssert.DoesNotContain(scriptAsset, csprojContents);
         }
@@ -454,8 +454,8 @@ public class SimpleCSharpScript : MonoBehaviour
             m_ProjectGeneration.Sync();
 
             string csprojContents = File.ReadAllText(m_CsProjPath);
-            StringAssert.DoesNotContain("Dimmer&\\foo.cs", csprojContents);
-            StringAssert.Contains("Dimmer&amp;\\foo.cs", csprojContents);
+            StringAssert.DoesNotContain($"Dimmer&{Path.DirectorySeparatorChar}foo.cs", csprojContents);
+            StringAssert.Contains($"Dimmer&amp;{Path.DirectorySeparatorChar}foo.cs", csprojContents);
         }
     }
 

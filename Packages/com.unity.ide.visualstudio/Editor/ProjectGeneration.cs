@@ -961,7 +961,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
         static string SkipPathPrefix(string path, string prefix)
         {
-            if (path.StartsWith($"{prefix}") && (path.Length > prefix.Length))
+            if (path.StartsWith($"{prefix}{Path.DirectorySeparatorChar}") && (path.Length > prefix.Length))
                 return path.Substring(prefix.Length + 1);
             return path;
         }
