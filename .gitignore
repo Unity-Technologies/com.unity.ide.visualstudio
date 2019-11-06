@@ -12,3 +12,4 @@ obj/
 /Temp
 *.bak
 *.bak.meta
+.DS_Store
