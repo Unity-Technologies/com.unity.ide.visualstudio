@@ -1,13 +1,17 @@
-#import  <Cocoa/Cocoa.h>
-#import  <Foundation/Foundation.h>
-#include <iostream>
-#include <string>
-#include <vector>
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Unity Technologies.
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+ 
+#import <Cocoa/Cocoa.h>
+#import <Foundation/Foundation.h>
 
-#define keyFileSender                                   'FSnd'
+// 'FSnd' FourCC
+#define keyFileSender                                   1179872868
 
 // 16 bit aligned legacy struct - this should total 20 bytes
-struct TheSelectionRange
+struct SelectionRange
 {
     int16_t unused1;    // 0 (not used)
     int16_t lineNum;    // line to select (<0 to specify range)
@@ -15,11 +19,14 @@ struct TheSelectionRange
     int32_t endRange;   // end of selection range (if line < 0)
     int32_t unused2;    // 0 (not used)
     int32_t theDate;    // modification date/time
-} __attribute__((packed)); a
+} __attribute__((packed));
 
-static NSString* MakeNSString(const std::string& string)
+static NSString* MakeNSString(const char* str)
 {
-    NSString* ret = [NSString stringWithUTF8String: string.c_str()];
+    if (!str)
+        return NULL;
+
+    NSString* ret = [NSString stringWithUTF8String: str];
     return ret;
 }
 
@@ -34,51 +41,45 @@ static UInt32 GetCreatorOfThisApp()
     return creator;
 }
 
-static BOOL OpenFileAtLineWithAppleEvent(NSRunningApplication *runningApp, NSString* path, int line, char* error, int errorLength)
+static BOOL OpenFileAtLineWithAppleEvent(NSRunningApplication *runningApp, NSString* path, int line)
 {
     if (!runningApp)
         return NO;
-    
+
     NSURL *pathUrl = [NSURL fileURLWithPath: path];
     
-    if (line != -1)
-        snprintf(error, errorLength, "%sAttempting to open file (using Apple events): %s line: %d.\n", error, [path UTF8String], line);
-    else
-        snprintf(error, errorLength, "%sAttempting to open file (using Apple events): %s.\n", error, [path UTF8String]);
-    
-    NSAppleEventDescriptor* targetDescriptor = [NSAppleEventDescriptor descriptorWithDescriptorType: typeApplicationBundleID data: [runningApp.bundleIdentifier dataUsingEncoding: NSUTF8StringEncoding]];
-    NSAppleEventDescriptor* appleEvent = [NSAppleEventDescriptor appleEventWithEventClass: kCoreEventClass eventID: kAEOpenDocuments targetDescriptor: targetDescriptor returnID: kAutoGenerateReturnID transactionID: kAnyTransactionID];
-    AEDesc reply = { typeNull, NULL };
-    
-    [appleEvent setParamDescriptor: [NSAppleEventDescriptor descriptorWithDescriptorType: typeFileURL data: [[pathUrl absoluteString] dataUsingEncoding: NSUTF8StringEncoding]] forKeyword: keyDirectObject];
-    
-#if 0
-    // The last code bit that has anything to do with FSRef. By now, any application out there should easily support typeFileURL,
-    // but maybe there is some legacy application where passing this (alongside with typeFileURL) is required. Until such reason exists, this
-    // code remains disabled since it's using a deprecated API
-    
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-    FSRef fileFSRef;
-    CFURLGetFSRef((CFURLRef)pathUrl, &fileFSRef);
-#pragma clang diagnostic pop
-    [appleEvent setParamDescriptor: [NSAppleEventDescriptor descriptorWithDescriptorType: typeFSRef bytes: &fileFSRef length: sizeof(fileFSRef)] forKeyword: keyDirectObject];
-#endif
-    
+    NSAppleEventDescriptor* targetDescriptor = [NSAppleEventDescriptor
+        descriptorWithProcessIdentifier: runningApp.processIdentifier];
+
+    NSAppleEventDescriptor* appleEvent = [NSAppleEventDescriptor
+		appleEventWithEventClass: kCoreEventClass
+		eventID: kAEOpenDocuments
+		targetDescriptor: targetDescriptor
+		returnID: kAutoGenerateReturnID
+		transactionID: kAnyTransactionID];
+
+    [appleEvent
+		setParamDescriptor: [NSAppleEventDescriptor
+			descriptorWithDescriptorType: typeFileURL
+			data: [[pathUrl absoluteString] dataUsingEncoding: NSUTF8StringEncoding]]
+		forKeyword: keyDirectObject];
+
     UInt32 packageCreator = GetCreatorOfThisApp();
-    if (packageCreator == kUnknownType)
-    {
-        [appleEvent setParamDescriptor: [NSAppleEventDescriptor descriptorWithDescriptorType: typeApplicationBundleID data: [[[NSBundle mainBundle] bundleIdentifier] dataUsingEncoding: NSUTF8StringEncoding]] forKeyword: keyFileSender];
-    }
-    else
-    {
-        [appleEvent setParamDescriptor: [NSAppleEventDescriptor descriptorWithTypeCode: packageCreator] forKeyword: keyFileSender];
+    if (packageCreator == kUnknownType) {
+        [appleEvent
+			setParamDescriptor: [NSAppleEventDescriptor
+				descriptorWithDescriptorType: typeApplicationBundleID
+				data: [[[NSBundle mainBundle] bundleIdentifier] dataUsingEncoding: NSUTF8StringEncoding]]
+			forKeyword: keyFileSender];
+    } else {
+        [appleEvent
+			setParamDescriptor: [NSAppleEventDescriptor descriptorWithTypeCode: packageCreator]
+			forKeyword: keyFileSender];
     }
     
-    if (line != -1)
-    {
+    if (line != -1) {
         // Add selection range to event
-        TheSelectionRange range;
+        SelectionRange range;
         range.unused1 = 0;
         range.lineNum = line - 1;
         range.startRange = -1;
@@ -86,119 +87,200 @@ static BOOL OpenFileAtLineWithAppleEvent(NSRunningApplication *runningApp, NSStr
         range.unused2 = 0;
         range.theDate = -1;
         
-        [appleEvent setParamDescriptor: [NSAppleEventDescriptor descriptorWithDescriptorType: typeChar bytes: &range length: sizeof(TheSelectionRange)] forKeyword: keyAEPosition];
+        [appleEvent
+			setParamDescriptor: [NSAppleEventDescriptor
+				descriptorWithDescriptorType: typeChar
+				bytes: &range
+				length: sizeof(SelectionRange)]
+			forKeyword: keyAEPosition];
     }
-    
-    OSErr err = AESendMessage([appleEvent aeDesc], &reply, kAENoReply + kAENeverInteract, kAEDefaultTimeout);
-    if (err != noErr)
-    {
-        snprintf(error, errorLength, "%sFailed to open file: unable to send Apple event (error: %d).\n", error, err);
-        return NO;
-    }
-    
-    return YES;
+
+    AEDesc reply = { typeNull, NULL };
+    OSErr err = AESendMessage(
+		[appleEvent aeDesc],
+		&reply,
+		kAENoReply + kAENeverInteract,
+		kAEDefaultTimeout);
+
+    return err == noErr;
 }
 
-static NSRunningApplication *LaunchServicesOpenApp(NSString* appPath)
+static BOOL ApplicationSupportsQueryOpenedSolution(NSString* appPath)
 {
-    // Check is the desired app is already running
-    NSRunningApplication *runningApp;
+    NSURL* appUrl = [NSURL fileURLWithPath: appPath];
+    NSBundle* bundle = [NSBundle bundleWithURL: appUrl];
+
+    if (!bundle)
+        return NO;
+
+    id versionValue = [bundle objectForInfoDictionaryKey: @"CFBundleVersion"];
+    if (!versionValue || ![versionValue isKindOfClass: [NSString class]])
+        return NO;
+
+    NSString* version = (NSString*)versionValue;
+    NSArray* components = [version componentsSeparatedByString:@"."];
+    if (!components || components.count < 2)
+        return NO;
+
+    return [components[0] integerValue] >= 8
+        && [components[1] integerValue] >= 6;
+}
+
+static NSArray<NSRunningApplication*>* QueryRunningInstances(NSString *appPath)
+{
+    NSMutableArray<NSRunningApplication*>* instances = [[NSMutableArray alloc] init];
     NSURL *appUrl = [NSURL fileURLWithPath: appPath];
-    NSWorkspace *workspace = [NSWorkspace sharedWorkspace];
-    NSArray *runningApps = [workspace runningApplications];
-    for (NSUInteger i = 0; i != runningApps.count; i++)
-    {
-        NSRunningApplication *app = [runningApps objectAtIndex: i];
-        if ([app.bundleURL isEqual: appUrl] || [app.executableURL isEqual: appUrl])
-        {
-            runningApp = app;
-            break;
+
+    for (NSRunningApplication *runningApp in NSWorkspace.sharedWorkspace.runningApplications) {
+        if (![runningApp isTerminated] && [runningApp.bundleURL isEqual: appUrl]) {
+            [instances addObject: runningApp];
         }
     }
     
-    if (!runningApp || runningApp.isTerminated)
-    {
-        NSMutableDictionary* config = [[NSMutableDictionary alloc] init];
-        runningApp = [[NSWorkspace sharedWorkspace] launchApplicationAtURL: appUrl options: NSWorkspaceLaunchDefault configuration: config error: nil];
+    return instances;
+}
+
+enum {
+    kWorkspaceEventClass = 1448302419, /* 'VSWS' FourCC */
+    kCurrentSelectedSolutionPathEventID = 1129534288 /* 'CSSP' FourCC */
+};
+
+static NSString* QueryCurrentSolutionPath(NSRunningApplication* runningApp)
+{
+    NSAppleEventDescriptor* targetDescriptor = [NSAppleEventDescriptor
+        descriptorWithProcessIdentifier: runningApp.processIdentifier];
+
+    NSAppleEventDescriptor* appleEvent = [NSAppleEventDescriptor
+        appleEventWithEventClass: kWorkspaceEventClass
+        eventID: kCurrentSelectedSolutionPathEventID
+        targetDescriptor: targetDescriptor
+        returnID: kAutoGenerateReturnID
+        transactionID: kAnyTransactionID];
+
+    AEDesc aeReply = { 0, };
+
+    OSErr sendResult = AESendMessage(
+        [appleEvent aeDesc],
+        &aeReply,
+        kAEWaitReply | kAENeverInteract,
+        kAEDefaultTimeout);
+
+    if (sendResult != noErr) {
+        return NULL;
+    }
+
+    NSAppleEventDescriptor *reply = [[NSAppleEventDescriptor alloc] initWithAEDescNoCopy: &aeReply];
+    return [[reply descriptorForKeyword: keyDirectObject] stringValue];
+}
+
+static BOOL IsRunningApplicationOpenedOnSolution(NSRunningApplication* runningApp, NSString* solutionPath)
+{
+    return [QueryCurrentSolutionPath(runningApp) isEqual: solutionPath];
+}
+
+static NSRunningApplication* QueryRunningApplicationOpenedOnSolution(NSString* appPath, NSString* solutionPath)
+{
+    BOOL supportsQueryOpenedSolution = ApplicationSupportsQueryOpenedSolution(appPath);
+
+    for (NSRunningApplication *runningApp in QueryRunningInstances(appPath)) {
+        // If the currently selected external editor does not support the opened solution apple event
+        // then fallback to the previous behavior: take the first opened VSM and open the solution
+        if (!supportsQueryOpenedSolution) {
+            OpenFileAtLineWithAppleEvent(runningApp, solutionPath, -1);
+            return runningApp;
+        }
+
+        if (IsRunningApplicationOpenedOnSolution(runningApp, solutionPath)) {
+            return runningApp;
+        }
     }
     
+    return NULL;
+}
+
+static NSRunningApplication* LaunchApplicationOnSolution(NSString* appPath, NSString* solutionPath)
+{
+    NSURL* appUrl = [NSURL fileURLWithPath: appPath];
+    NSMutableDictionary* config = [[NSMutableDictionary alloc] init];
+
+    NSRunningApplication* runningApp = [[NSWorkspace sharedWorkspace]
+        launchApplicationAtURL: appUrl
+        options: NSWorkspaceLaunchDefault | NSWorkspaceLaunchNewInstance
+        configuration: config
+        error: nil];
+
+    OpenFileAtLineWithAppleEvent(runningApp, solutionPath, -1);
+    
+    return runningApp;
+}
+
+static NSRunningApplication* QueryOrLaunchApplication(NSString* appPath, NSString* solutionPath)
+{
+    NSRunningApplication* runningApp = QueryRunningApplicationOpenedOnSolution(appPath, solutionPath);
+    
+    if (!runningApp)
+        runningApp = LaunchApplicationOnSolution(appPath, solutionPath);
+
     if (runningApp)
         [runningApp activateWithOptions: 0];
     
     return runningApp;
 }
 
-bool LaunchOrReuseApp(const std::string& appPath, NSRunningApplication** outApp, char* error, int errorLength)
+BOOL LaunchOrReuseApp(NSString* appPath, NSString* solutionPath, NSRunningApplication** outApp)
 {
-    std::vector<std::string> args;
-    NSRunningApplication* app;
-    
-    app = LaunchServicesOpenApp(MakeNSString(appPath));
+    NSRunningApplication* app = QueryOrLaunchApplication(appPath, solutionPath);
     
     if (outApp)
         *outApp = app;
-    if (!app)
-    {
-        snprintf(error, errorLength, "%sFailed to open file: unable to launch the application at %s.\n", error, appPath.c_str());
-        return false;
-    }
-    return true;
+
+    return app != NULL;
 }
 
-bool MonoDevelopOpenFile(const std::string& appPath, const std::string& solutionPath, const std::string& filePath, int line, char* error, int errorLength)
+BOOL MonoDevelopOpenFile(NSString* appPath, NSString* solutionPath, NSString* filePath, int line)
 {
     NSRunningApplication* runningApp;
-    if (!LaunchOrReuseApp(appPath, &runningApp, error, errorLength))
-        return false;
-    
-    OpenFileAtLineWithAppleEvent(runningApp, MakeNSString(solutionPath), -1, error, errorLength);
-    
-    // Do not try to open an empty filepath
-    return filePath.empty() ? true : OpenFileAtLineWithAppleEvent(runningApp, MakeNSString(filePath), line, error, errorLength);
+    if (!LaunchOrReuseApp(appPath, solutionPath, &runningApp)) {
+        return FALSE;
+    }
+
+    if (filePath) {
+        return OpenFileAtLineWithAppleEvent(runningApp, filePath, line);
+    }
+
+    return YES;
 }
 
 #if BUILD_APP
-int main(int argc, const char * argv[]) {
-    
+
+int main(int argc, const char** argv)
+{
     if (argc != 5) {
-        std::cerr << argc << ": wrong number of arguments\n" << "Usage: AppleEventIntegration.exe installationPath fileName solutionPath lineNumber" << std::endl;
-        for (int i = 0; i < argc; i++) {
-            std::cerr << argv[i] << std::endl;
-        }
+        printf("Usage: AppleEventIntegration appPath solutionPath filePath lineNumber\n");
         return 1;
     }
-    const std::string installationPath(argv[1]);
-    const std::string fileName(argv[2]);
-    const std::string solutionPath(argv[3]);
+
+    const char* appPath = argv[1];
+    const char* solutionPath = argv[2];
+    const char* filePath = argv[3];
     const int lineNumber = atoi(argv[4]);
-    
+
     @autoreleasepool
     {
-        char errorBuffer[4096];
-        errorBuffer[0] = '\0';
-        
-        MonoDevelopOpenFile(installationPath, solutionPath, fileName, lineNumber, errorBuffer, 4096);
-        
-        if(strlen(errorBuffer) > 0)
-        {
-            puts(errorBuffer);
-        }        
+        MonoDevelopOpenFile(MakeNSString(appPath), MakeNSString(solutionPath), MakeNSString(filePath), lineNumber);
     }
-    
-    printf("AppleEventIntegration.exe Exit");
-    
+
     return 0;
 }
+
 #else
 
 extern "C"
 {
-    
-void OpenVisualStudio(const char* appPath, const char* solutionPath, const char* filePath, int line, char* error, int errorLength)
-{
-    MonoDevelopOpenFile(appPath, solutionPath, filePath, line, error, errorLength);
-}
-    
+	BOOL OpenVisualStudio(const char* appPath, const char* solutionPath, const char* filePath, int line)
+	{
+    	return MonoDevelopOpenFile(MakeNSString(appPath), MakeNSString(solutionPath), MakeNSString(filePath), line);
+	}
 }
 
 #endif

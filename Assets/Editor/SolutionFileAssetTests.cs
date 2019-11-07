@@ -6,6 +6,7 @@ using UnityEngine;
 using UnityEngine.TestTools;
 using System.IO;
 using System;
+using Microsoft.Unity.VisualStudio.Editor;
 
 namespace VisualStudioEditor.Runtime_spec
 {

@@ -1,5 +1,6 @@
 using NUnit.Framework;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Xml;
 
@@ -51,7 +52,7 @@ namespace VisualStudioEditor
 
         static IEnumerable<string> RelativeAssetPathsFor(IEnumerable<string> fileNames)
         {
-            return fileNames.Select(fileName => @"Assets\" + fileName.Replace('/', '\\')).ToArray();
+            return fileNames.Select(fileName => @"Assets" + Path.DirectorySeparatorChar + fileName).ToArray();
         }
 
         static IEnumerable<string> SelectAttributeValues(this XmlDocument xmlDocument, string xpathQuery, XmlNamespaceManager xmlNamespaceManager)

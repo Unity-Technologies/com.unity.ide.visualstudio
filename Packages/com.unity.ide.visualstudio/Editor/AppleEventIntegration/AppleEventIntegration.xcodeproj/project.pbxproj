@@ -7,73 +7,59 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		B2366AB122708EE800EB4A1F /* main.mm in Sources */ = {isa = PBXBuildFile; fileRef = B2366AB022708EE800EB4A1F /* main.mm */; };
-		B2366AB92270944300EB4A1F /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B2366AB82270944300EB4A1F /* Carbon.framework */; };
-		B2366ABB2270946300EB4A1F /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B2366ABA2270946300EB4A1F /* AppKit.framework */; };
+		E08E02FF236392D000A4B1BE /* main.mm in Sources */ = {isa = PBXBuildFile; fileRef = E08E02FE236392D000A4B1BE /* main.mm */; };
+		E08E03022363933B00A4B1BE /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E08E03012363933B00A4B1BE /* AppKit.framework */; };
 /* End PBXBuildFile section */
 
-/* Begin PBXCopyFilesBuildPhase section */
-		B2366AAB22708EE800EB4A1F /* CopyFiles */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = /usr/share/man/man1/;
-			dstSubfolderSpec = 0;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 1;
-		};
-/* End PBXCopyFilesBuildPhase section */
-
 /* Begin PBXFileReference section */
-		B2366AAD22708EE800EB4A1F /* AppleEventIntegration */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = AppleEventIntegration; sourceTree = BUILT_PRODUCTS_DIR; };
-		B2366AB022708EE800EB4A1F /* main.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = main.mm; sourceTree = "<group>"; };
-		B2366AB82270944300EB4A1F /* Carbon.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Carbon.framework; path = System/Library/Frameworks/Carbon.framework; sourceTree = SDKROOT; };
-		B2366ABA2270946300EB4A1F /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
+		E08E02F5236392A300A4B1BE /* AppleEventIntegration.bundle */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AppleEventIntegration.bundle; sourceTree = BUILT_PRODUCTS_DIR; };
+		E08E02F8236392A300A4B1BE /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		E08E02FE236392D000A4B1BE /* main.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = main.mm; sourceTree = "<group>"; };
+		E08E03012363933B00A4B1BE /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		B2366AAA22708EE800EB4A1F /* Frameworks */ = {
+		E08E02F2236392A300A4B1BE /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				B2366ABB2270946300EB4A1F /* AppKit.framework in Frameworks */,
-				B2366AB92270944300EB4A1F /* Carbon.framework in Frameworks */,
+				E08E03022363933B00A4B1BE /* AppKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		B2366AA422708EE800EB4A1F = {
+		E08E02EC236392A300A4B1BE = {
 			isa = PBXGroup;
 			children = (
-				B2366AAF22708EE800EB4A1F /* AppleEventIntegration */,
-				B2366AAE22708EE800EB4A1F /* Products */,
-				B2366AB72270944200EB4A1F /* Frameworks */,
+				E08E02F7236392A300A4B1BE /* AppleEventIntegration */,
+				E08E02F6236392A300A4B1BE /* Products */,
+				E08E03002363933B00A4B1BE /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
-		B2366AAE22708EE800EB4A1F /* Products */ = {
+		E08E02F6236392A300A4B1BE /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				B2366AAD22708EE800EB4A1F /* AppleEventIntegration */,
+				E08E02F5236392A300A4B1BE /* AppleEventIntegration.bundle */,
 			);
 			name = Products;
 			sourceTree = "<group>";
 		};
-		B2366AAF22708EE800EB4A1F /* AppleEventIntegration */ = {
+		E08E02F7236392A300A4B1BE /* AppleEventIntegration */ = {
 			isa = PBXGroup;
 			children = (
-				B2366AB022708EE800EB4A1F /* main.mm */,
+				E08E02F8236392A300A4B1BE /* Info.plist */,
+				E08E02FE236392D000A4B1BE /* main.mm */,
 			);
 			path = AppleEventIntegration;
 			sourceTree = "<group>";
 		};
-		B2366AB72270944200EB4A1F /* Frameworks */ = {
+		E08E03002363933B00A4B1BE /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				B2366ABA2270946300EB4A1F /* AppKit.framework */,
-				B2366AB82270944300EB4A1F /* Carbon.framework */,
+				E08E03012363933B00A4B1BE /* AppKit.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -81,13 +67,13 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		B2366AAC22708EE800EB4A1F /* AppleEventIntegration */ = {
+		E08E02F4236392A300A4B1BE /* AppleEventIntegration */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = B2366AB422708EE800EB4A1F /* Build configuration list for PBXNativeTarget "AppleEventIntegration" */;
+			buildConfigurationList = E08E02FB236392A300A4B1BE /* Build configuration list for PBXNativeTarget "AppleEventIntegration" */;
 			buildPhases = (
-				B2366AA922708EE800EB4A1F /* Sources */,
-				B2366AAA22708EE800EB4A1F /* Frameworks */,
-				B2366AAB22708EE800EB4A1F /* CopyFiles */,
+				E08E02F1236392A300A4B1BE /* Sources */,
+				E08E02F2236392A300A4B1BE /* Frameworks */,
+				E08E02F3236392A300A4B1BE /* Resources */,
 			);
 			buildRules = (
 			);
@@ -95,53 +81,64 @@
 			);
 			name = AppleEventIntegration;
 			productName = AppleEventIntegration;
-			productReference = B2366AAD22708EE800EB4A1F /* AppleEventIntegration */;
-			productType = "com.apple.product-type.tool";
+			productReference = E08E02F5236392A300A4B1BE /* AppleEventIntegration.bundle */;
+			productType = "com.apple.product-type.bundle";
 		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
-		B2366AA522708EE800EB4A1F /* Project object */ = {
+		E08E02ED236392A300A4B1BE /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 1020;
+				LastUpgradeCheck = 1110;
 				ORGANIZATIONNAME = Unity;
 				TargetAttributes = {
-					B2366AAC22708EE800EB4A1F = {
-						CreatedOnToolsVersion = 10.2.1;
+					E08E02F4236392A300A4B1BE = {
+						CreatedOnToolsVersion = 11.1;
 					};
 				};
 			};
-			buildConfigurationList = B2366AA822708EE800EB4A1F /* Build configuration list for PBXProject "AppleEventIntegration" */;
+			buildConfigurationList = E08E02F0236392A300A4B1BE /* Build configuration list for PBXProject "AppleEventIntegration" */;
 			compatibilityVersion = "Xcode 9.3";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
+				Base,
 			);
-			mainGroup = B2366AA422708EE800EB4A1F;
-			productRefGroup = B2366AAE22708EE800EB4A1F /* Products */;
+			mainGroup = E08E02EC236392A300A4B1BE;
+			productRefGroup = E08E02F6236392A300A4B1BE /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				B2366AAC22708EE800EB4A1F /* AppleEventIntegration */,
+				E08E02F4236392A300A4B1BE /* AppleEventIntegration */,
 			);
 		};
 /* End PBXProject section */
 
+/* Begin PBXResourcesBuildPhase section */
+		E08E02F3236392A300A4B1BE /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
-		B2366AA922708EE800EB4A1F /* Sources */ = {
+		E08E02F1236392A300A4B1BE /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				B2366AB122708EE800EB4A1F /* main.mm in Sources */,
+				E08E02FF236392D000A4B1BE /* main.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
-		B2366AB222708EE800EB4A1F /* Debug */ = {
+		E08E02F9236392A300A4B1BE /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -173,7 +170,6 @@
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				CODE_SIGN_IDENTITY = "-";
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -192,7 +188,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 10.14;
+				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -200,7 +196,7 @@
 			};
 			name = Debug;
 		};
-		B2366AB322708EE800EB4A1F /* Release */ = {
+		E08E02FA236392A300A4B1BE /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -232,7 +228,6 @@
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				CODE_SIGN_IDENTITY = "-";
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
@@ -245,53 +240,65 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 10.14;
+				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = macosx;
 			};
 			name = Release;
 		};
-		B2366AB522708EE800EB4A1F /* Debug */ = {
+		E08E02FC236392A300A4B1BE /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				MACOSX_DEPLOYMENT_TARGET = 10.12;
+				COMBINE_HIDPI_IMAGES = YES;
+				INFOPLIST_FILE = AppleEventIntegration/Info.plist;
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Bundles";
+				MACOSX_DEPLOYMENT_TARGET = 10.14;
+				PRODUCT_BUNDLE_IDENTIFIER = com.unity.visualstudio.AppleEventIntegration;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				WRAPPER_EXTENSION = bundle;
 			};
 			name = Debug;
 		};
-		B2366AB622708EE800EB4A1F /* Release */ = {
+		E08E02FD236392A300A4B1BE /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				MACOSX_DEPLOYMENT_TARGET = 10.12;
+				COMBINE_HIDPI_IMAGES = YES;
+				INFOPLIST_FILE = AppleEventIntegration/Info.plist;
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Bundles";
+				MACOSX_DEPLOYMENT_TARGET = 10.14;
+				PRODUCT_BUNDLE_IDENTIFIER = com.unity.visualstudio.AppleEventIntegration;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				WRAPPER_EXTENSION = bundle;
 			};
 			name = Release;
 		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		B2366AA822708EE800EB4A1F /* Build configuration list for PBXProject "AppleEventIntegration" */ = {
+		E08E02F0236392A300A4B1BE /* Build configuration list for PBXProject "AppleEventIntegration" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				B2366AB222708EE800EB4A1F /* Debug */,
-				B2366AB322708EE800EB4A1F /* Release */,
+				E08E02F9236392A300A4B1BE /* Debug */,
+				E08E02FA236392A300A4B1BE /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		B2366AB422708EE800EB4A1F /* Build configuration list for PBXNativeTarget "AppleEventIntegration" */ = {
+		E08E02FB236392A300A4B1BE /* Build configuration list for PBXNativeTarget "AppleEventIntegration" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				B2366AB522708EE800EB4A1F /* Debug */,
-				B2366AB622708EE800EB4A1F /* Release */,
+				E08E02FC236392A300A4B1BE /* Debug */,
+				E08E02FD236392A300A4B1BE /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
-	rootObject = B2366AA522708EE800EB4A1F /* Project object */;
+	rootObject = E08E02ED236392A300A4B1BE /* Project object */;
 }

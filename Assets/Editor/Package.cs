@@ -13,7 +13,7 @@ namespace VisualStudioEditor
         [Test]
         public void Validate()
         {
-            Assert.True(ValidationSuite.ValidatePackage("com.unity.ide.visualstudio@1.1.1", ValidationType.LocalDevelopment));
+            Assert.True(ValidationSuite.ValidatePackage("com.unity.ide.visualstudio@2.0.0", ValidationType.LocalDevelopment));
         }
     }
 }

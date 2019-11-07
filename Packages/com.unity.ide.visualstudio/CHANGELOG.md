@@ -1,5 +1,15 @@
 # Code Editor Package for Visual Studio
 
+## [2.0.0] - 2019-11-06
+
+- Improved Visual Studio and Visual Studio for Mac automatic discovery
+- Added support for the VSTU messaging system (start/stop features from Visual Studio)
+- Added support for solution roundtrip (preserves references to external projects and solution properties)
+- Added support for VSTU Analyzers (requires Visual Studio 2019 16.3, Visual Studio for Mac 8.3)
+- Added a warning when using legacy pdb symbol files.
+- Fixed issues while Opening Visual Studio on Windows
+- Fixed issues while Opening Visual Studio on Mac
+
 ## [1.1.1] - 2019-05-29
 
 Fix Bridge assembly loading with non VS2017 editors

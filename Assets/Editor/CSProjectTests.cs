@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Xml;
+using Microsoft.Unity.VisualStudio.Editor;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
@@ -85,7 +86,7 @@ namespace VisualStudioEditor.Editor_spec
             Assert.IsTrue(ContainsRegex(csprojFileContents, "<DefineConstants>.*;DEF1.*</DefineConstants>"));
             Assert.IsTrue(ContainsRegex(csprojFileContents, "<DefineConstants>.*;DEF2.*</DefineConstants>"));
 
-            Assert.IsTrue(ContainsRegex(csprojFileContents, "<Reference Include=\"MyPlugin\">\\W*<HintPath>.*Assets/MyPlugin.dll</HintPath>\\W*</Reference>"));
+            Assert.IsTrue(ContainsRegex(csprojFileContents, $"<Reference Include=\"MyPlugin\">\\W*<HintPath>.*Assets{Regex.Escape(Path.DirectorySeparatorChar.ToString())}MyPlugin.dll</HintPath>\\W*</Reference>"));
         }
 
         [UnityTest]
@@ -102,7 +103,7 @@ namespace VisualStudioEditor.Editor_spec
 
             var csprojFileContents = SetupProjectGenerationAndReturnCSProjFileContent();
 
-            Assert.IsTrue(ContainsRegex(csprojFileContents, "<Reference Include=\"Goodbye\">\\W*<HintPath>.*Assets/Path With Space/Goodbye.dll\\W*</HintPath>\\W*</Reference>"));
+            Assert.IsTrue(ContainsRegex(csprojFileContents, $"<Reference Include=\"Goodbye\">\\W*<HintPath>.*Assets{Regex.Escape(Path.DirectorySeparatorChar.ToString())}Path With Space{Regex.Escape(Path.DirectorySeparatorChar.ToString())}Goodbye.dll\\W*</HintPath>\\W*</Reference>"));
         }
 
         [UnityTest]
@@ -132,8 +133,8 @@ namespace VisualStudioEditor.Editor_spec
 
             var csprojFileContents = SetupProjectGenerationAndReturnCSProjFileContent();
 
-            Assert.IsTrue(ContainsRegex(csprojFileContents, "<Reference Include=\"Hello\">\\W*<HintPath>.*Assets/Hello.dll</HintPath>\\W*</Reference>"));
-            Assert.IsTrue(ContainsRegex(csprojFileContents, "<Reference Include=\"MyPlugin\">\\W*<HintPath>.*Assets/MyPlugin.dll</HintPath>\\W*</Reference>"));
+            Assert.IsTrue(ContainsRegex(csprojFileContents, $"<Reference Include=\"Hello\">\\W*<HintPath>.*Assets{Regex.Escape(Path.DirectorySeparatorChar.ToString())}Hello.dll</HintPath>\\W*</Reference>"));
+            Assert.IsTrue(ContainsRegex(csprojFileContents, $"<Reference Include=\"MyPlugin\">\\W*<HintPath>.*Assets{Regex.Escape(Path.DirectorySeparatorChar.ToString())}MyPlugin.dll</HintPath>\\W*</Reference>"));
         }
 
         [UnityTest]
@@ -179,8 +180,9 @@ namespace VisualStudioEditor.Editor_spec
             xmlDocument.LoadXml(csprojFileContents);
 
             var references = SelectInnerTextOfNodes(xmlDocument, "/msb:Project/msb:ItemGroup/msb:Reference/msb:HintPath", GetModifiedXmlNamespaceManager(xmlDocument)).ToArray();
-            Assert.True(references.Any(reference => reference.Contains("System.Data.dll")), "System.Data.dll was not found.\n Make sure that this is in the specific API reference files.");
-            Assert.That(references, Is.All.Matches<string>(Path.IsPathRooted));
+			var systemDataReference = references.Where(reference => reference.Contains("System.Data.dll"));
+			Assert.True(systemDataReference.Any(), "System.Data.dll was not found.\n Make sure that this is in the specific API reference files.");
+            Assert.That(systemDataReference, Is.All.Matches<string>(Path.IsPathRooted));
         }
 
         static IEnumerable<string> SelectInnerTextOfNodes(XmlDocument xmlDocument, string xpathQuery, XmlNamespaceManager xmlNamespaceManager)

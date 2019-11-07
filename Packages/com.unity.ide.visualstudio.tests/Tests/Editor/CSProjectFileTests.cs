@@ -5,6 +5,7 @@ using System.IO;
 using UnityEditor.Compilation;
 using UnityEngine;
 using System.Collections.Generic;
+using Microsoft.Unity.VisualStudio.Editor;
 
 namespace VisualStudioEditor.Editor_spec
 {
@@ -50,7 +51,7 @@ namespace VisualStudioEditor.Editor_spec
 
             synchronizer.Sync();
 
-            StringAssert.Contains("\\FullPath\\ExamplePackage\\Packages\\Asset.cs", syncPaths[Path.Combine("/FullPath/Example", $"{island.name}.csproj")]);
+            StringAssert.Contains($"{Path.DirectorySeparatorChar}FullPath{Path.DirectorySeparatorChar}ExamplePackage{Path.DirectorySeparatorChar}Packages{Path.DirectorySeparatorChar}Asset.cs", syncPaths[Path.Combine("/FullPath/Example", $"{island.name}.csproj")]);
         }
     }
 }
