@@ -294,7 +294,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
                         continue;
                     }
 
-                    assemblyName = FileUtility.FileNameWithoutExtension(assemblyName);
+                    assemblyName = Path.GetFileNameWithoutExtension(assemblyName);
 
                     if (!stringBuilders.TryGetValue(assemblyName, out var projectBuilder))
                     {
@@ -560,7 +560,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
         void AppendReference(string fullReference, StringBuilder projectBuilder)
         {
             var escapedFullPath = EscapedRelativePathFor(fullReference);
-            projectBuilder.Append("    <Reference Include=\"").Append(FileUtility.FileNameWithoutExtension(escapedFullPath)).Append("\">").Append(k_WindowsNewline);
+            projectBuilder.Append("    <Reference Include=\"").Append(Path.GetFileNameWithoutExtension(escapedFullPath)).Append("\">").Append(k_WindowsNewline);
             projectBuilder.Append("      <HintPath>").Append(escapedFullPath).Append("</HintPath>").Append(k_WindowsNewline);
             projectBuilder.Append("    </Reference>").Append(k_WindowsNewline);
         }
