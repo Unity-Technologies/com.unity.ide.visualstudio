@@ -43,6 +43,8 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 			if (Path.DirectorySeparatorChar == WinSeparator)
 				path = path.Replace(UnixSeparator, WinSeparator);
+			if (Path.DirectorySeparatorChar == UnixSeparator)
+				path = path.Replace(WinSeparator, UnixSeparator);
 
 			return path.Replace(string.Concat(WinSeparator, WinSeparator), WinSeparator.ToString());
 		}

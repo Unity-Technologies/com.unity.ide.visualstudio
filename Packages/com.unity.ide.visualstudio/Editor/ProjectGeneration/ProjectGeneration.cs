@@ -789,7 +789,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
                 Debug.LogWarning("Project path contains special characters, which can be an issue when opening Visual Studio");
 
             var solutionFile = SolutionFile();
-            var previousSolution = m_FileIOProvider.Exists(solutionFile) ? SolutionParser.ParseSolutionFile(solutionFile) : null;
+            var previousSolution = m_FileIOProvider.Exists(solutionFile) ? SolutionParser.ParseSolutionFile(solutionFile, m_FileIOProvider) : null;
             SyncSolutionFileIfNotChanged(solutionFile, SolutionText(assemblies, previousSolution));
         }
 

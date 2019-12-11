@@ -5,6 +5,7 @@ using System.Xml;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEditor.Compilation;
+using UnityEditorInternal;
 using UnityEngine;
 
 namespace Microsoft.Unity.VisualStudio.Editor.Tests
@@ -38,7 +39,7 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 
                 var csprojContent = m_Builder.ReadProjectFile(m_Builder.Assembly);
                 StringAssert.DoesNotContain(illegalFormattedFileName, csprojContent);
-                StringAssert.Contains(expectedFileName, csprojContent);
+                StringAssert.Contains(expectedFileName.ReplaceDirectorySeparators(), csprojContent);
             }
 
             [Test]
@@ -78,6 +79,8 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
                 synchronizer.Sync();
 
                 var csprojContent = m_Builder.ReadProjectFile(m_Builder.Assembly);
+                var buildTarget = Application.platform == RuntimePlatform.WindowsEditor ? "StandaloneWindows64:19" : "StandaloneOSX:2";
+                var unityVersion = Application.unityVersion;
 
                 var defines = string.Join(";", new[] { "DEBUG", "TRACE" }.Concat(EditorUserBuildSettings.activeScriptCompilationDefines).Concat(m_Builder.Assembly.defines).Distinct().ToArray());
                 var content = new[]
@@ -132,15 +135,15 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
                     "    <ProjectTypeGuids>{E097FAD1-6243-4DAD-9C02-E9B9EFC3FFC1};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>",
                     "    <UnityProjectGenerator>Package</UnityProjectGenerator>",
                     "    <UnityProjectType>Game:1</UnityProjectType>",
-                    "    <UnityBuildTarget>StandaloneWindows64:19</UnityBuildTarget>",
-                    "    <UnityVersion>2020.1.0a15</UnityVersion>",
+                    $"    <UnityBuildTarget>{buildTarget}</UnityBuildTarget>",
+                    $"    <UnityVersion>{unityVersion}</UnityVersion>",
                     "  </PropertyGroup>",
                     "  <ItemGroup>",
                     "    <Reference Include=\"UnityEngine\">",
-                    "      <HintPath>C:\\projects\\unity\\build\\WindowsEditor\\Data\\Managed\\UnityEngine\\UnityEngine.dll</HintPath>",
+                    $"      <HintPath>{InternalEditorUtility.GetEngineAssemblyPath()}</HintPath>",
                     "    </Reference>",
                     "    <Reference Include=\"UnityEditor\">",
-                    "      <HintPath>C:\\projects\\unity\\build\\WindowsEditor\\Data\\Managed\\UnityEditor.dll</HintPath>",
+                    $"      <HintPath>{InternalEditorUtility.GetEditorAssemblyPath()}</HintPath>",
                     "    </Reference>",
                     "  </ItemGroup>",
                     "  <ItemGroup>",
@@ -311,7 +314,7 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 
                 var csprojectContent = m_Builder.ReadProjectFile(m_Builder.Assembly);
                 var xmlDocument = XMLUtilities.FromText(csprojectContent);
-                XMLUtilities.AssertCompileItemsMatchExactly(xmlDocument, new[] { assetPath });
+                XMLUtilities.AssertCompileItemsMatchExactly(xmlDocument, new[] { assetPath.ReplaceDirectorySeparators() });
             }
 
             [Test]
@@ -462,7 +465,7 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
                 synchronizer.Sync();
 
                 var csprojContent = m_Builder.ReadProjectFile(m_Builder.Assembly);
-                StringAssert.Contains(filePath, csprojContent);
+                StringAssert.Contains(filePath.ReplaceDirectorySeparators(), csprojContent);
             }
 
             [Test]
