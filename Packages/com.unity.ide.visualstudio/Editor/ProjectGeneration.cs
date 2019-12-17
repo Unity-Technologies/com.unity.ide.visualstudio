@@ -625,7 +625,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
             const string baseDirectory = ".";
 
             var targetFrameworkVersion = "v4.7.1";
-            var targetLanguageVersion = "latest";
+            var targetLanguageVersion = "7.3";
 
             var projectType = ProjectTypeOf(island.outputPath);
 
