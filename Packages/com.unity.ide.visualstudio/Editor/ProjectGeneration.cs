@@ -625,7 +625,16 @@ namespace Microsoft.Unity.VisualStudio.Editor
             const string baseDirectory = ".";
 
             var targetFrameworkVersion = "v4.7.1";
-            var targetLanguageVersion = "7.3";
+            var targetLanguageVersion = "latest"; // danger: latest is not the same absolute value depending on the VS version.
+
+            if (CodeEditor.CurrentEditor is VisualStudioEditor editor
+                && editor.TryGetVisualStudioInstallationForPath(CodeEditor.CurrentEditorInstallation, out var installation)
+                && installation.SupportsCSharp8)
+            {
+                // Current installation is compatible with C# 8.
+                // But Unity has no support for C# 8 constructs so far, so tell the compiler to accept only C# 7.3 or lower.
+                targetLanguageVersion = "7.3";
+            }
 
             var projectType = ProjectTypeOf(island.outputPath);
 
