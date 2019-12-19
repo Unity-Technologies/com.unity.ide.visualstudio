@@ -104,6 +104,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
         readonly string m_ProjectName;
         readonly IAssemblyNameProvider m_AssemblyNameProvider;
         bool m_ShouldGenerateAll;
+        VisualStudioInstallation m_CurrentInstallation;
 
         public ProjectGeneration() : this(Directory.GetParent(Application.dataPath).FullName,  new AssemblyNameProvider())
         {
@@ -161,8 +162,17 @@ namespace Microsoft.Unity.VisualStudio.Editor
             return k_ReimportSyncExtensions.Contains(new FileInfo(asset).Extension);
         }
 
+        private void RefreshCurrentInstallation()
+        {
+            var editor = CodeEditor.CurrentEditor as VisualStudioEditor;
+            editor?.TryGetVisualStudioInstallationForPath(CodeEditor.CurrentEditorInstallation, out m_CurrentInstallation);
+        }
+
         public void Sync()
         {
+            // We need the exact VS version/capabilities to tweak project generation (analyzers/langversion)
+            RefreshCurrentInstallation();
+
             SetupProjectSupportedExtensions();
             bool externalCodeAlreadyGeneratedProjects = OnPreGeneratingCSProjectFiles();
 
@@ -627,9 +637,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
             var targetFrameworkVersion = "v4.7.1";
             var targetLanguageVersion = "latest"; // danger: latest is not the same absolute value depending on the VS version.
 
-            if (CodeEditor.CurrentEditor is VisualStudioEditor editor
-                && editor.TryGetVisualStudioInstallationForPath(CodeEditor.CurrentEditorInstallation, out var installation)
-                && installation.SupportsCSharp8)
+            if (m_CurrentInstallation != null && m_CurrentInstallation.SupportsCSharp8)
             {
                 // Current installation is compatible with C# 8.
                 // But Unity has no support for C# 8 constructs so far, so tell the compiler to accept only C# 7.3 or lower.
@@ -812,18 +820,15 @@ namespace Microsoft.Unity.VisualStudio.Editor
                 .ToList();
 
             // Only add analyzer block for compatible Visual Studio
-            if (CodeEditor.CurrentEditor is VisualStudioEditor editor && editor.TryGetVisualStudioInstallationForPath(CodeEditor.CurrentEditorInstallation, out var installation))
+            if (m_CurrentInstallation != null && m_CurrentInstallation.SupportsAnalyzers)
             {
-                if (installation.SupportsAnalyzers)
+                var analyzers = m_CurrentInstallation.GetAnalyzers();
+                if (analyzers != null && analyzers.Length > 0)
                 {
-                    var analyzers = installation.GetAnalyzers();
-                    if (analyzers != null && analyzers.Length > 0)
-                    {
-                        lines.Add(@"  <ItemGroup>");
-                        foreach (var analyzer in analyzers)
-                            lines.Add(string.Format(@"    <Analyzer Include=""{0}"" />", EscapedRelativePathFor(analyzer)));
-                        lines.Add(@"  </ItemGroup>");
-                    }
+                    lines.Add(@"  <ItemGroup>");
+                    foreach (var analyzer in analyzers)
+                        lines.Add(string.Format(@"    <Analyzer Include=""{0}"" />", EscapedRelativePathFor(analyzer)));
+                    lines.Add(@"  </ItemGroup>");
                 }
             }
 
