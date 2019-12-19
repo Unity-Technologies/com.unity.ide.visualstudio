@@ -70,6 +70,29 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
                 XMLUtilities.AssertCompileItemsMatchExactly(scriptProject, new[] { "dimmer.cs" });
             }
 
+            private enum ProjectType
+            {
+                GamePlugins = 3,
+                Game = 1,
+                EditorPlugins = 7,
+                Editor = 5,
+            }
+
+            private static ProjectType ProjectTypeOf(string fileName)
+            {
+                var plugins = fileName.Contains("firstpass");
+                var editor = fileName.Contains("Editor");
+
+                if (plugins && editor)
+                    return ProjectType.EditorPlugins;
+                if (plugins)
+                    return ProjectType.GamePlugins;
+                if (editor)
+                    return ProjectType.Editor;
+
+                return ProjectType.Game;
+            }
+
             [Test]
             public void DefaultSyncSettings_WhenSynced_CreatesProjectFileFromDefaultTemplate()
             {
@@ -79,7 +102,9 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
                 synchronizer.Sync();
 
                 var csprojContent = m_Builder.ReadProjectFile(m_Builder.Assembly);
-                var buildTarget = Application.platform == RuntimePlatform.WindowsEditor ? "StandaloneWindows64:19" : "StandaloneOSX:2";
+
+                var projectType = ProjectTypeOf(m_Builder.Assembly.name);
+                var buildTarget = projectType + ":" + (int)projectType;
                 var unityVersion = Application.unityVersion;
 
                 var defines = string.Join(";", new[] { "DEBUG", "TRACE" }.Concat(EditorUserBuildSettings.activeScriptCompilationDefines).Concat(m_Builder.Assembly.defines).Distinct().ToArray());
@@ -134,16 +159,16 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
                     "  <PropertyGroup>",
                     "    <ProjectTypeGuids>{E097FAD1-6243-4DAD-9C02-E9B9EFC3FFC1};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>",
                     "    <UnityProjectGenerator>Package</UnityProjectGenerator>",
-                    "    <UnityProjectType>Game:1</UnityProjectType>",
-                    $"    <UnityBuildTarget>{buildTarget}</UnityBuildTarget>",
+                    $"    <UnityProjectType>{buildTarget}</UnityProjectType>",
+                    $"    <UnityBuildTarget>{EditorUserBuildSettings.activeBuildTarget + ":" + (int)EditorUserBuildSettings.activeBuildTarget}</UnityBuildTarget>",
                     $"    <UnityVersion>{unityVersion}</UnityVersion>",
                     "  </PropertyGroup>",
                     "  <ItemGroup>",
                     "    <Reference Include=\"UnityEngine\">",
-                    $"      <HintPath>{InternalEditorUtility.GetEngineAssemblyPath()}</HintPath>",
+                    $"      <HintPath>{InternalEditorUtility.GetEngineAssemblyPath().ReplaceDirectorySeparators()}</HintPath>",
                     "    </Reference>",
                     "    <Reference Include=\"UnityEditor\">",
-                    $"      <HintPath>{InternalEditorUtility.GetEditorAssemblyPath()}</HintPath>",
+                    $"      <HintPath>{InternalEditorUtility.GetEditorAssemblyPath().ReplaceDirectorySeparators()}</HintPath>",
                     "    </Reference>",
                     "  </ItemGroup>",
                     "  <ItemGroup>",
