@@ -99,15 +99,13 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 			EditorGUILayout.LabelField("Generate .csproj files for:");
 			EditorGUI.indentLevel++;
-			_generator.AssemblyNameProvider.GenerateAll(SettingsButton(unity_generate_all, "All packages", "Generate csproj files for all packages, including packages marked as internal."));
-			_generator.AssemblyNameProvider.GeneratePlayerProjects(SettingsButton(unity_generate_player_projects, "Player assemblies", "For each player assembly generate an additional csproj with the name 'assembly-player.csproj'."));
+			_generator.AssemblyNameProvider.GenerateAll(SettingsButton(unity_generate_all, "All packages", "Generate csproj files for all packages, including packages marked as internal.", _generator.AssemblyNameProvider.ShouldGenerateAll));
+			_generator.AssemblyNameProvider.GeneratePlayerProjects(SettingsButton(unity_generate_player_projects, "Player assemblies", "For each player assembly generate an additional csproj with the name 'assembly-player.csproj'.", _generator.AssemblyNameProvider.ShouldGeneratePlayerProjects));
 			EditorGUI.indentLevel--;
 		}
 
-		static bool SettingsButton(string preference, string guiMessage, string toolTip)
+		static bool SettingsButton(string preference, string guiMessage, string toolTip, bool prevValue)
 		{
-			var prevValue = EditorPrefs.GetBool(preference, false);
-
 			var newValue = EditorGUILayout.Toggle(new GUIContent(guiMessage, toolTip), prevValue);
 			if (newValue != prevValue)
 			{

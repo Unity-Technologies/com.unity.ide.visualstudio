@@ -12,6 +12,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
         string[] ProjectSupportedExtensions { get; }
         string ProjectGenerationRootNamespace { get; }
         bool ShouldGenerateAll { get; }
+        bool ShouldGeneratePlayerProjects { get; }
 
         string GetAssemblyNameFromScriptPath(string path);
         bool IsInternalizedPackagePath(string path);
@@ -25,14 +26,15 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
     public class AssemblyNameProvider : IAssemblyNameProvider
     {
-        bool m_generatePlayerProjects;
-        bool m_ShouldGenerateAll;
+        bool m_generatePlayerProjects = EditorPrefs.GetBool("unity_generate_player_projects");
+        bool m_ShouldGenerateAll = EditorPrefs.GetBool("unity_generate_all_csproj");
 
         public string[] ProjectSupportedExtensions => EditorSettings.projectGenerationUserExtensions;
 
         public string ProjectGenerationRootNamespace => EditorSettings.projectGenerationRootNamespace;
 
         public bool ShouldGenerateAll => m_ShouldGenerateAll;
+        public bool ShouldGeneratePlayerProjects => m_generatePlayerProjects;
 
         public string GetAssemblyNameFromScriptPath(string path)
         {
@@ -53,7 +55,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
             {
                 foreach (var assembly in CompilationPipeline.GetAssemblies(AssembliesType.Player).Where(assembly => assembly.sourceFiles.Any(shouldFileBePartOfSolution)))
                 {
-                    yield return new Assembly(assembly.name + "-player", assembly.outputPath, assembly.sourceFiles, assembly.defines, assembly.assemblyReferences, assembly.compiledAssemblyReferences, assembly.flags)
+                    yield return new Assembly(assembly.name + ".Player", assembly.outputPath, assembly.sourceFiles, assembly.defines, assembly.assemblyReferences, assembly.compiledAssemblyReferences, assembly.flags)
                     {
                         compilerOptions =
                         {
