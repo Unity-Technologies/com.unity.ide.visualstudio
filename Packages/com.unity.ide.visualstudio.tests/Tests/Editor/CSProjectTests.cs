@@ -164,14 +164,6 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
                     $"    <UnityVersion>{unityVersion}</UnityVersion>",
                     "  </PropertyGroup>",
                     "  <ItemGroup>",
-                    "    <Reference Include=\"UnityEngine\">",
-                    $"      <HintPath>{InternalEditorUtility.GetEngineAssemblyPath().ReplaceDirectorySeparators()}</HintPath>",
-                    "    </Reference>",
-                    "    <Reference Include=\"UnityEditor\">",
-                    $"      <HintPath>{InternalEditorUtility.GetEditorAssemblyPath().ReplaceDirectorySeparators()}</HintPath>",
-                    "    </Reference>",
-                    "  </ItemGroup>",
-                    "  <ItemGroup>",
                     "    <Compile Include=\"test.cs\" />",
                     "  </ItemGroup>",
                     "  <ItemGroup>",
@@ -279,9 +271,10 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 
                 synchronizer.Sync();
 
-                synchronizer.GenerateAll(true);
                 var packageAsset = "packageAsset.cs";
-                m_Builder.WithPackageAsset(packageAsset, true);
+                m_Builder
+                    .WithPackageAsset(packageAsset, true)
+                    .WithGenerateAll(true);
 
                 Assert.IsTrue(synchronizer.SyncIfNeeded(new[] { packageAsset }, new string[0]));
             }
@@ -370,8 +363,10 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
             [Test]
             public void InInternalizedPackage_WithGenerateAll_WillBeAddedToCompileInclude()
             {
-                var synchronizer = m_Builder.WithPackageAsset(m_Builder.Assembly.sourceFiles[0], true).Build();
-                synchronizer.GenerateAll(true);
+                var synchronizer = m_Builder
+                    .WithPackageAsset(m_Builder.Assembly.sourceFiles[0], true)
+                    .WithGenerateAll(true)
+                    .Build();
 
                 synchronizer.Sync();
 
@@ -381,7 +376,7 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
             [Test]
             public void InInternalizedPackage_WithoutGenerateAll_WillNotBeAddedToNonInclude()
             {
-                var nonCompileItem = "packageAsset.uxml";
+                var nonCompileItem = "packageAsset.shader";
                 var nonCompileItems = new[] { nonCompileItem };
                 var synchronizer = m_Builder
                     .WithAssetFiles(nonCompileItems)
@@ -398,14 +393,14 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
             [Test]
             public void InInternalizedPackage_WithGenerateAll_WillBeAddedToNonInclude()
             {
-                var nonCompileItem = "packageAsset.uxml";
+                var nonCompileItem = "packageAsset.shader";
                 var nonCompileItems = new[] { nonCompileItem };
                 var synchronizer = m_Builder
                     .WithAssetFiles(nonCompileItems)
                     .AssignFilesToAssembly(nonCompileItems, m_Builder.Assembly)
                     .WithPackageAsset(nonCompileItem, true)
+                    .WithGenerateAll(true)
                     .Build();
-                synchronizer.GenerateAll(true);
 
                 synchronizer.Sync();
 
