@@ -31,10 +31,10 @@ namespace Microsoft.Unity.VisualStudio.Editor
         bool SyncIfNeeded(IEnumerable<string> affectedFiles, IEnumerable<string> reimportedFiles);
         void Sync();
         bool HasSolutionBeenGenerated();
+        bool IsSupportedFile(string path);
         string SolutionFile();
         string ProjectDirectory { get; }
-        void GenerateAll(bool generateAll);
-        bool IsSupportedFile(string path);
+        IAssemblyNameProvider AssemblyNameProvider { get; }
     }
 
     public class ProjectGeneration : IGenerator
@@ -68,8 +68,8 @@ namespace Microsoft.Unity.VisualStudio.Editor
         readonly IAssemblyNameProvider m_AssemblyNameProvider;
         readonly IFileIO m_FileIOProvider;
         readonly IGUIDGenerator m_GUIDGenerator;
-        bool m_ShouldGenerateAll;
         VisualStudioInstallation m_CurrentInstallation;
+        public IAssemblyNameProvider AssemblyNameProvider => m_AssemblyNameProvider;
 
         public ProjectGeneration() : this(Directory.GetParent(Application.dataPath).FullName)
         {
@@ -88,9 +88,10 @@ namespace Microsoft.Unity.VisualStudio.Editor
             m_GUIDGenerator = guidGenerator;
         }
 
+        [Obsolete("Use AssemblyNameProvider.GenerateAll")]
         public void GenerateAll(bool generateAll)
         {
-            m_ShouldGenerateAll = generateAll;
+            m_AssemblyNameProvider.GenerateAll(generateAll);
         }
 
         /// <summary>
@@ -163,7 +164,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
         bool ShouldFileBePartOfSolution(string file)
         {
             // Exclude files coming from packages except if they are internalized.
-            if (!m_ShouldGenerateAll && m_AssemblyNameProvider.IsInternalizedPackagePath(file))
+            if (!m_AssemblyNameProvider.ShouldGenerateAll && m_AssemblyNameProvider.IsInternalizedPackagePath(file))
             {
                 return false;
             }
@@ -289,7 +290,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
             foreach (string asset in m_AssemblyNameProvider.GetAllAssetPaths())
             {
                 // Exclude files coming from packages except if they are internalized.
-                if (!m_ShouldGenerateAll && m_AssemblyNameProvider.IsInternalizedPackagePath(asset))
+                if (!m_AssemblyNameProvider.ShouldGenerateAll && m_AssemblyNameProvider.IsInternalizedPackagePath(asset))
                 {
                     continue;
                 }
@@ -609,7 +610,9 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
             var arguments = new object[]
             {
-                toolsVersion, productVersion, m_GUIDGenerator.ProjectGuid(m_ProjectName, assembly.name),
+                toolsVersion,
+                productVersion,
+                m_GUIDGenerator.ProjectGuid(m_ProjectName, assembly.name),
                 XmlFilename(FileUtility.Normalize(InternalEditorUtility.GetEngineAssemblyPath())),
                 XmlFilename(FileUtility.Normalize(InternalEditorUtility.GetEditorAssemblyPath())),
                 string.Join(";", new[] { "DEBUG", "TRACE" }.Concat(EditorUserBuildSettings.activeScriptCompilationDefines).Concat(assembly.defines).Concat(responseFilesData.SelectMany(x => x.Defines)).Distinct().ToArray()),
@@ -764,14 +767,6 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
             var footer = new[]
             {
-                @"  <ItemGroup>",
-                @"    <Reference Include=""UnityEngine"">",
-                @"      <HintPath>{3}</HintPath>",
-                @"    </Reference>",
-                @"    <Reference Include=""UnityEditor"">",
-                @"      <HintPath>{4}</HintPath>",
-                @"    </Reference>",
-                @"  </ItemGroup>",
                 @""
             };
 
