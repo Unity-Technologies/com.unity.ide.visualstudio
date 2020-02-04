@@ -11,32 +11,36 @@ namespace Microsoft.Unity.VisualStudio.Editor
     {
         string[] ProjectSupportedExtensions { get; }
         string ProjectGenerationRootNamespace { get; }
-        bool ShouldGenerateAll { get; }
-        bool ShouldGeneratePlayerProjects { get; }
+		ProjectGenerationFlag ProjectGenerationFlag { get; }
 
-        string GetAssemblyNameFromScriptPath(string path);
+		string GetAssemblyNameFromScriptPath(string path);
         bool IsInternalizedPackagePath(string path);
         IEnumerable<Assembly> GetAssemblies(Func<string, bool> shouldFileBePartOfSolution);
         IEnumerable<string> GetAllAssetPaths();
         UnityEditor.PackageManager.PackageInfo FindForAssetPath(string assetPath);
         ResponseFileData ParseResponseFile(string responseFilePath, string projectDirectory, string[] systemReferenceDirectories);
-        void GeneratePlayerProjects(bool generatePlayerProjects);
-        void GenerateAll(bool generateAll);
-    }
+		void ToggleProjectGeneration(ProjectGenerationFlag preference);
+	}
 
     public class AssemblyNameProvider : IAssemblyNameProvider
     {
-        bool m_generatePlayerProjects = EditorPrefs.GetBool("unity_generate_player_projects");
-        bool m_ShouldGenerateAll = EditorPrefs.GetBool("unity_generate_all_csproj");
+		ProjectGenerationFlag m_ProjectGenerationFlag = (ProjectGenerationFlag)EditorPrefs.GetInt("unity_project_generation_flag", 0);
 
-        public string[] ProjectSupportedExtensions => EditorSettings.projectGenerationUserExtensions;
+		public string[] ProjectSupportedExtensions => EditorSettings.projectGenerationUserExtensions;
 
         public string ProjectGenerationRootNamespace => EditorSettings.projectGenerationRootNamespace;
 
-        public bool ShouldGenerateAll => m_ShouldGenerateAll;
-        public bool ShouldGeneratePlayerProjects => m_generatePlayerProjects;
+		public ProjectGenerationFlag ProjectGenerationFlag
+		{
+			get => m_ProjectGenerationFlag;
+			private set
+			{
+				EditorPrefs.SetInt("unity_project_generation_flag", (int)value);
+				m_ProjectGenerationFlag = value;
+			}
+		}
 
-        public string GetAssemblyNameFromScriptPath(string path)
+		public string GetAssemblyNameFromScriptPath(string path)
         {
             return CompilationPipeline.GetAssemblyNameFromScriptPath(path);
         }
@@ -51,8 +55,8 @@ namespace Microsoft.Unity.VisualStudio.Editor
                 }
             }
 
-            if (m_generatePlayerProjects)
-            {
+			if (ProjectGenerationFlag.HasFlag(ProjectGenerationFlag.PlayerAssemblies))
+			{
                 foreach (var assembly in CompilationPipeline.GetAssemblies(AssembliesType.Player).Where(assembly => assembly.sourceFiles.Any(shouldFileBePartOfSolution)))
                 {
                     yield return new Assembly(assembly.name + ".Player", assembly.outputPath, assembly.sourceFiles, assembly.defines, assembly.assemblyReferences, assembly.compiledAssemblyReferences, assembly.flags)
@@ -90,8 +94,26 @@ namespace Microsoft.Unity.VisualStudio.Editor
                 return false;
             }
             var packageSource = packageInfo.source;
-            return packageSource != PackageSource.Embedded && packageSource != PackageSource.Local;
-        }
+			switch (packageSource)
+			{
+				case PackageSource.Embedded:
+					return !ProjectGenerationFlag.HasFlag(ProjectGenerationFlag.Embedded);
+				case PackageSource.Registry:
+					return !ProjectGenerationFlag.HasFlag(ProjectGenerationFlag.Registry);
+				case PackageSource.BuiltIn:
+					return !ProjectGenerationFlag.HasFlag(ProjectGenerationFlag.BuiltIn);
+				case PackageSource.Unknown:
+					return !ProjectGenerationFlag.HasFlag(ProjectGenerationFlag.Unknown);
+				case PackageSource.Local:
+					return !ProjectGenerationFlag.HasFlag(ProjectGenerationFlag.Local);
+				case PackageSource.Git:
+					return !ProjectGenerationFlag.HasFlag(ProjectGenerationFlag.Git);
+				case PackageSource.LocalTarball:
+					return !ProjectGenerationFlag.HasFlag(ProjectGenerationFlag.LocalTarBall);
+			}
+
+			return false;
+		}
 
         public ResponseFileData ParseResponseFile(string responseFilePath, string projectDirectory, string[] systemReferenceDirectories)
         {
@@ -102,14 +124,16 @@ namespace Microsoft.Unity.VisualStudio.Editor
             );
         }
 
-        public void GeneratePlayerProjects(bool generatePlayerProjects)
-        {
-            m_generatePlayerProjects = generatePlayerProjects;
-        }
-
-        public void GenerateAll(bool generateAll)
-        {
-            m_ShouldGenerateAll = generateAll;
-        }
-    }
+		public void ToggleProjectGeneration(ProjectGenerationFlag preference)
+		{
+			if (ProjectGenerationFlag.HasFlag(preference))
+			{
+				ProjectGenerationFlag ^= preference;
+			}
+			else
+			{
+				ProjectGenerationFlag |= preference;
+			}
+		}
+	}
 }

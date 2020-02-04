@@ -80,9 +80,6 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 		public void OnGUI()
 		{
-			const string unity_generate_all = "unity_generate_all_csproj";
-			const string unity_generate_player_projects = "unity_generate_player_projects";
-
 			GUILayout.BeginHorizontal();
 			GUILayout.FlexibleSpace();
 
@@ -99,19 +96,25 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 			EditorGUILayout.LabelField("Generate .csproj files for:");
 			EditorGUI.indentLevel++;
-			_generator.AssemblyNameProvider.GenerateAll(SettingsButton(unity_generate_all, "All packages", "Generate csproj files for all packages, including packages marked as internal.", _generator.AssemblyNameProvider.ShouldGenerateAll));
-			_generator.AssemblyNameProvider.GeneratePlayerProjects(SettingsButton(unity_generate_player_projects, "Player assemblies", "For each player assembly generate an additional csproj with the name 'assembly-player.csproj'.", _generator.AssemblyNameProvider.ShouldGeneratePlayerProjects));
+			SettingsButton(ProjectGenerationFlag.Embedded, "Embedded packages", "");
+			SettingsButton(ProjectGenerationFlag.Local, "Local packages", "");
+			SettingsButton(ProjectGenerationFlag.Registry, "Registry packages", "");
+			SettingsButton(ProjectGenerationFlag.Git, "Git packages", "");
+			SettingsButton(ProjectGenerationFlag.BuiltIn, "Built-in packages", "");
+			SettingsButton(ProjectGenerationFlag.LocalTarBall, "Local tarball", "");
+			SettingsButton(ProjectGenerationFlag.Unknown, "Packages from unknown sources", "");
+			SettingsButton(ProjectGenerationFlag.PlayerAssemblies, "Player projects", "For each player project generate an additional csproj with the name 'project-player.csproj'");
 			EditorGUI.indentLevel--;
 		}
 
-		static bool SettingsButton(string preference, string guiMessage, string toolTip, bool prevValue)
+		void SettingsButton(ProjectGenerationFlag preference, string guiMessage, string toolTip)
 		{
+			var prevValue = _generator.AssemblyNameProvider.ProjectGenerationFlag.HasFlag(preference);
 			var newValue = EditorGUILayout.Toggle(new GUIContent(guiMessage, toolTip), prevValue);
 			if (newValue != prevValue)
 			{
-				EditorPrefs.SetBool(preference, newValue);
+				_generator.AssemblyNameProvider.ToggleProjectGeneration(preference);
 			}
-			return newValue;
 		}
 
 		public void SyncIfNeeded(string[] addedFiles, string[] deletedFiles, string[] movedFiles, string[] movedFromFiles, string[] importedFiles)

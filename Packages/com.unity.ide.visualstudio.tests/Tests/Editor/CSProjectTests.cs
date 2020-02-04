@@ -65,7 +65,8 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 
                 synchronizer.Sync();
 
-                var csprojContent = m_Builder.ReadProjectFile(m_Builder.Assembly);
+                var csprojContent = m_Builder.ReadProjectFile(m_Builder.Assembly)
+                    ;
                 XmlDocument scriptProject = XMLUtilities.FromText(csprojContent);
                 XMLUtilities.AssertCompileItemsMatchExactly(scriptProject, new[] { "dimmer.cs" });
             }
@@ -252,29 +253,14 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
             }
 
             [Test]
-            public void InInternalizedPackage_WithoutGenerateAll_WillNotResync()
+            public void NotInInternalizedPackage_WillResync()
             {
                 var synchronizer = m_Builder.Build();
 
                 synchronizer.Sync();
 
                 var packageAsset = "packageAsset.cs";
-                m_Builder.WithPackageAsset(packageAsset, true);
-
-                Assert.IsFalse(synchronizer.SyncIfNeeded(new[] { packageAsset }, new string[0]));
-            }
-
-            [Test]
-            public void InInternalizedPackage_WithGenerateAll_WillResync()
-            {
-                var synchronizer = m_Builder.Build();
-
-                synchronizer.Sync();
-
-                var packageAsset = "packageAsset.cs";
-                m_Builder
-                    .WithPackageAsset(packageAsset, true)
-                    .WithGenerateAll(true);
+				m_Builder.WithPackageAsset(packageAsset, false);
 
                 Assert.IsTrue(synchronizer.SyncIfNeeded(new[] { packageAsset }, new string[0]));
             }
@@ -351,7 +337,7 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
             }
 
             [Test]
-            public void InInternalizedPackage_WithoutGenerateAll_WillNotBeAddedToCompileInclude()
+            public void InternalizedPackage_WillNotBeAddedToCompileInclude()
             {
                 var synchronizer = m_Builder.WithPackageAsset(m_Builder.Assembly.sourceFiles[0], true).Build();
 
@@ -361,51 +347,15 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
             }
 
             [Test]
-            public void InInternalizedPackage_WithGenerateAll_WillBeAddedToCompileInclude()
+            public void NoneInternalizedPackage_WillBeAddedToCompileInclude()
             {
                 var synchronizer = m_Builder
-                    .WithPackageAsset(m_Builder.Assembly.sourceFiles[0], true)
-                    .WithGenerateAll(true)
+                    .WithPackageAsset(m_Builder.Assembly.sourceFiles[0], false)
                     .Build();
 
                 synchronizer.Sync();
 
                 StringAssert.Contains(m_Builder.Assembly.sourceFiles[0], m_Builder.ReadProjectFile(m_Builder.Assembly));
-            }
-
-            [Test]
-            public void InInternalizedPackage_WithoutGenerateAll_WillNotBeAddedToNonInclude()
-            {
-                var nonCompileItem = "packageAsset.shader";
-                var nonCompileItems = new[] { nonCompileItem };
-                var synchronizer = m_Builder
-                    .WithAssetFiles(nonCompileItems)
-                    .AssignFilesToAssembly(nonCompileItems, m_Builder.Assembly)
-                    .WithPackageAsset(nonCompileItem, true)
-                    .Build();
-
-                synchronizer.Sync();
-
-                var xmlDocument = XMLUtilities.FromText(m_Builder.ReadProjectFile(m_Builder.Assembly));
-                XMLUtilities.AssertNonCompileItemsMatchExactly(xmlDocument, new string[0]);
-            }
-
-            [Test]
-            public void InInternalizedPackage_WithGenerateAll_WillBeAddedToNonInclude()
-            {
-                var nonCompileItem = "packageAsset.shader";
-                var nonCompileItems = new[] { nonCompileItem };
-                var synchronizer = m_Builder
-                    .WithAssetFiles(nonCompileItems)
-                    .AssignFilesToAssembly(nonCompileItems, m_Builder.Assembly)
-                    .WithPackageAsset(nonCompileItem, true)
-                    .WithGenerateAll(true)
-                    .Build();
-
-                synchronizer.Sync();
-
-                var xmlDocument = XMLUtilities.FromText(m_Builder.ReadProjectFile(m_Builder.Assembly));
-                XMLUtilities.AssertNonCompileItemsMatchExactly(xmlDocument, nonCompileItems);
             }
 
             [Test]

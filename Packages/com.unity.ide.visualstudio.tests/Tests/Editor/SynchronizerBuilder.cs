@@ -148,11 +148,5 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
             m_AssemblyProvider.Setup(x => x.ProjectSupportedExtensions).Returns(extensions);
             return this;
         }
-
-        public SynchronizerBuilder WithGenerateAll(bool shouldGenerateAll)
-        {
-            m_AssemblyProvider.Setup(x => x.ShouldGenerateAll).Returns(shouldGenerateAll);
-            return this;
-        }
     }
 }

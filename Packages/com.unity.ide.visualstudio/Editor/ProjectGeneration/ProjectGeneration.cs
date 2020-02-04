@@ -88,12 +88,6 @@ namespace Microsoft.Unity.VisualStudio.Editor
             m_GUIDGenerator = guidGenerator;
         }
 
-        [Obsolete("Use AssemblyNameProvider.GenerateAll")]
-        public void GenerateAll(bool generateAll)
-        {
-            m_AssemblyNameProvider.GenerateAll(generateAll);
-        }
-
         /// <summary>
         /// Syncs the scripting solution if any affected files are relevant.
         /// </summary>
@@ -164,7 +158,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
         bool ShouldFileBePartOfSolution(string file)
         {
             // Exclude files coming from packages except if they are internalized.
-            if (!m_AssemblyNameProvider.ShouldGenerateAll && m_AssemblyNameProvider.IsInternalizedPackagePath(file))
+            if (m_AssemblyNameProvider.IsInternalizedPackagePath(file))
             {
                 return false;
             }
@@ -290,7 +284,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
             foreach (string asset in m_AssemblyNameProvider.GetAllAssetPaths())
             {
                 // Exclude files coming from packages except if they are internalized.
-                if (!m_AssemblyNameProvider.ShouldGenerateAll && m_AssemblyNameProvider.IsInternalizedPackagePath(asset))
+                if (m_AssemblyNameProvider.IsInternalizedPackagePath(asset))
                 {
                     continue;
                 }
@@ -323,21 +317,6 @@ namespace Microsoft.Unity.VisualStudio.Editor
                 result[entry.Key] = entry.Value.ToString();
 
             return result;
-        }
-
-        bool IsInternalizedPackagePath(string file)
-        {
-            if (string.IsNullOrWhiteSpace(file))
-            {
-                return false;
-            }
-
-            var packageInfo = m_AssemblyNameProvider.FindForAssetPath(file);
-            if (packageInfo == null) {
-                return false;
-            }
-            var packageSource = packageInfo.source;
-            return packageSource != PackageSource.Embedded && packageSource != PackageSource.Local;
         }
 
         void SyncProject(
