@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using SR = System.Reflection;
 using System.Security;
 using System.Security.Cryptography;
 using System.Text;
@@ -140,7 +141,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
             RefreshCurrentInstallation();
 
             SetupProjectSupportedExtensions();
-            bool externalCodeAlreadyGeneratedProjects = OnPreGeneratingCSProjectFiles();
+            var externalCodeAlreadyGeneratedProjects = OnPreGeneratingCSProjectFiles();
 
             if (!externalCodeAlreadyGeneratedProjects)
             {
@@ -216,26 +217,6 @@ namespace Microsoft.Unity.VisualStudio.Editor
         static ScriptingLanguage ScriptingLanguageFor(string path)
         {
             return GetExtensionWithoutDot(path) == "cs" ? ScriptingLanguage.CSharp : ScriptingLanguage.None;
-        }
-
-        static List<Type> SafeGetTypes(System.Reflection.Assembly a)
-        {
-            var ret = new List<Type>();
-
-            try
-            {
-                ret = a.GetTypes().ToList();
-            }
-            catch (System.Reflection.ReflectionTypeLoadException rtl)
-            {
-                ret = rtl.Types.ToList();
-            }
-            catch (Exception)
-            {
-                return new List<Type>();
-            }
-
-            return ret.Where(r => r != null).ToList();
         }
 
         public void GenerateAndWriteSolutionAndProjects()
@@ -365,84 +346,62 @@ namespace Microsoft.Unity.VisualStudio.Editor
             SyncFileIfNotChanged(path, newContents);
         }
 
+        static IEnumerable<SR.MethodInfo> GetPostProcessorCallbacks(string name)
+        {
+            return TypeCache
+                .GetTypesDerivedFrom<AssetPostprocessor>()
+                .Select(t => t.GetMethod(name, SR.BindingFlags.Public | SR.BindingFlags.NonPublic | SR.BindingFlags.Static))
+                .Where(m => m!= null);
+        }
+
         static void OnGeneratedCSProjectFiles()
         {
-            IEnumerable<Type> types = AppDomain.CurrentDomain.GetAssemblies().SelectMany(x => SafeGetTypes(x))
-            .Where(x => typeof(AssetPostprocessor).IsAssignableFrom(x) && !x.IsInterface && !x.IsAbstract);
-            var args = new object[0];
-            foreach (var type in types)
+            foreach(var method in GetPostProcessorCallbacks(nameof(OnGeneratedCSProjectFiles)))
             {
-                var method = type.GetMethod("OnGeneratedCSProjectFiles", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
-                if (method == null)
-                {
-                    continue;
-                }
-                method.Invoke(null, args);
+                method.Invoke(null, Array.Empty<object>());
             }
         }
 
         static bool OnPreGeneratingCSProjectFiles()
         {
-            IEnumerable<Type> types = AppDomain.CurrentDomain.GetAssemblies().SelectMany(x => SafeGetTypes(x))
-            .Where(x => typeof(AssetPostprocessor).IsAssignableFrom(x) && !x.IsInterface && !x.IsAbstract);
             bool result = false;
-            foreach (var type in types)
+
+            foreach(var method in GetPostProcessorCallbacks(nameof(OnPreGeneratingCSProjectFiles)))
             {
-                var args = new object[0];
-                var method = type.GetMethod("OnPreGeneratingCSProjectFiles", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
-                if (method == null)
-                {
-                    continue;
-                }
-                var returnValue = method.Invoke(null, args);
-                if (method.ReturnType == typeof(bool))
-                {
-                    result |= (bool)returnValue;
+                var retValue = method.Invoke(null, Array.Empty<object>());
+                if (method.ReturnType == typeof(bool))	
+                {	
+                    result |= (bool)retValue;	
                 }
             }
+
             return result;
+        }
+
+        static string InvokeAssetPostProcessorGenerationCallbacks(string name, string path, string content)
+        {
+            foreach(var method in GetPostProcessorCallbacks(name))
+            {
+                var args = new [] { path, content };
+                var returnValue = method.Invoke(null, args);
+                if (method.ReturnType == typeof(string))
+                {
+                    // We want to chain content update between invocations
+                    content = (string)returnValue;
+                }
+            }
+
+            return content;
         }
 
         static string OnGeneratedCSProject(string path, string content)
         {
-            IEnumerable<Type> types = AppDomain.CurrentDomain.GetAssemblies().SelectMany(x => SafeGetTypes(x))
-            .Where(x => typeof(AssetPostprocessor).IsAssignableFrom(x) && !x.IsInterface && !x.IsAbstract);
-            foreach (var type in types)
-            {
-                var args = new [] { path, content };
-                var method = type.GetMethod("OnGeneratedCSProject", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
-                if (method == null)
-                {
-                    continue;
-                }
-                var returnValue = method.Invoke(null, args);
-                if (method.ReturnType == typeof(string))
-                {
-                    content = (string)returnValue;
-                }
-            }
-            return content;
+            return InvokeAssetPostProcessorGenerationCallbacks(nameof(OnGeneratedCSProject), path, content);
         }
 
         static string OnGeneratedSlnSolution(string path, string content)
         {
-            IEnumerable<Type> types = AppDomain.CurrentDomain.GetAssemblies().SelectMany(x => SafeGetTypes(x))
-            .Where(x => typeof(AssetPostprocessor).IsAssignableFrom(x) && !x.IsInterface && !x.IsAbstract);
-            foreach (var type in types)
-            {
-                var args = new [] { path, content };
-                var method = type.GetMethod("OnGeneratedSlnSolution", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
-                if (method == null)
-                {
-                    continue;
-                }
-                var returnValue = method.Invoke(null, args);
-                if (method.ReturnType == typeof(string))
-                {
-                    content = (string)returnValue;
-                }
-            }
-            return content;
+            return InvokeAssetPostProcessorGenerationCallbacks(nameof(OnGeneratedSlnSolution), path, content);
         }
 
         void SyncFileIfNotChanged(string filename, string newContents)
