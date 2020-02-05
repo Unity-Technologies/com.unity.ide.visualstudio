@@ -104,8 +104,19 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			SettingsButton(ProjectGenerationFlag.LocalTarBall, "Local tarball", "");
 			SettingsButton(ProjectGenerationFlag.Unknown, "Packages from unknown sources", "");
 			SettingsButton(ProjectGenerationFlag.PlayerAssemblies, "Player projects", "For each player project generate an additional csproj with the name 'project-player.csproj'");
+			RegenerateProjectFiles();
 			EditorGUI.indentLevel--;
 		}
+
+		void RegenerateProjectFiles()
+        {
+            var rect = EditorGUI.IndentedRect(EditorGUILayout.GetControlRect(new GUILayoutOption[] {}));
+            rect.width = 252;
+            if (GUI.Button(rect, "Regenerate project files"))
+            {
+                _generator.Sync();
+            }
+        }
 
 		void SettingsButton(ProjectGenerationFlag preference, string guiMessage, string toolTip)
 		{
