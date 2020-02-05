@@ -479,12 +479,6 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
             foreach (string reference in assemblyRefs)
             {
-                if (reference.EndsWith("/UnityEditor.dll", StringComparison.Ordinal)
-                    || reference.EndsWith("/UnityEngine.dll", StringComparison.Ordinal)
-                    || reference.EndsWith("\\UnityEditor.dll", StringComparison.Ordinal)
-                    || reference.EndsWith("\\UnityEngine.dll", StringComparison.Ordinal))
-                    continue;
-
                 var match = k_ScriptReferenceExpression.Match(reference);
                 if (match.Success)
                 {
