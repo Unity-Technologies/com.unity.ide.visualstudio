@@ -449,7 +449,6 @@ namespace Microsoft.Unity.VisualStudio.Editor
         {
             var projectBuilder = new StringBuilder(ProjectHeader(assembly, responseFilesData));
             var references = new List<string>();
-            var projectReferences = new List<Match>();
 
             projectBuilder.Append(@"  <ItemGroup>").Append(k_WindowsNewline);
             foreach (string file in assembly.sourceFiles)
@@ -471,53 +470,33 @@ namespace Microsoft.Unity.VisualStudio.Editor
             projectBuilder.Append(@"  </ItemGroup>").Append(k_WindowsNewline);
 
             projectBuilder.Append(@"  <ItemGroup>").Append(k_WindowsNewline);
+
             // Append additional non-script files that should be included in project generation.
             if (allAssetsProjectParts.TryGetValue(assembly.name, out var additionalAssetsForProject))
                 projectBuilder.Append(additionalAssetsForProject);
 
-            var assemblyRefs = references.Union(assembly.allReferences);
-
-            foreach (string reference in assemblyRefs)
+            var responseRefs = responseFilesData.SelectMany(x => x.FullPathReferences.Select(r => r));
+            foreach (var reference in assembly.compiledAssemblyReferences.Union(responseRefs).Union(references))
             {
-                var match = k_ScriptReferenceExpression.Match(reference);
-                if (match.Success)
-                {
-                    // assume csharp language
-                    // Add a reference to a project except if it's a reference to a script assembly
-                    // that we are not generating a project for. This will be the case for assemblies
-                    // coming from .assembly.json files in non-internalized packages.
-                    var dllName = match.Groups["dllname"].Value;
-                    if (allProjectAsemblies.Any(i => Path.GetFileName(i.outputPath) == dllName))
-                    {
-                        projectReferences.Add(match);
-                        continue;
-                    }
-                }
-
                 string fullReference = Path.IsPathRooted(reference) ? reference : Path.Combine(ProjectDirectory, reference);
-
                 AppendReference(fullReference, projectBuilder);
             }
 
-            var responseRefs = responseFilesData.SelectMany(x => x.FullPathReferences.Select(r => r));
-            foreach (var reference in responseRefs)
-            {
-                AppendReference(reference, projectBuilder);
-            }
             projectBuilder.Append(@"  </ItemGroup>").Append(k_WindowsNewline);
 
-            if (0 < projectReferences.Count)
+            if (0 < assembly.assemblyReferences.Length)
             {
-                projectBuilder.Append(@"  <ItemGroup>").Append(k_WindowsNewline);
-                foreach (Match reference in projectReferences)
+                projectBuilder.Append("  <ItemGroup>").Append(k_WindowsNewline);
+                foreach (Assembly reference in assembly.assemblyReferences)
                 {
-                    var referencedProject = reference.Groups["project"].Value;
+                    var referencedProject = reference.outputPath;
 
-                    projectBuilder.Append("    <ProjectReference Include=\"").Append(referencedProject).Append(GetProjectExtension()).Append("\">").Append(k_WindowsNewline);
-                    projectBuilder.Append("      <Project>{").Append(m_GUIDGenerator.ProjectGuid(m_ProjectName, Path.Combine("Temp", reference.Groups["project"].Value + ".dll"))).Append("}</Project>").Append(k_WindowsNewline);
-                    projectBuilder.Append("      <Name>").Append(referencedProject).Append("</Name>").Append(k_WindowsNewline);
+                    projectBuilder.Append("    <ProjectReference Include=\"").Append(reference.name).Append(GetProjectExtension()).Append("\">").Append(k_WindowsNewline);
+                    projectBuilder.Append("      <Project>{").Append(ProjectGuid(reference.name)).Append("}</Project>").Append(k_WindowsNewline);
+                    projectBuilder.Append("      <Name>").Append(reference.name).Append("</Name>").Append(k_WindowsNewline);
                     projectBuilder.Append("    </ProjectReference>").Append(k_WindowsNewline);
                 }
+
                 projectBuilder.Append(@"  </ItemGroup>").Append(k_WindowsNewline);
             }
 
@@ -585,10 +564,10 @@ namespace Microsoft.Unity.VisualStudio.Editor
             {
                 toolsVersion,
                 productVersion,
-                m_GUIDGenerator.ProjectGuid(m_ProjectName, assembly.name),
+                ProjectGuid(assembly.name),
                 XmlFilename(FileUtility.Normalize(InternalEditorUtility.GetEngineAssemblyPath())),
                 XmlFilename(FileUtility.Normalize(InternalEditorUtility.GetEditorAssemblyPath())),
-                string.Join(";", new[] { "DEBUG", "TRACE" }.Concat(EditorUserBuildSettings.activeScriptCompilationDefines).Concat(assembly.defines).Concat(responseFilesData.SelectMany(x => x.Defines)).Distinct().ToArray()),
+                string.Join(";", assembly.defines.Concat(responseFilesData.SelectMany(x => x.Defines)).Distinct().ToArray()),
                 MSBuildNamespaceUri,
                 assembly.name,
                 m_AssemblyNameProvider.ProjectGenerationRootNamespace,
@@ -867,10 +846,10 @@ namespace Microsoft.Unity.VisualStudio.Editor
             foreach (var assembly in assemblies)
                 yield return new SolutionProjectEntry()
                 {
-                    ProjectFactoryGuid = m_GUIDGenerator.SolutionGuid(m_ProjectName, ScriptingLanguageFor(assembly)),
+                    ProjectFactoryGuid = SolutionGuid(assembly),
                     Name = assembly.name,
                     FileName = Path.GetFileName(ProjectFile(assembly)),
-                    ProjectGuid = m_GUIDGenerator.ProjectGuid(m_ProjectName, assembly.name)
+                    ProjectGuid = ProjectGuid(assembly.name)
                 };
         }
 
@@ -916,6 +895,16 @@ namespace Microsoft.Unity.VisualStudio.Editor
         static string GetProjectExtension()
         {
             return ".csproj";
+        }
+
+        string ProjectGuid(string assembly)
+        {
+            return m_GUIDGenerator.ProjectGuid(m_ProjectName, assembly);
+        }
+
+        string SolutionGuid(Assembly assembly)
+        {
+            return m_GUIDGenerator.SolutionGuid(m_ProjectName, ScriptingLanguageFor(assembly));
         }
     }
 

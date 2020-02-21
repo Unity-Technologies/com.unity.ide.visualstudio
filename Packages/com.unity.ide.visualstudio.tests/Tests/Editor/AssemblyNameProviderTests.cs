@@ -1,5 +1,6 @@
 using System.Linq;
 using NUnit.Framework;
+using UnityEditor;
 using UnityEditor.Compilation;
 
 namespace Microsoft.Unity.VisualStudio.Editor.Tests
@@ -7,11 +8,26 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
     public class AssemblyNameProviderTests
     {
         AssemblyNameProvider m_AssemblyNameProvider;
+        ProjectGenerationFlag m_Flag;
+
+        [OneTimeSetUp]
+        public void OneTimeSetUp()
+        {
+            m_AssemblyNameProvider = new AssemblyNameProvider();
+            m_Flag = m_AssemblyNameProvider.ProjectGenerationFlag;
+        }
+
+        [OneTimeTearDown]
+        public void OneTimeTearDown()
+        {
+            m_AssemblyNameProvider.ToggleProjectGeneration(ProjectGenerationFlag.None);
+            m_AssemblyNameProvider.ToggleProjectGeneration(m_Flag);
+        }
 
         [SetUp]
         public void SetUp()
         {
-            m_AssemblyNameProvider = new AssemblyNameProvider();
+            m_AssemblyNameProvider.ResetProjectGenerationFlag();
         }
 
         [Test]
@@ -24,6 +40,19 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
             foreach (Assembly editorAssembly in editorAssemblies)
             {
                 Assert.IsTrue(collectedAssemblies.Any(assembly => assembly.name == editorAssembly.name && assembly.outputPath == editorAssembly.outputPath), $"{editorAssembly.name}: was not found in collection.");
+            }
+        }
+
+        [Test]
+        public void EditorAssemblies_WillIncludeEditorSettingsDefines()
+        {
+            var defines = new[] { "DEBUG", "TRACE" }.Concat(EditorUserBuildSettings.activeScriptCompilationDefines);
+
+            var collectedAssemblies = m_AssemblyNameProvider.GetAssemblies(s => true).ToList();
+
+            foreach (Assembly editorAssembly in collectedAssemblies)
+            {
+                CollectionAssert.IsSubsetOf(defines, editorAssembly.defines);
             }
         }
 
@@ -44,9 +73,6 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
         {
             var playerAssemblies = CompilationPipeline.GetAssemblies(AssembliesType.Player);
 
-            if (m_AssemblyNameProvider.ProjectGenerationFlag.HasFlag(ProjectGenerationFlag.PlayerAssemblies))
-                m_AssemblyNameProvider.ToggleProjectGeneration(ProjectGenerationFlag.PlayerAssemblies);
-
             var collectedAssemblies = m_AssemblyNameProvider.GetAssemblies(s => true).ToList();
 
             foreach (Assembly playerAssembly in playerAssemblies)
@@ -60,8 +86,8 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
         {
             var playerAssemblies = CompilationPipeline.GetAssemblies(AssembliesType.Player);
 
-            if (!m_AssemblyNameProvider.ProjectGenerationFlag.HasFlag(ProjectGenerationFlag.PlayerAssemblies))
-                m_AssemblyNameProvider.ToggleProjectGeneration(ProjectGenerationFlag.PlayerAssemblies);
+            m_AssemblyNameProvider.ToggleProjectGeneration(ProjectGenerationFlag.PlayerAssemblies);
+
             var collectedAssemblies = m_AssemblyNameProvider.GetAssemblies(s => true).ToList();
 
             foreach (Assembly playerAssembly in playerAssemblies)
