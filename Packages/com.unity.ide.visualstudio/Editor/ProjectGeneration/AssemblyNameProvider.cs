@@ -14,6 +14,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
         ProjectGenerationFlag ProjectGenerationFlag { get; }
 
         string GetAssemblyNameFromScriptPath(string path);
+        string GetCompileOutputPath(string assemblyName);
         bool IsInternalizedPackagePath(string path);
         IEnumerable<Assembly> GetAssemblies(Func<string, bool> shouldFileBePartOfSolution);
         IEnumerable<string> GetAllAssetPaths();
@@ -77,6 +78,18 @@ namespace Microsoft.Unity.VisualStudio.Editor
                         }
                     };
                 }
+            }
+        }
+
+        public string GetCompileOutputPath(string assemblyName)
+        {
+            if (assemblyName.EndsWith(".Player", StringComparison.Ordinal))
+            {
+                return @"Temp\Bin\Debug\Player\";
+            }
+            else
+            {
+                return @"Temp\Bin\Debug\";
             }
         }
 

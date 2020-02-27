@@ -30,7 +30,16 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
             m_AssemblyNameProvider.ResetProjectGenerationFlag();
         }
 
-        [Test]
+		[TestCase("AssemblyName", @"Temp\Bin\Debug\")]
+		[TestCase("My.Player.AssemblyName", @"Temp\Bin\Debug\")]
+		[TestCase("AssemblyName.Player", @"Temp\Bin\Debug\Player\")]
+		[TestCase(".Player", @"Temp\Bin\Debug\Player\")]
+		public void GetOutputPath_ReturnsPlayerAndeditorOutputPath(string assemblyName, string expectedOutputPath)
+		{
+			Assert.AreEqual(expectedOutputPath, m_AssemblyNameProvider.GetCompileOutputPath(assemblyName));
+		}
+
+		[Test]
         public void AllEditorAssemblies_AreCollected()
         {
             var editorAssemblies = CompilationPipeline.GetAssemblies(AssembliesType.Editor);
