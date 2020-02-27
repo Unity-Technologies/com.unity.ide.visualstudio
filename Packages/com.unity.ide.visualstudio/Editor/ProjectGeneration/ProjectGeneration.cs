@@ -489,8 +489,6 @@ namespace Microsoft.Unity.VisualStudio.Editor
                 projectBuilder.Append("  <ItemGroup>").Append(k_WindowsNewline);
                 foreach (Assembly reference in assembly.assemblyReferences)
                 {
-                    var referencedProject = reference.outputPath;
-
                     projectBuilder.Append("    <ProjectReference Include=\"").Append(reference.name).Append(GetProjectExtension()).Append("\">").Append(k_WindowsNewline);
                     projectBuilder.Append("      <Project>{").Append(ProjectGuid(reference.name)).Append("}</Project>").Append(k_WindowsNewline);
                     projectBuilder.Append("      <Name>").Append(reference.name).Append("</Name>").Append(k_WindowsNewline);
@@ -569,7 +567,8 @@ namespace Microsoft.Unity.VisualStudio.Editor
                 XmlFilename(FileUtility.Normalize(InternalEditorUtility.GetEditorAssemblyPath())),
                 string.Join(";", assembly.defines.Concat(responseFilesData.SelectMany(x => x.Defines)).Distinct().ToArray()),
                 MSBuildNamespaceUri,
-                assembly.name,
+                Path.GetFileNameWithoutExtension(assembly.outputPath),
+                m_AssemblyNameProvider.GetCompileOutputPath(assembly.name),
                 m_AssemblyNameProvider.ProjectGenerationRootNamespace,
                 targetFrameworkVersion,
                 targetLanguageVersion,
@@ -657,32 +656,32 @@ namespace Microsoft.Unity.VisualStudio.Editor
                 @"<?xml version=""1.0"" encoding=""utf-8""?>",
                 @"<Project ToolsVersion=""{0}"" DefaultTargets=""Build"" xmlns=""{6}"">",
                 @"  <PropertyGroup>",
-                @"    <LangVersion>{10}</LangVersion>",
+                @"    <LangVersion>{11}</LangVersion>",
                 @"  </PropertyGroup>",
                 @"  <PropertyGroup>",
                 @"    <Configuration Condition="" '$(Configuration)' == '' "">Debug</Configuration>",
                 @"    <Platform Condition="" '$(Platform)' == '' "">AnyCPU</Platform>",
                 @"    <ProductVersion>{1}</ProductVersion>",
                 @"    <SchemaVersion>2.0</SchemaVersion>",
-                @"    <RootNamespace>{8}</RootNamespace>",
+                @"    <RootNamespace>{9}</RootNamespace>",
                 @"    <ProjectGuid>{{{2}}}</ProjectGuid>",
                 @"    <OutputType>Library</OutputType>",
                 @"    <AppDesignerFolder>Properties</AppDesignerFolder>",
                 @"    <AssemblyName>{7}</AssemblyName>",
-                @"    <TargetFrameworkVersion>{9}</TargetFrameworkVersion>",
+                @"    <TargetFrameworkVersion>{10}</TargetFrameworkVersion>",
                 @"    <FileAlignment>512</FileAlignment>",
-                @"    <BaseDirectory>{11}</BaseDirectory>",
+                @"    <BaseDirectory>{12}</BaseDirectory>",
                 @"  </PropertyGroup>",
                 @"  <PropertyGroup Condition="" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' "">",
                 @"    <DebugSymbols>true</DebugSymbols>",
                 @"    <DebugType>full</DebugType>",
                 @"    <Optimize>false</Optimize>",
-                @"    <OutputPath>Temp\bin\Debug\</OutputPath>",
+                @"    <OutputPath>{8}</OutputPath>",
                 @"    <DefineConstants>{5}</DefineConstants>",
                 @"    <ErrorReport>prompt</ErrorReport>",
                 @"    <WarningLevel>4</WarningLevel>",
                 @"    <NoWarn>0169</NoWarn>",
-                @"    <AllowUnsafeBlocks>{12}</AllowUnsafeBlocks>",
+                @"    <AllowUnsafeBlocks>{13}</AllowUnsafeBlocks>",
                 @"  </PropertyGroup>",
                 @"  <PropertyGroup Condition="" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' "">",
                 @"    <DebugType>pdbonly</DebugType>",
@@ -691,7 +690,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
                 @"    <ErrorReport>prompt</ErrorReport>",
                 @"    <WarningLevel>4</WarningLevel>",
                 @"    <NoWarn>0169</NoWarn>",
-                @"    <AllowUnsafeBlocks>{12}</AllowUnsafeBlocks>",
+                @"    <AllowUnsafeBlocks>{13}</AllowUnsafeBlocks>",
                 @"  </PropertyGroup>"
             };
 
@@ -711,9 +710,9 @@ namespace Microsoft.Unity.VisualStudio.Editor
                 @"  <PropertyGroup>",
                 @"    <ProjectTypeGuids>{{E097FAD1-6243-4DAD-9C02-E9B9EFC3FFC1}};{{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}}</ProjectTypeGuids>",
                 @"    <UnityProjectGenerator>Package</UnityProjectGenerator>",
-                @"    <UnityProjectType>{13}</UnityProjectType>",
-                @"    <UnityBuildTarget>{14}</UnityBuildTarget>",
-                @"    <UnityVersion>{15}</UnityVersion>",
+                @"    <UnityProjectType>{14}</UnityProjectType>",
+                @"    <UnityBuildTarget>{15}</UnityBuildTarget>",
+                @"    <UnityVersion>{16}</UnityVersion>",
                 @"  </PropertyGroup>"
             };
 
