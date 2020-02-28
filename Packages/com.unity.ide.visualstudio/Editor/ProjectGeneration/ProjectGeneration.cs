@@ -490,7 +490,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
                 foreach (Assembly reference in assembly.assemblyReferences)
                 {
                     projectBuilder.Append("    <ProjectReference Include=\"").Append(reference.name).Append(GetProjectExtension()).Append("\">").Append(k_WindowsNewline);
-                    projectBuilder.Append("      <Project>{").Append(ProjectGuid(reference.name)).Append("}</Project>").Append(k_WindowsNewline);
+                    projectBuilder.Append("      <Project>{").Append(ProjectGuid(reference)).Append("}</Project>").Append(k_WindowsNewline);
                     projectBuilder.Append("      <Name>").Append(reference.name).Append("</Name>").Append(k_WindowsNewline);
                     projectBuilder.Append("    </ProjectReference>").Append(k_WindowsNewline);
                 }
@@ -528,8 +528,8 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
         public string ProjectFile(Assembly assembly)
         {
-            return Path.Combine(ProjectDirectory, $"{assembly.name}.csproj");
-        }
+			return Path.Combine(ProjectDirectory, $"{m_AssemblyNameProvider.GetAssemblyName(assembly.outputPath, assembly.name)}.csproj");
+		}
 
         private static readonly Regex InvalidCharactersRegexPattern = new Regex(@"\?|&|\*|""|<|>|\||#|%|\^|;" + (VisualStudioEditor.IsWindows ? "" : "|:"));
         public string SolutionFile()
@@ -562,13 +562,13 @@ namespace Microsoft.Unity.VisualStudio.Editor
             {
                 toolsVersion,
                 productVersion,
-                ProjectGuid(assembly.name),
+                ProjectGuid(assembly),
                 XmlFilename(FileUtility.Normalize(InternalEditorUtility.GetEngineAssemblyPath())),
                 XmlFilename(FileUtility.Normalize(InternalEditorUtility.GetEditorAssemblyPath())),
                 string.Join(";", assembly.defines.Concat(responseFilesData.SelectMany(x => x.Defines)).Distinct().ToArray()),
                 MSBuildNamespaceUri,
-                Path.GetFileNameWithoutExtension(assembly.outputPath),
-                m_AssemblyNameProvider.GetCompileOutputPath(assembly.name),
+                assembly.name,
+                assembly.outputPath,
                 m_AssemblyNameProvider.ProjectGenerationRootNamespace,
                 targetFrameworkVersion,
                 targetLanguageVersion,
@@ -848,7 +848,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
                     ProjectFactoryGuid = SolutionGuid(assembly),
                     Name = assembly.name,
                     FileName = Path.GetFileName(ProjectFile(assembly)),
-                    ProjectGuid = ProjectGuid(assembly.name)
+                    ProjectGuid = ProjectGuid(assembly)
                 };
         }
 
@@ -896,10 +896,12 @@ namespace Microsoft.Unity.VisualStudio.Editor
             return ".csproj";
         }
 
-        string ProjectGuid(string assembly)
+        string ProjectGuid(Assembly assembly)
         {
-            return m_GUIDGenerator.ProjectGuid(m_ProjectName, assembly);
-        }
+            return m_GUIDGenerator.ProjectGuid(
+				m_ProjectName,
+				m_AssemblyNameProvider.GetAssemblyName(assembly.outputPath, assembly.name));
+		}
 
         string SolutionGuid(Assembly assembly)
         {

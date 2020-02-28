@@ -30,13 +30,14 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
             m_AssemblyNameProvider.ResetProjectGenerationFlag();
         }
 
-		[TestCase("AssemblyName", @"Temp\Bin\Debug\")]
-		[TestCase("My.Player.AssemblyName", @"Temp\Bin\Debug\")]
-		[TestCase("AssemblyName.Player", @"Temp\Bin\Debug\Player\")]
-		[TestCase(".Player", @"Temp\Bin\Debug\Player\")]
-		public void GetOutputPath_ReturnsPlayerAndeditorOutputPath(string assemblyName, string expectedOutputPath)
+		[TestCase(@"Temp\Bin\Debug\", "AssemblyName", "AssemblyName")]
+		[TestCase(@"Temp\Bin\Debug\", "My.Player.AssemblyName", "My.Player.AssemblyName")]
+		[TestCase(@"Temp\Bin\Debug\", "AssemblyName.Player", "AssemblyName.Player")]
+		[TestCase(@"Temp\Bin\Debug\Player\", "AssemblyName", "AssemblyName.Player")]
+		[TestCase(@"Temp\Bin\Debug\Player\", "AssemblyName.Player", "AssemblyName.Player.Player")]
+		public void GetOutputPath_ReturnsPlayerAndeditorOutputPath(string assemblyOutputPath, string assemblyName, string expectedAssemblyName)
 		{
-			Assert.AreEqual(expectedOutputPath, m_AssemblyNameProvider.GetCompileOutputPath(assemblyName));
+			Assert.AreEqual(expectedAssemblyName, m_AssemblyNameProvider.GetAssemblyName(assemblyOutputPath, assemblyName));
 		}
 
 		[Test]
@@ -48,8 +49,8 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 
             foreach (Assembly editorAssembly in editorAssemblies)
             {
-                Assert.IsTrue(collectedAssemblies.Any(assembly => assembly.name == editorAssembly.name && assembly.outputPath == editorAssembly.outputPath), $"{editorAssembly.name}: was not found in collection.");
-            }
+				Assert.IsTrue(collectedAssemblies.Any(assembly => assembly.name == editorAssembly.name && assembly.outputPath == @"Temp\Bin\Debug\"), $"{editorAssembly.name}: was not found in collection.");
+			}
         }
 
         [Test]
@@ -86,8 +87,8 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 
             foreach (Assembly playerAssembly in playerAssemblies)
             {
-                Assert.IsFalse(collectedAssemblies.Any(assembly => assembly.name == playerAssembly.name + ".Player" && assembly.outputPath == playerAssembly.outputPath), $"{playerAssembly.name}: was found in collection.");
-            }
+				Assert.IsFalse(collectedAssemblies.Any(assembly => assembly.name == playerAssembly.name && assembly.outputPath == @"Temp\Bin\Debug\Player\"), $"{playerAssembly.name}: was found in collection.");
+			}
         }
 
         [Test]
@@ -101,8 +102,8 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 
             foreach (Assembly playerAssembly in playerAssemblies)
             {
-                Assert.IsTrue(collectedAssemblies.Any(assembly => assembly.name == playerAssembly.name + ".Player" && assembly.outputPath == playerAssembly.outputPath), $"{playerAssembly.name}: was not found in collection.");
-            }
+				Assert.IsTrue(collectedAssemblies.Any(assembly => assembly.name == playerAssembly.name && assembly.outputPath == @"Temp\Bin\Debug\Player\"), $"{playerAssembly.name}: was not found in collection.");
+			}
         }
 
         [Test]

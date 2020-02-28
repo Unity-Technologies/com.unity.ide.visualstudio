@@ -14,8 +14,8 @@ namespace Microsoft.Unity.VisualStudio.Editor
         ProjectGenerationFlag ProjectGenerationFlag { get; }
 
         string GetAssemblyNameFromScriptPath(string path);
-        string GetCompileOutputPath(string assemblyName);
-        bool IsInternalizedPackagePath(string path);
+		string GetAssemblyName(string assemblyOutputPath, string assemblyName);
+		bool IsInternalizedPackagePath(string path);
         IEnumerable<Assembly> GetAssemblies(Func<string, bool> shouldFileBePartOfSolution);
         IEnumerable<string> GetAllAssetPaths();
         UnityEditor.PackageManager.PackageInfo FindForAssetPath(string assetPath);
@@ -52,9 +52,9 @@ namespace Microsoft.Unity.VisualStudio.Editor
             {
                 if (assembly.sourceFiles.Any(shouldFileBePartOfSolution))
                 {
-                    yield return new Assembly(assembly.name, assembly.outputPath, assembly.sourceFiles, new[] { "DEBUG", "TRACE" }.Concat(assembly.defines).Concat(EditorUserBuildSettings.activeScriptCompilationDefines).ToArray(), assembly.assemblyReferences, assembly.compiledAssemblyReferences, assembly.flags)
-                    {
-                        compilerOptions =
+					yield return new Assembly(assembly.name, @"Temp\Bin\Debug\", assembly.sourceFiles, new[] { "DEBUG", "TRACE" }.Concat(assembly.defines).Concat(EditorUserBuildSettings.activeScriptCompilationDefines).ToArray(), assembly.assemblyReferences, assembly.compiledAssemblyReferences, assembly.flags)
+					{ 
+						compilerOptions =
                         {
                             ResponseFiles = assembly.compilerOptions.ResponseFiles,
                             AllowUnsafeCode = assembly.compilerOptions.AllowUnsafeCode,
@@ -68,8 +68,8 @@ namespace Microsoft.Unity.VisualStudio.Editor
             {
                 foreach (var assembly in CompilationPipeline.GetAssemblies(AssembliesType.Player).Where(assembly => assembly.sourceFiles.Any(shouldFileBePartOfSolution)))
                 {
-                    yield return new Assembly(assembly.name + ".Player", assembly.outputPath, assembly.sourceFiles, new[] { "DEBUG", "TRACE" }.Concat(assembly.defines).ToArray(), assembly.assemblyReferences, assembly.compiledAssemblyReferences, assembly.flags)
-                    {
+					yield return new Assembly(assembly.name, @"Temp\Bin\Debug\Player\", assembly.sourceFiles, new[] { "DEBUG", "TRACE" }.Concat(assembly.defines).ToArray(), assembly.assemblyReferences, assembly.compiledAssemblyReferences, assembly.flags)
+					{
                         compilerOptions =
                         {
                             ResponseFiles = assembly.compilerOptions.ResponseFiles,
@@ -161,5 +161,10 @@ namespace Microsoft.Unity.VisualStudio.Editor
         {
             ProjectGenerationFlag = ProjectGenerationFlag.None;
         }
-    }
+
+		public string GetAssemblyName(string assemblyOutputPath, string assemblyName)
+		{
+			return assemblyOutputPath.EndsWith(@"\Player\", StringComparison.Ordinal) ? assemblyName + ".Player" : assemblyName;
+		}
+	}
 }

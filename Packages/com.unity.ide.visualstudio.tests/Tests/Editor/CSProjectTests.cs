@@ -71,7 +71,18 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
                 XMLUtilities.AssertCompileItemsMatchExactly(scriptProject, new[] { "dimmer.cs" });
             }
 
-            private enum ProjectType
+			[Test]
+			public void ProjectGeneration_UseAssemblyNameProvider_ForOutputPath()
+			{
+				var expectedAssemblyName = "my.AssemblyName";
+				var synchronizer = m_Builder.WithOutputPathForAssemblyPath(m_Builder.Assembly.outputPath, m_Builder.Assembly.name, expectedAssemblyName).Build();
+
+				synchronizer.Sync();
+
+				Assert.That(m_Builder.FileExists(Path.Combine(SynchronizerBuilder.projectDirectory, $"{expectedAssemblyName}.csproj")));
+			}
+
+			private enum ProjectType
             {
                 GamePlugins = 3,
                 Game = 1,
@@ -124,7 +135,7 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
                     $"    <ProjectGuid>{{{projectGuid}}}</ProjectGuid>",
                     "    <OutputType>Library</OutputType>",
                     "    <AppDesignerFolder>Properties</AppDesignerFolder>",
-                    $"    <AssemblyName>{Path.GetFileNameWithoutExtension(m_Builder.Assembly.outputPath)}</AssemblyName>",
+                    $"    <AssemblyName>{m_Builder.Assembly.name}</AssemblyName>",
                     "    <TargetFrameworkVersion>v4.7.1</TargetFrameworkVersion>",
                     "    <FileAlignment>512</FileAlignment>",
                     "    <BaseDirectory>.</BaseDirectory>",
@@ -133,7 +144,7 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
                     "    <DebugSymbols>true</DebugSymbols>",
                     "    <DebugType>full</DebugType>",
                     "    <Optimize>false</Optimize>",
-                    "    <OutputPath></OutputPath>",
+					$"    <OutputPath>{m_Builder.Assembly.outputPath}</OutputPath>",
                     $"    <DefineConstants></DefineConstants>",
                     "    <ErrorReport>prompt</ErrorReport>",
                     "    <WarningLevel>4</WarningLevel>",
