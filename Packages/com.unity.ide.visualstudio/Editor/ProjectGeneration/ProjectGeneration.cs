@@ -476,7 +476,14 @@ namespace Microsoft.Unity.VisualStudio.Editor
                 projectBuilder.Append(additionalAssetsForProject);
 
             var responseRefs = responseFilesData.SelectMany(x => x.FullPathReferences.Select(r => r));
-            foreach (var reference in assembly.compiledAssemblyReferences.Union(responseRefs).Union(references))
+            var internalAssemblyReferences = assembly.assemblyReferences
+              .Where(i => !i.sourceFiles.Any(ShouldFileBePartOfSolution)).Select(i => i.outputPath);
+            var allReferences =
+              assembly.compiledAssemblyReferences
+                .Union(responseRefs)
+                .Union(references)
+                .Union(internalAssemblyReferences);
+            foreach (var reference in allReferences)
             {
                 string fullReference = Path.IsPathRooted(reference) ? reference : Path.Combine(ProjectDirectory, reference);
                 AppendReference(fullReference, projectBuilder);
@@ -487,7 +494,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
             if (0 < assembly.assemblyReferences.Length)
             {
                 projectBuilder.Append("  <ItemGroup>").Append(k_WindowsNewline);
-                foreach (Assembly reference in assembly.assemblyReferences)
+                foreach (Assembly reference in assembly.assemblyReferences.Where(i => i.sourceFiles.Any(ShouldFileBePartOfSolution)))
                 {
                     projectBuilder.Append("    <ProjectReference Include=\"").Append(reference.name).Append(GetProjectExtension()).Append("\">").Append(k_WindowsNewline);
                     projectBuilder.Append("      <Project>{").Append(ProjectGuid(reference)).Append("}</Project>").Append(k_WindowsNewline);
