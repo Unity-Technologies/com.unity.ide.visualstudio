@@ -65,12 +65,24 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 
                 synchronizer.Sync();
 
-                var csprojContent = m_Builder.ReadProjectFile(m_Builder.Assembly);
+                var csprojContent = m_Builder.ReadProjectFile(m_Builder.Assembly)
+                    ;
                 XmlDocument scriptProject = XMLUtilities.FromText(csprojContent);
                 XMLUtilities.AssertCompileItemsMatchExactly(scriptProject, new[] { "dimmer.cs" });
             }
 
-            private enum ProjectType
+			[Test]
+			public void ProjectGeneration_UseAssemblyNameProvider_ForOutputPath()
+			{
+				var expectedAssemblyName = "my.AssemblyName";
+				var synchronizer = m_Builder.WithOutputPathForAssemblyPath(m_Builder.Assembly.outputPath, m_Builder.Assembly.name, expectedAssemblyName).Build();
+
+				synchronizer.Sync();
+
+				Assert.That(m_Builder.FileExists(Path.Combine(SynchronizerBuilder.projectDirectory, $"{expectedAssemblyName}.csproj")));
+			}
+
+			private enum ProjectType
             {
                 GamePlugins = 3,
                 Game = 1,
@@ -107,7 +119,6 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
                 var buildTarget = projectType + ":" + (int)projectType;
                 var unityVersion = Application.unityVersion;
 
-                var defines = string.Join(";", new[] { "DEBUG", "TRACE" }.Concat(EditorUserBuildSettings.activeScriptCompilationDefines).Concat(m_Builder.Assembly.defines).Distinct().ToArray());
                 var content = new[]
                 {
                     "<?xml version=\"1.0\" encoding=\"utf-8\"?>",
@@ -133,8 +144,8 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
                     "    <DebugSymbols>true</DebugSymbols>",
                     "    <DebugType>full</DebugType>",
                     "    <Optimize>false</Optimize>",
-                    "    <OutputPath>Temp\\bin\\Debug\\</OutputPath>",
-                    $"    <DefineConstants>{defines}</DefineConstants>",
+					$"    <OutputPath>{m_Builder.Assembly.outputPath}</OutputPath>",
+                    $"    <DefineConstants></DefineConstants>",
                     "    <ErrorReport>prompt</ErrorReport>",
                     "    <WarningLevel>4</WarningLevel>",
                     "    <NoWarn>0169</NoWarn>",
@@ -164,14 +175,6 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
                     $"    <UnityVersion>{unityVersion}</UnityVersion>",
                     "  </PropertyGroup>",
                     "  <ItemGroup>",
-                    "    <Reference Include=\"UnityEngine\">",
-                    $"      <HintPath>{InternalEditorUtility.GetEngineAssemblyPath().ReplaceDirectorySeparators()}</HintPath>",
-                    "    </Reference>",
-                    "    <Reference Include=\"UnityEditor\">",
-                    $"      <HintPath>{InternalEditorUtility.GetEditorAssemblyPath().ReplaceDirectorySeparators()}</HintPath>",
-                    "    </Reference>",
-                    "  </ItemGroup>",
-                    "  <ItemGroup>",
                     "    <Compile Include=\"test.cs\" />",
                     "  </ItemGroup>",
                     "  <ItemGroup>",
@@ -200,7 +203,7 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
             {
                 string[] files = { "test.cs" };
                 var assemblyB = new Assembly("Test", "Temp/Test.dll", files, new string[0], new Assembly[0], new string[0], AssemblyFlags.None);
-                var assemblyA = new Assembly("Test2", "some/path/file.dll", files, new string[0], new[] { assemblyB }, new[] { "Library.ScriptAssemblies.Test.dll" }, AssemblyFlags.None);
+                var assemblyA = new Assembly("Test2", "some/path/file.dll", files, new string[0], new[] { assemblyB }, new string[0], AssemblyFlags.None);
                 var synchronizer = m_Builder.WithAssemblies(new[] { assemblyA, assemblyB }).Build();
 
                 synchronizer.Sync();
@@ -260,28 +263,14 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
             }
 
             [Test]
-            public void InInternalizedPackage_WithoutGenerateAll_WillNotResync()
+            public void NotInInternalizedPackage_WillResync()
             {
                 var synchronizer = m_Builder.Build();
 
                 synchronizer.Sync();
 
                 var packageAsset = "packageAsset.cs";
-                m_Builder.WithPackageAsset(packageAsset, true);
-
-                Assert.IsFalse(synchronizer.SyncIfNeeded(new[] { packageAsset }, new string[0]));
-            }
-
-            [Test]
-            public void InInternalizedPackage_WithGenerateAll_WillResync()
-            {
-                var synchronizer = m_Builder.Build();
-
-                synchronizer.Sync();
-
-                synchronizer.GenerateAll(true);
-                var packageAsset = "packageAsset.cs";
-                m_Builder.WithPackageAsset(packageAsset, true);
+                m_Builder.WithPackageAsset(packageAsset, false);
 
                 Assert.IsTrue(synchronizer.SyncIfNeeded(new[] { packageAsset }, new string[0]));
             }
@@ -358,7 +347,7 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
             }
 
             [Test]
-            public void InInternalizedPackage_WithoutGenerateAll_WillNotBeAddedToCompileInclude()
+            public void InternalizedPackage_WillNotBeAddedToCompileInclude()
             {
                 var synchronizer = m_Builder.WithPackageAsset(m_Builder.Assembly.sourceFiles[0], true).Build();
 
@@ -368,49 +357,15 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
             }
 
             [Test]
-            public void InInternalizedPackage_WithGenerateAll_WillBeAddedToCompileInclude()
+            public void NoneInternalizedPackage_WillBeAddedToCompileInclude()
             {
-                var synchronizer = m_Builder.WithPackageAsset(m_Builder.Assembly.sourceFiles[0], true).Build();
-                synchronizer.GenerateAll(true);
+                var synchronizer = m_Builder
+                    .WithPackageAsset(m_Builder.Assembly.sourceFiles[0], false)
+                    .Build();
 
                 synchronizer.Sync();
 
                 StringAssert.Contains(m_Builder.Assembly.sourceFiles[0], m_Builder.ReadProjectFile(m_Builder.Assembly));
-            }
-
-            [Test]
-            public void InInternalizedPackage_WithoutGenerateAll_WillNotBeAddedToNonInclude()
-            {
-                var nonCompileItem = "packageAsset.uxml";
-                var nonCompileItems = new[] { nonCompileItem };
-                var synchronizer = m_Builder
-                    .WithAssetFiles(nonCompileItems)
-                    .AssignFilesToAssembly(nonCompileItems, m_Builder.Assembly)
-                    .WithPackageAsset(nonCompileItem, true)
-                    .Build();
-
-                synchronizer.Sync();
-
-                var xmlDocument = XMLUtilities.FromText(m_Builder.ReadProjectFile(m_Builder.Assembly));
-                XMLUtilities.AssertNonCompileItemsMatchExactly(xmlDocument, new string[0]);
-            }
-
-            [Test]
-            public void InInternalizedPackage_WithGenerateAll_WillBeAddedToNonInclude()
-            {
-                var nonCompileItem = "packageAsset.uxml";
-                var nonCompileItems = new[] { nonCompileItem };
-                var synchronizer = m_Builder
-                    .WithAssetFiles(nonCompileItems)
-                    .AssignFilesToAssembly(nonCompileItems, m_Builder.Assembly)
-                    .WithPackageAsset(nonCompileItem, true)
-                    .Build();
-                synchronizer.GenerateAll(true);
-
-                synchronizer.Sync();
-
-                var xmlDocument = XMLUtilities.FromText(m_Builder.ReadProjectFile(m_Builder.Assembly));
-                XMLUtilities.AssertNonCompileItemsMatchExactly(xmlDocument, nonCompileItems);
             }
 
             [Test]
@@ -669,7 +624,8 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 
                 synchronizer.Sync();
 
-                var csprojFileContents = m_Builder.ReadProjectFile(m_Builder.Assembly); // TODO: is assembly.name correct or should it be fileName?
+                var csprojFileContents = m_Builder.ReadProjectFile(m_Builder.Assembly);
+                Assert.IsTrue(csprojFileContents.MatchesRegex($@"<ProjectReference Include=""{assembly.name}\.csproj\"">"));
             }
 
             [Test]
@@ -702,8 +658,28 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
                 synchronizer.Sync();
 
                 var csprojFileContents = m_Builder.ReadProjectFile(m_Builder.Assembly);
-                Assert.IsTrue(csprojFileContents.MatchesRegex($"<Reference Include=\"{assemblyReferences[0].name}\">\\W*<HintPath>{Regex.Escape(assemblyReferences[0].outputPath.ReplaceDirectorySeparators())}</HintPath>\\W*</Reference>"));
-                Assert.IsTrue(csprojFileContents.MatchesRegex($"<Reference Include=\"{assemblyReferences[1].name}\">\\W*<HintPath>{Regex.Escape(assemblyReferences[1].outputPath.ReplaceDirectorySeparators())}</HintPath>\\W*</Reference>"));
+                Assert.That(csprojFileContents, Does.Match($"<ProjectReference Include=\"{assemblyReferences[0].name}\\.csproj\">\\s+.+\\s+<Name>{assemblyReferences[0].name}</Name>\\W*</ProjectReference>"));
+                Assert.That(csprojFileContents, Does.Match($"<ProjectReference Include=\"{assemblyReferences[1].name}\\.csproj\">\\s+.+\\s+<Name>{assemblyReferences[1].name}</Name>\\W*</ProjectReference>"));
+            }
+
+            [Test]
+            public void AssemblyReferenceFromInternalizedPackage_IsAddedAsReference()
+            {
+                string[] files = { "test.cs" };
+                var assemblyReferences = new[]
+                {
+                    new Assembly("MyPlugin", "/some/path/MyPlugin.dll", files, new string[0], new Assembly[0], new string[0], AssemblyFlags.None),
+                    new Assembly("Hello", "/some/path/Hello.dll", files, new string[0], new Assembly[0], new string[0], AssemblyFlags.None),
+                };
+                var synchronizer = m_Builder.WithPackageAsset(files[0], true).WithAssemblyData(assemblyReferences: assemblyReferences).Build();
+
+                synchronizer.Sync();
+
+                var csprojFileContents = m_Builder.ReadProjectFile(m_Builder.Assembly);
+                Assert.That(csprojFileContents, Does.Not.Match($@"<ProjectReference Include=""{assemblyReferences[0].name}\.csproj"">[\S\s]*?</ProjectReference>"));
+                Assert.That(csprojFileContents, Does.Not.Match($@"<ProjectReference Include=""{assemblyReferences[1].name}\.csproj"">[\S\s]*?</ProjectReference>"));
+                Assert.That(csprojFileContents, Does.Match($"<Reference Include=\"{assemblyReferences[0].name}\">\\W*<HintPath>{Regex.Escape(assemblyReferences[0].outputPath.ReplaceDirectorySeparators())}</HintPath>\\W*</Reference>"));
+                Assert.That(csprojFileContents, Does.Match($"<Reference Include=\"{assemblyReferences[1].name}\">\\W*<HintPath>{Regex.Escape(assemblyReferences[1].outputPath.ReplaceDirectorySeparators())}</HintPath>\\W*</Reference>"));
             }
 
             [Test]
@@ -762,8 +738,7 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
                 synchronizer.Sync();
 
                 var csprojFileContents = m_Builder.ReadProjectFile(m_Builder.Assembly);
-                Assert.IsTrue(csprojFileContents.MatchesRegex("<DefineConstants>.*;DEF1.*</DefineConstants>"));
-                Assert.IsTrue(csprojFileContents.MatchesRegex("<DefineConstants>.*;DEF2.*</DefineConstants>"));
+                StringAssert.Contains("<DefineConstants>DEF1;DEF2</DefineConstants>", csprojFileContents);
             }
 
             [Test]
@@ -774,8 +749,7 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
                 synchronizer.Sync();
 
                 var csprojFileContents = m_Builder.ReadProjectFile(m_Builder.Assembly);
-                Assert.IsTrue(csprojFileContents.MatchesRegex("<DefineConstants>.*;DEF1.*</DefineConstants>"));
-                Assert.IsTrue(csprojFileContents.MatchesRegex("<DefineConstants>.*;DEF2.*</DefineConstants>"));
+                StringAssert.Contains("<DefineConstants>DEF1;DEF2</DefineConstants>", csprojFileContents);
             }
 
             [Test]
@@ -794,10 +768,11 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 
                 var aCsprojContent = m_Builder.ReadProjectFile(assemblyA);
                 var bCsprojContent = m_Builder.ReadProjectFile(assemblyB);
-                Assert.IsTrue(bCsprojContent.MatchesRegex("<DefineConstants>.*;CHILD_DEFINE.*</DefineConstants>"));
-                Assert.IsFalse(bCsprojContent.MatchesRegex("<DefineConstants>.*;RootedDefine.*</DefineConstants>"));
-                Assert.IsFalse(aCsprojContent.MatchesRegex("<DefineConstants>.*;CHILD_DEFINE.*</DefineConstants>"));
-                Assert.IsTrue(aCsprojContent.MatchesRegex("<DefineConstants>.*;RootedDefine.*</DefineConstants>"));
+                
+                StringAssert.Contains("<DefineConstants>CHILD_DEFINE</DefineConstants>", bCsprojContent);
+                StringAssert.DoesNotContain("<DefineConstants>RootedDefine</DefineConstants>", bCsprojContent);
+                StringAssert.DoesNotContain("<DefineConstants>CHILD_DEFINE</DefineConstants>", aCsprojContent);
+                StringAssert.Contains("<DefineConstants>RootedDefine</DefineConstants>", aCsprojContent);
             }
         }
     }

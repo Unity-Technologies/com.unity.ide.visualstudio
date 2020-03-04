@@ -32,10 +32,10 @@ namespace Microsoft.Unity.VisualStudio.Editor
         bool SyncIfNeeded(IEnumerable<string> affectedFiles, IEnumerable<string> reimportedFiles);
         void Sync();
         bool HasSolutionBeenGenerated();
+        bool IsSupportedFile(string path);
         string SolutionFile();
         string ProjectDirectory { get; }
-        void GenerateAll(bool generateAll);
-        bool IsSupportedFile(string path);
+        IAssemblyNameProvider AssemblyNameProvider { get; }
     }
 
     public class ProjectGeneration : IGenerator
@@ -69,8 +69,8 @@ namespace Microsoft.Unity.VisualStudio.Editor
         readonly IAssemblyNameProvider m_AssemblyNameProvider;
         readonly IFileIO m_FileIOProvider;
         readonly IGUIDGenerator m_GUIDGenerator;
-        bool m_ShouldGenerateAll;
         VisualStudioInstallation m_CurrentInstallation;
+        public IAssemblyNameProvider AssemblyNameProvider => m_AssemblyNameProvider;
 
         public ProjectGeneration() : this(Directory.GetParent(Application.dataPath).FullName)
         {
@@ -87,11 +87,6 @@ namespace Microsoft.Unity.VisualStudio.Editor
             m_AssemblyNameProvider = assemblyNameProvider;
             m_FileIOProvider = fileIoProvider;
             m_GUIDGenerator = guidGenerator;
-        }
-
-        public void GenerateAll(bool generateAll)
-        {
-            m_ShouldGenerateAll = generateAll;
         }
 
         /// <summary>
@@ -164,7 +159,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
         bool ShouldFileBePartOfSolution(string file)
         {
             // Exclude files coming from packages except if they are internalized.
-            if (!m_ShouldGenerateAll && m_AssemblyNameProvider.IsInternalizedPackagePath(file))
+            if (m_AssemblyNameProvider.IsInternalizedPackagePath(file))
             {
                 return false;
             }
@@ -270,7 +265,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
             foreach (string asset in m_AssemblyNameProvider.GetAllAssetPaths())
             {
                 // Exclude files coming from packages except if they are internalized.
-                if (!m_ShouldGenerateAll && m_AssemblyNameProvider.IsInternalizedPackagePath(asset))
+                if (m_AssemblyNameProvider.IsInternalizedPackagePath(asset))
                 {
                     continue;
                 }
@@ -303,21 +298,6 @@ namespace Microsoft.Unity.VisualStudio.Editor
                 result[entry.Key] = entry.Value.ToString();
 
             return result;
-        }
-
-        bool IsInternalizedPackagePath(string file)
-        {
-            if (string.IsNullOrWhiteSpace(file))
-            {
-                return false;
-            }
-
-            var packageInfo = m_AssemblyNameProvider.FindForAssetPath(file);
-            if (packageInfo == null) {
-                return false;
-            }
-            var packageSource = packageInfo.source;
-            return packageSource != PackageSource.Embedded && packageSource != PackageSource.Local;
         }
 
         void SyncProject(
@@ -428,7 +408,6 @@ namespace Microsoft.Unity.VisualStudio.Editor
         {
             var projectBuilder = new StringBuilder(ProjectHeader(assembly, responseFilesData));
             var references = new List<string>();
-            var projectReferences = new List<Match>();
 
             projectBuilder.Append(@"  <ItemGroup>").Append(k_WindowsNewline);
             foreach (string file in assembly.sourceFiles)
@@ -450,59 +429,38 @@ namespace Microsoft.Unity.VisualStudio.Editor
             projectBuilder.Append(@"  </ItemGroup>").Append(k_WindowsNewline);
 
             projectBuilder.Append(@"  <ItemGroup>").Append(k_WindowsNewline);
+
             // Append additional non-script files that should be included in project generation.
             if (allAssetsProjectParts.TryGetValue(assembly.name, out var additionalAssetsForProject))
                 projectBuilder.Append(additionalAssetsForProject);
 
-            var assemblyRefs = references.Union(assembly.allReferences);
-
-            foreach (string reference in assemblyRefs)
+            var responseRefs = responseFilesData.SelectMany(x => x.FullPathReferences.Select(r => r));
+            var internalAssemblyReferences = assembly.assemblyReferences
+              .Where(i => !i.sourceFiles.Any(ShouldFileBePartOfSolution)).Select(i => i.outputPath);
+            var allReferences =
+              assembly.compiledAssemblyReferences
+                .Union(responseRefs)
+                .Union(references)
+                .Union(internalAssemblyReferences);
+            foreach (var reference in allReferences)
             {
-                if (reference.EndsWith("/UnityEditor.dll", StringComparison.Ordinal)
-                    || reference.EndsWith("/UnityEngine.dll", StringComparison.Ordinal)
-                    || reference.EndsWith("\\UnityEditor.dll", StringComparison.Ordinal)
-                    || reference.EndsWith("\\UnityEngine.dll", StringComparison.Ordinal))
-                    continue;
-
-                var match = k_ScriptReferenceExpression.Match(reference);
-                if (match.Success)
-                {
-                    // assume csharp language
-                    // Add a reference to a project except if it's a reference to a script assembly
-                    // that we are not generating a project for. This will be the case for assemblies
-                    // coming from .assembly.json files in non-internalized packages.
-                    var dllName = match.Groups["dllname"].Value;
-                    if (allProjectAsemblies.Any(i => Path.GetFileName(i.outputPath) == dllName))
-                    {
-                        projectReferences.Add(match);
-                        continue;
-                    }
-                }
-
                 string fullReference = Path.IsPathRooted(reference) ? reference : Path.Combine(ProjectDirectory, reference);
-
                 AppendReference(fullReference, projectBuilder);
             }
 
-            var responseRefs = responseFilesData.SelectMany(x => x.FullPathReferences.Select(r => r));
-            foreach (var reference in responseRefs)
-            {
-                AppendReference(reference, projectBuilder);
-            }
             projectBuilder.Append(@"  </ItemGroup>").Append(k_WindowsNewline);
 
-            if (0 < projectReferences.Count)
+            if (0 < assembly.assemblyReferences.Length)
             {
-                projectBuilder.Append(@"  <ItemGroup>").Append(k_WindowsNewline);
-                foreach (Match reference in projectReferences)
+                projectBuilder.Append("  <ItemGroup>").Append(k_WindowsNewline);
+                foreach (Assembly reference in assembly.assemblyReferences.Where(i => i.sourceFiles.Any(ShouldFileBePartOfSolution)))
                 {
-                    var referencedProject = reference.Groups["project"].Value;
-
-                    projectBuilder.Append("    <ProjectReference Include=\"").Append(referencedProject).Append(GetProjectExtension()).Append("\">").Append(k_WindowsNewline);
-                    projectBuilder.Append("      <Project>{").Append(m_GUIDGenerator.ProjectGuid(m_ProjectName, Path.Combine("Temp", reference.Groups["project"].Value + ".dll"))).Append("}</Project>").Append(k_WindowsNewline);
-                    projectBuilder.Append("      <Name>").Append(referencedProject).Append("</Name>").Append(k_WindowsNewline);
+                    projectBuilder.Append("    <ProjectReference Include=\"").Append(reference.name).Append(GetProjectExtension()).Append("\">").Append(k_WindowsNewline);
+                    projectBuilder.Append("      <Project>{").Append(ProjectGuid(reference)).Append("}</Project>").Append(k_WindowsNewline);
+                    projectBuilder.Append("      <Name>").Append(reference.name).Append("</Name>").Append(k_WindowsNewline);
                     projectBuilder.Append("    </ProjectReference>").Append(k_WindowsNewline);
                 }
+
                 projectBuilder.Append(@"  </ItemGroup>").Append(k_WindowsNewline);
             }
 
@@ -536,8 +494,8 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
         public string ProjectFile(Assembly assembly)
         {
-            return Path.Combine(ProjectDirectory, $"{assembly.name}.csproj");
-        }
+			return Path.Combine(ProjectDirectory, $"{m_AssemblyNameProvider.GetAssemblyName(assembly.outputPath, assembly.name)}.csproj");
+		}
 
         private static readonly Regex InvalidCharactersRegexPattern = new Regex(@"\?|&|\*|""|<|>|\||#|%|\^|;" + (VisualStudioEditor.IsWindows ? "" : "|:"));
         public string SolutionFile()
@@ -568,12 +526,15 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
             var arguments = new object[]
             {
-                toolsVersion, productVersion, m_GUIDGenerator.ProjectGuid(m_ProjectName, assembly.name),
+                toolsVersion,
+                productVersion,
+                ProjectGuid(assembly),
                 XmlFilename(FileUtility.Normalize(InternalEditorUtility.GetEngineAssemblyPath())),
                 XmlFilename(FileUtility.Normalize(InternalEditorUtility.GetEditorAssemblyPath())),
-                string.Join(";", new[] { "DEBUG", "TRACE" }.Concat(EditorUserBuildSettings.activeScriptCompilationDefines).Concat(assembly.defines).Concat(responseFilesData.SelectMany(x => x.Defines)).Distinct().ToArray()),
+                string.Join(";", assembly.defines.Concat(responseFilesData.SelectMany(x => x.Defines)).Distinct().ToArray()),
                 MSBuildNamespaceUri,
                 assembly.name,
+                assembly.outputPath,
                 m_AssemblyNameProvider.ProjectGenerationRootNamespace,
                 targetFrameworkVersion,
                 targetLanguageVersion,
@@ -661,32 +622,32 @@ namespace Microsoft.Unity.VisualStudio.Editor
                 @"<?xml version=""1.0"" encoding=""utf-8""?>",
                 @"<Project ToolsVersion=""{0}"" DefaultTargets=""Build"" xmlns=""{6}"">",
                 @"  <PropertyGroup>",
-                @"    <LangVersion>{10}</LangVersion>",
+                @"    <LangVersion>{11}</LangVersion>",
                 @"  </PropertyGroup>",
                 @"  <PropertyGroup>",
                 @"    <Configuration Condition="" '$(Configuration)' == '' "">Debug</Configuration>",
                 @"    <Platform Condition="" '$(Platform)' == '' "">AnyCPU</Platform>",
                 @"    <ProductVersion>{1}</ProductVersion>",
                 @"    <SchemaVersion>2.0</SchemaVersion>",
-                @"    <RootNamespace>{8}</RootNamespace>",
+                @"    <RootNamespace>{9}</RootNamespace>",
                 @"    <ProjectGuid>{{{2}}}</ProjectGuid>",
                 @"    <OutputType>Library</OutputType>",
                 @"    <AppDesignerFolder>Properties</AppDesignerFolder>",
                 @"    <AssemblyName>{7}</AssemblyName>",
-                @"    <TargetFrameworkVersion>{9}</TargetFrameworkVersion>",
+                @"    <TargetFrameworkVersion>{10}</TargetFrameworkVersion>",
                 @"    <FileAlignment>512</FileAlignment>",
-                @"    <BaseDirectory>{11}</BaseDirectory>",
+                @"    <BaseDirectory>{12}</BaseDirectory>",
                 @"  </PropertyGroup>",
                 @"  <PropertyGroup Condition="" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' "">",
                 @"    <DebugSymbols>true</DebugSymbols>",
                 @"    <DebugType>full</DebugType>",
                 @"    <Optimize>false</Optimize>",
-                @"    <OutputPath>Temp\bin\Debug\</OutputPath>",
+                @"    <OutputPath>{8}</OutputPath>",
                 @"    <DefineConstants>{5}</DefineConstants>",
                 @"    <ErrorReport>prompt</ErrorReport>",
                 @"    <WarningLevel>4</WarningLevel>",
                 @"    <NoWarn>0169</NoWarn>",
-                @"    <AllowUnsafeBlocks>{12}</AllowUnsafeBlocks>",
+                @"    <AllowUnsafeBlocks>{13}</AllowUnsafeBlocks>",
                 @"  </PropertyGroup>",
                 @"  <PropertyGroup Condition="" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' "">",
                 @"    <DebugType>pdbonly</DebugType>",
@@ -695,7 +656,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
                 @"    <ErrorReport>prompt</ErrorReport>",
                 @"    <WarningLevel>4</WarningLevel>",
                 @"    <NoWarn>0169</NoWarn>",
-                @"    <AllowUnsafeBlocks>{12}</AllowUnsafeBlocks>",
+                @"    <AllowUnsafeBlocks>{13}</AllowUnsafeBlocks>",
                 @"  </PropertyGroup>"
             };
 
@@ -715,22 +676,14 @@ namespace Microsoft.Unity.VisualStudio.Editor
                 @"  <PropertyGroup>",
                 @"    <ProjectTypeGuids>{{E097FAD1-6243-4DAD-9C02-E9B9EFC3FFC1}};{{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}}</ProjectTypeGuids>",
                 @"    <UnityProjectGenerator>Package</UnityProjectGenerator>",
-                @"    <UnityProjectType>{13}</UnityProjectType>",
-                @"    <UnityBuildTarget>{14}</UnityBuildTarget>",
-                @"    <UnityVersion>{15}</UnityVersion>",
+                @"    <UnityProjectType>{14}</UnityProjectType>",
+                @"    <UnityBuildTarget>{15}</UnityBuildTarget>",
+                @"    <UnityVersion>{16}</UnityVersion>",
                 @"  </PropertyGroup>"
             };
 
             var footer = new[]
             {
-                @"  <ItemGroup>",
-                @"    <Reference Include=""UnityEngine"">",
-                @"      <HintPath>{3}</HintPath>",
-                @"    </Reference>",
-                @"    <Reference Include=""UnityEditor"">",
-                @"      <HintPath>{4}</HintPath>",
-                @"    </Reference>",
-                @"  </ItemGroup>",
                 @""
             };
 
@@ -858,10 +811,10 @@ namespace Microsoft.Unity.VisualStudio.Editor
             foreach (var assembly in assemblies)
                 yield return new SolutionProjectEntry()
                 {
-                    ProjectFactoryGuid = m_GUIDGenerator.SolutionGuid(m_ProjectName, ScriptingLanguageFor(assembly)),
+                    ProjectFactoryGuid = SolutionGuid(assembly),
                     Name = assembly.name,
                     FileName = Path.GetFileName(ProjectFile(assembly)),
-                    ProjectGuid = m_GUIDGenerator.ProjectGuid(m_ProjectName, assembly.name)
+                    ProjectGuid = ProjectGuid(assembly)
                 };
         }
 
@@ -907,6 +860,18 @@ namespace Microsoft.Unity.VisualStudio.Editor
         static string GetProjectExtension()
         {
             return ".csproj";
+        }
+
+        string ProjectGuid(Assembly assembly)
+        {
+            return m_GUIDGenerator.ProjectGuid(
+				m_ProjectName,
+				m_AssemblyNameProvider.GetAssemblyName(assembly.outputPath, assembly.name));
+		}
+
+        string SolutionGuid(Assembly assembly)
+        {
+            return m_GUIDGenerator.SolutionGuid(m_ProjectName, ScriptingLanguageFor(assembly));
         }
     }
 
