@@ -1,16 +1,20 @@
 codeeditor: visualstudio
 test_suite_name: VisualStudio
+
 editors:
+  - version: 2020.1
   - version: trunk
 platforms:
   - name: win
     type: Unity::VM
     image: package-ci/win10:stable
     flavor: b1.large
+    envsetup: echo
   - name: mac
     type: Unity::VM::osx
     image: buildfarm/mac:stable
     flavor: m1.mac
+    envsetup: echo
   - name: linux
     type: Unity::VM
     image: package-ci/ubuntu:stable
@@ -26,7 +30,7 @@ pack:
     image: package-ci/win10:stable
     flavor: b1.large
   commands:
-    - npm install upm-ci-utils -g --registry https://api.bintray.com/npm/unity/unity-npm
+    - npm install upm-ci-utils@stable -g --registry https://api.bintray.com/npm/unity/unity-npm
     - upm-ci project pack
   artifacts:
     packages:
@@ -40,6 +44,9 @@ commit_ci:
     branches:
       only:
         - "/.*/"
+      except:
+        - next/master
+        - publish-release
   dependencies:
   {% for editor in editors %}
   - .yamato/CI.yml#run_test_project_linux_{{ editor.version }}
@@ -54,13 +61,17 @@ run_test_project_{{ platform.name }}_{{ editor.version }}:
     type: {{ platform.type }}
     image: {{ platform.image }}
     flavor: {{ platform.flavor}}
-    {% if platform.name == "linux" %}
+  {% if platform.name == "linux" %}
   variables:
     PATH: /home/bokken/bin:/home/bokken/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/sbin:/home/bokken/.npm-global/bin::/home/bokken/npm-global/bin
     DISPLAY: ":0"
   {% endif %}
   commands:
+{% if platform.name == "linux" -%}
+    - pip install unity-downloader-cli --user --upgrade --extra-index-url https://artifactory.eu-cph-1.unityops.net/api/pypi/common-python/simple
+{% else -%}
     - pip install unity-downloader-cli --upgrade --extra-index-url https://artifactory.eu-cph-1.unityops.net/api/pypi/common-python/simple
+{% endif -%}    
     - {{ platform.envsetup }}
     - unity-downloader-cli -u {{editor.version}} -c editor -c linux -c macos -c windows --wait --published-only
     - npm install upm-ci-utils@stable -g --registry https://api.bintray.com/npm/unity/unity-npm
@@ -112,17 +123,13 @@ publish_release:
     image: package-ci/win10:stable
     flavor: b1.large
   commands:
-    - npm install upm-ci-utils --registry https://api.bintray.com/npm/unity/unity-npm
-    - node node_modules/upm-ci-utils project publish
+    - npm install upm-ci-utils@stable -g --registry https://api.bintray.com/npm/unity/unity-npm
+    - upm-ci project publish
     - git push origin HEAD:refs/heads/next/master HEAD:refs/heads/master -f
 
 
 prepare_promotion:
   name: Prepare promotion
-  triggers:
-    branches:
-      only:
-        - master
   dependencies:
     - .yamato/CI.yml#pack
   agent:
@@ -136,20 +143,20 @@ prepare_promotion:
     - py -3 C:\buildslave\Nicklas-CI\prepare_promotion.py C:\buildslave\unity\build upm-ci~/packages/packages.json {{test_suite_name}}
 
 
-#create_pull_request:
-#  name: Create Ono Pull Request
-#  triggers:
-#    branches:
-#      only:
-#        - master
-#  dependencies:
-#    - .yamato/CI.yml#prepare_promotion
-#    - .yamato/CI.yml#pack
-#  agent:
-#    type: Unity::VM
-#    image: cds-ops/ubuntu-18.04-agent:latest
-#    flavor: b1.large
-#  commands:
-#    - git clone git@github.cds.internal.unity3d.com:nicklas/Nicklas-CI.git /tmp/Nicklas-CI
-#    - python3 /tmp/Nicklas-CI/create_pullrequest.py nicklas upm-ci~/packages/packages.json
-#    - python3 /tmp/Nicklas-CI/start_katana.py "Nicklas Pingel <nicklas@unity3d.com>" upm-ci~/packages/packages.json
+create_pull_request:
+  name: Create Ono Pull Request
+  triggers:
+    branches:
+      only:
+       - master
+  dependencies:
+    - .yamato/CI.yml#prepare_promotion
+    - .yamato/CI.yml#pack
+  agent:
+    type: Unity::VM
+    image: cds-ops/ubuntu-18.04-agent:latest
+    flavor: b1.large
+  commands:
+    - git clone git@github.cds.internal.unity3d.com:nicklas/Nicklas-CI.git /tmp/Nicklas-CI
+    - python3 /tmp/Nicklas-CI/create_pullrequest.py nicklas upm-ci~/packages/packages.json
+    - python3 /tmp/Nicklas-CI/start_katana.py "Nicklas Pingel <nicklas@unity3d.com>" upm-ci~/packages/packages.json
