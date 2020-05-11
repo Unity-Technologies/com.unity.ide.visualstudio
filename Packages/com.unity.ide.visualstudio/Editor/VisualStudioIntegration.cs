@@ -22,10 +22,11 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		private static readonly Queue<Message> Incoming = new Queue<Message>();
 		private static readonly object IncomingLock = new object();
 
-		public static Application.LogCallback LogCallback = delegate { };
-
 		static VisualStudioIntegration()
 		{
+			if (!VisualStudioEditor.IsEnabled)
+				return;
+
 			RunOnceOnUpdate(() =>
 			{
 				// Despite using ReuseAddress|!ExclusiveAddressUse, we can fail here:
