@@ -87,6 +87,8 @@ namespace Microsoft.Unity.VisualStudio.Editor
             m_AssemblyNameProvider = assemblyNameProvider;
             m_FileIOProvider = fileIoProvider;
             m_GUIDGenerator = guidGenerator;
+
+            SetupProjectSupportedExtensions();
         }
 
         /// <summary>
