@@ -12,7 +12,7 @@ platforms:
     envsetup: echo
   - name: mac
     type: Unity::VM::osx
-    image: buildfarm/mac:stable
+    image: package-ci/mac:stable
     flavor: m1.mac
     envsetup: echo
   - name: linux
@@ -102,7 +102,7 @@ prepare_release:
   commands:
     - git clone git@github.cds.internal.unity3d.com:nicklas/Nicklas-CI.git /tmp/Nicklas-CI
     - python3 /tmp/Nicklas-CI/prepare_release.py
-    - git push origin HEAD:refs/heads/publish-release
+    - git push origin HEAD:refs/heads/publish-release -f
 
 
 publish_release:
