@@ -46,7 +46,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			CodeEditor.Register(new VisualStudioEditor());
 		}
 
-		public static bool IsEnabled
+		internal static bool IsEnabled
 		{
 			get
 			{
