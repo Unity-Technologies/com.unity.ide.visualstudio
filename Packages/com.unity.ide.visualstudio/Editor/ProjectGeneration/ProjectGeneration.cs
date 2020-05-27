@@ -412,7 +412,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
             projectBuilder.Append(@"  <ItemGroup>").Append(k_WindowsNewline);
             foreach (string file in assembly.sourceFiles)
             {
-                if (!ShouldFileBePartOfSolution(file))
+                if (!IsSupportedFile(file))
                     continue;
 
                 var extension = Path.GetExtension(file).ToLower();
