@@ -54,7 +54,11 @@ scripting_backends:
     {{ v[0] }}: {{ v[1]}}
 {% endfor -%}
   commands:
+  {% if platform.os == "linux" -%}
+  - pip install unity-downloader-cli --user --upgrade --extra-index-url https://artifactory.eu-cph-1.unityops.net/api/pypi/common-python/simple
+  {% else -%}
   - pip install unity-downloader-cli --upgrade --extra-index-url https://artifactory.eu-cph-1.unityops.net/api/pypi/common-python/simple
+  {% endif -%}
   - git clone git@github.cds.internal.unity3d.com:unity/utr.git
   - unity-downloader-cli --source-file unity_revision.txt {% for component in platform.components %}-c {{ component }} {% endfor %}--wait --published-only
   - >
@@ -95,8 +99,12 @@ scripting_backends:
     {{ v[0] }}: {{ v[1]}}
 {% endfor -%}
   commands:
+    {% if platform.os == "linux" -%}
+    - pip install unity-downloader-cli --user --upgrade --extra-index-url https://artifactory.eu-cph-1.unityops.net/api/pypi/common-python/simple
+    {% else -%}
     - pip install unity-downloader-cli --upgrade --extra-index-url https://artifactory.eu-cph-1.unityops.net/api/pypi/common-python/simple
-    - npm install upm-ci-utils@stable --registry https://api.bintray.com/npm/unity/unity-npm -g
+    {% endif -%}
+    - npm install upm-ci-utils@stable --registry https://artifactory.prd.cds.internal.unity3d.com/artifactory/api/npm/upm-npm -g
     - unity-downloader-cli --source-file unity_revision.txt {% for component in platform.components %}-c {{ component }} {% endfor %}--wait --published-only
 {% if test.standalone == "true" -%}
     - upm-ci project test -u .Editor --project-path {{ test.path }}
@@ -126,8 +134,12 @@ scripting_backends:
     {{ v[0] }}: {{ v[1]}}
 {% endfor -%}
   commands:
+      {% if platform.os == "linux" -%}
+      - pip install unity-downloader-cli --user --upgrade --extra-index-url https://artifactory.eu-cph-1.unityops.net/api/pypi/common-python/simple
+      {% else -%}
       - pip install unity-downloader-cli --upgrade --extra-index-url https://artifactory.eu-cph-1.unityops.net/api/pypi/common-python/simple
-      - npm install upm-ci-utils@stable --registry https://api.bintray.com/npm/unity/unity-npm -g
+      {% endif -%}
+      - npm install upm-ci-utils@stable --registry https://artifactory.prd.cds.internal.unity3d.com/artifactory/api/npm/upm-npm -g
       - unity-downloader-cli --source-file unity_revision.txt {% for component in platform.components %}-c {{ component }} {% endfor %}--wait --published-only
       - upm-ci package test -u .Editor --package-path {{ test.path }}
   artifacts:
@@ -155,8 +167,12 @@ scripting_backends:
     {{ v[0] }}: {{ v[1]}}
 {% endfor -%}
   commands:
+    {% if platform.os == "linux" -%}
+    - pip install unity-downloader-cli --user --upgrade --extra-index-url https://artifactory.eu-cph-1.unityops.net/api/pypi/common-python/simple
+    {% else -%}
     - pip install unity-downloader-cli --upgrade --extra-index-url https://artifactory.eu-cph-1.unityops.net/api/pypi/common-python/simple
-    - npm install upm-ci-utils@stable --registry https://api.bintray.com/npm/unity/unity-npm -g
+    {% endif -%}
+    - npm install upm-ci-utils@stable --registry https://artifactory.prd.cds.internal.unity3d.com/artifactory/api/npm/upm-npm -g
     - unity-downloader-cli --source-file unity_revision.txt {% for component in platform.components %}-c {{ component }} {% endfor %}--wait --published-only
 {% if test.standalone == "true" -%}
     - upm-ci project test -u .Editor --project-path {{ test.path }}
@@ -186,8 +202,12 @@ scripting_backends:
     {{ v[0] }}: {{ v[1]}}
 {% endfor -%}
   commands:
+      {% if platform.os == "linux" -%}
+      - pip install unity-downloader-cli --user --upgrade --extra-index-url https://artifactory.eu-cph-1.unityops.net/api/pypi/common-python/simple
+      {% else -%}
       - pip install unity-downloader-cli --upgrade --extra-index-url https://artifactory.eu-cph-1.unityops.net/api/pypi/common-python/simple
-      - npm install upm-ci-utils@stable --registry https://api.bintray.com/npm/unity/unity-npm -g
+      {% endif -%}
+      - npm install upm-ci-utils@stable --registry https://artifactory.prd.cds.internal.unity3d.com/artifactory/api/npm/upm-npm -g
       - unity-downloader-cli --source-file unity_revision.txt {% for component in platform.components %}-c {{ component }} {% endfor %}--wait --published-only
       - upm-ci package test -u .Editor --package-path {{ test.path }}
   artifacts:
@@ -214,7 +234,7 @@ pack:{{ test.name }}:
     {{ v[0] }}: {{ v[1]}}
 {% endfor -%}
   commands:
-  - npm install upm-ci-utils@stable --registry https://api.bintray.com/npm/unity/unity-npm -g
+  - npm install upm-ci-utils@stable --registry https://artifactory.prd.cds.internal.unity3d.com/artifactory/api/npm/upm-npm -g
 {% if test.type == "project" %}
   - upm-ci project pack --project-path {{ test.path }}
 {% elsif test.type == "package" %}
@@ -232,7 +252,7 @@ test:trigger:
     image: package-ci/win10:stable
     flavor: b1.large
   commands:
-    - npm install upm-ci-utils@experimental -g --registry https://api.bintray.com/npm/unity/unity-npm
+    - npm install upm-ci-utils@stable -g --registry https://artifactory.prd.cds.internal.unity3d.com/artifactory/api/npm/upm-npm
     - upm-ci package izon --tests-complete
   artifacts:
     logs:
@@ -269,9 +289,13 @@ dependency:{{ test.name }}:{{ platform.os }}:{{ editor.version }}:
     DISPLAY: ":0"
 {% endif -%}
   commands:
+    {% if platform.os == "linux" -%}
+    - pip install unity-downloader-cli --user --upgrade --extra-index-url https://artifactory.eu-cph-1.unityops.net/api/pypi/common-python/simple
+    {% else -%}
     - pip install unity-downloader-cli --upgrade --extra-index-url https://artifactory.eu-cph-1.unityops.net/api/pypi/common-python/simple
+    {% endif -%}
     - unity-downloader-cli --source-file unity_revision.txt {% for component in platform.components %}-c {{ component }} {% endfor %}--wait --published-only
-    - npm install upm-ci-utils@experimental -g --registry https://api.bintray.com/npm/unity/unity-npm
+    - npm install upm-ci-utils@stable -g --registry https://artifactory.prd.cds.internal.unity3d.com/artifactory/api/npm/upm-npm
 {% if test.type == "package" %}
     - upm-ci package test -u {{ editor.version }} --type updated-dependencies-tests --package-path {{ test.path }}
 {% elsif test.type == "project" %}
@@ -299,7 +323,7 @@ dependency:{{ test.name }}:{{ platform.os }}:{{ editor.version }}:
 #    image: package-ci/win10:stable
 #    flavor: b1.large
 #  commands:
-#    - npm install upm-ci-utils@experimental -g --registry https://api.bintray.com/npm/unity/unity-npm
+#    - npm install upm-ci-utils@stable -g --registry https://artifactory.prd.cds.internal.unity3d.com/artifactory/api/npm/upm-npm
 #{% if test.type == "package" %}
 #    - upm-ci package izon -d
 #{% elsif test.type == "project" %}
@@ -368,9 +392,13 @@ promotion:test:{{ test.name }}:{{ platform.os }}:{{ editor.version }}:
     DISPLAY: ":0"
 {% endif -%}
   commands:
+    {% if platform.os == "linux" -%}
+    - pip install unity-downloader-cli --user --upgrade --extra-index-url https://artifactory.eu-cph-1.unityops.net/api/pypi/common-python/simple
+    {% else -%}
     - pip install unity-downloader-cli --upgrade --extra-index-url https://artifactory.eu-cph-1.unityops.net/api/pypi/common-python/simple
+    {% endif -%}
     - unity-downloader-cli --source-file unity_revision.txt {% for component in platform.components %}-c {{ component }} {% endfor %}--wait --published-only
-    - npm install upm-ci-utils@experimental -g --registry https://api.bintray.com/npm/unity/unity-npm
+    - npm install upm-ci-utils@stable -g --registry https://artifactory.prd.cds.internal.unity3d.com/artifactory/api/npm/upm-npm
 {% if test.type == "package" %}
     - upm-ci package test -u {{ editor.version }} --package-path {{ test.path }}
 {% elsif test.type == "project" %}
@@ -389,17 +417,6 @@ promotion:test:{{ test.name }}:{{ platform.os }}:{{ editor.version }}:
 {% for test in testables %}
 promotion:test:trigger:{{ test.name }}:
   name: Promotion Tests Trigger for {{ test.name }}
-  agent:
-    type: Unity::VM
-    image: package-ci/win10:stable
-    flavor: b1.large
-  artifacts:
-    logs:
-      paths:
-        - "upm-ci~/test-results/**/*"
-    packages:
-      paths:
-        - "upm-ci~/packages/**/*"
   dependencies:
     - .yamato/package-test.yml#pack:{{ test.name }}
 {% for editor in editors %}
