@@ -550,6 +550,26 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
             };
         }
 
+#if UNITY_2020_2_OR_NEWER
+        class RootNamespace : SolutionGenerationTestBase
+        {
+            [Test]
+            public void RootNamespaceFromAssembly_AddBlockToCsproj()
+            {
+                var @namespace = "TestNamespace";
+
+                var synchronizer = m_Builder
+                    .WithAssemblyData(rootNamespace: @namespace)
+                    .Build();
+
+                synchronizer.Sync();
+
+                var csprojFileContents = m_Builder.ReadProjectFile(m_Builder.Assembly);
+                StringAssert.Contains($"<RootNamespace>{@namespace}</RootNamespace>", csprojFileContents);
+            }
+        }
+#endif
+
         class CompilerOptions : SolutionGenerationTestBase
         {
             [Test]

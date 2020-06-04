@@ -1,10 +1,10 @@
 {
     "name": "Unity.VisualStudio.EditorTests",
-	"references": [
-        "Unity.VisualStudio.Editor"
-    ],
-    "optionalUnityReferences": [
-        "TestAssemblies"
+    "rootNamespace": "Microsoft.Unity.VisualStudio.Editor.Tests",
+    "references": [
+        "Unity.VisualStudio.Editor",
+        "UnityEngine.TestRunner",
+        "UnityEditor.TestRunner"
     ],
     "includePlatforms": [
         "Editor"
@@ -13,9 +13,13 @@
     "allowUnsafeCode": false,
     "overrideReferences": true,
     "precompiledReferences": [
-        "Moq.dll"
+        "Moq.dll",
+        "nunit.framework.dll"
     ],
     "autoReferenced": false,
-    "defineConstraints": [],
-    "versionDefines": []
+    "defineConstraints": [
+        "UNITY_INCLUDE_TESTS"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
 }

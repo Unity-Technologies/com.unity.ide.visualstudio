@@ -90,14 +90,10 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 			return this;
 		}
 
-		public SynchronizerBuilder WithAssemblyData(
-			string[] files = null,
-			string[] defines = null,
-			Assembly[] assemblyReferences = null,
-			string[] compiledAssemblyReferences = null,
-			bool unsafeSettings = false,
-			string roslynAnalyzerRuleSetPath = null)
+		public SynchronizerBuilder WithAssemblyData(string[] files = null, string[] defines = null, Assembly[] assemblyReferences = null, string[] compiledAssemblyReferences = null, bool unsafeSettings = false, string rootNamespace = "")
 		{
+            var options = new ScriptCompilerOptions() { AllowUnsafeCode = unsafeSettings };
+
 			var assembly = new Assembly(
 				"Test",
 				"some/path/file.dll",
@@ -105,14 +101,14 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 				defines ?? new string[0],
 				assemblyReferences ?? new Assembly[0],
 				compiledAssemblyReferences ?? new string[0],
-				AssemblyFlags.None);
-
+                AssemblyFlags.None,
 #if UNITY_2020_2_OR_NEWER
-			assembly.compilerOptions.RoslynAnalyzerRulesetPath = roslynAnalyzerRuleSetPath;
+                options,
+                rootNamespace);
+#else
+                options);
 #endif
-			assembly.compilerOptions.AllowUnsafeCode = unsafeSettings;
-
-			return WithAssembly(assembly);
+            return WithAssembly(assembly);
 		}
 
 		public SynchronizerBuilder WithAssembly(Assembly assembly)

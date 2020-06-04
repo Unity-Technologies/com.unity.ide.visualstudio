@@ -549,7 +549,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
                 MSBuildNamespaceUri,
                 assembly.name,
                 assembly.outputPath,
-                m_AssemblyNameProvider.ProjectGenerationRootNamespace,
+                GetRootNamespace(assembly),
                 targetFrameworkVersion,
                 targetLanguageVersion,
                 baseDirectory,
@@ -902,6 +902,15 @@ namespace Microsoft.Unity.VisualStudio.Editor
         string SolutionGuid(Assembly assembly)
         {
             return m_GUIDGenerator.SolutionGuid(m_ProjectName, ScriptingLanguageFor(assembly));
+        }
+
+        static string GetRootNamespace(Assembly assembly)
+        {
+ #if UNITY_2020_2_OR_NEWER
+            return assembly.rootNamespace;
+#else
+            return EditorSettings.projectGenerationRootNamespace;
+#endif
         }
     }
 
