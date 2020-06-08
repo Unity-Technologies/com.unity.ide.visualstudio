@@ -92,7 +92,7 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 
 		public SynchronizerBuilder WithAssemblyData(string[] files = null, string[] defines = null, Assembly[] assemblyReferences = null, string[] compiledAssemblyReferences = null, bool unsafeSettings = false, string rootNamespace = "")
 		{
-            var options = new ScriptCompilerOptions() { AllowUnsafeCode = unsafeSettings };
+			var options = new ScriptCompilerOptions() { AllowUnsafeCode = unsafeSettings };
 
 			var assembly = new Assembly(
 				"Test",
@@ -101,14 +101,14 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 				defines ?? new string[0],
 				assemblyReferences ?? new Assembly[0],
 				compiledAssemblyReferences ?? new string[0],
-                AssemblyFlags.None,
+				AssemblyFlags.None,
 #if UNITY_2020_2_OR_NEWER
-                options,
-                rootNamespace);
+				options,
+				rootNamespace);
 #else
-                options);
+				options);
 #endif
-            return WithAssembly(assembly);
+			return WithAssembly(assembly);
 		}
 
 		public SynchronizerBuilder WithAssembly(Assembly assembly)
