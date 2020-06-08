@@ -66,6 +66,21 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
             }
         }
 
+#if UNITY_2020_2_OR_NEWER
+        [Test]
+        public void EditorAssemblies_WillIncludeRootNamespace()
+        {
+            var editorAssemblies = CompilationPipeline.GetAssemblies(AssembliesType.Editor);
+            var collectedAssemblies = m_AssemblyNameProvider.GetAssemblies(s => true).ToList();
+
+            var editorTestAssembly = editorAssemblies.Single(a => a.name == "Unity.VisualStudio.EditorTests");
+            Assert.AreEqual("Microsoft.Unity.VisualStudio.Editor.Tests", editorTestAssembly.rootNamespace);
+
+            var collectedTestAssembly = collectedAssemblies.Single(a => a.name == editorTestAssembly.name);
+            Assert.AreEqual(editorTestAssembly.rootNamespace, collectedTestAssembly.rootNamespace);
+        }
+#endif
+
         [Test]
         public void AllEditorAssemblies_HaveAReferenceToUnityEditorAndUnityEngine()
         {
@@ -104,18 +119,6 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
             {
 				Assert.IsTrue(collectedAssemblies.Any(assembly => assembly.name == playerAssembly.name && assembly.outputPath == @"Temp\Bin\Debug\Player\"), $"{playerAssembly.name}: was not found in collection.");
 			}
-        }
-
-        [Test]
-        public void AllPlayerAssemblies_HaveAReferenceToUnityEngine()
-        {
-            var playerAssemblies = CompilationPipeline.GetAssemblies(AssembliesType.Player);
-
-            foreach (Assembly playerAssembly in playerAssemblies)
-            {
-                Assert.IsTrue(playerAssembly.allReferences.Any(reference => reference.EndsWith("UnityEngine.dll")));
-                Assert.IsFalse(playerAssembly.allReferences.Any(reference => reference.EndsWith("UnityEditor.dll")));
-            }
         }
     }
 }
