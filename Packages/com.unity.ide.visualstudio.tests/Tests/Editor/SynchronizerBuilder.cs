@@ -106,7 +106,7 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 				compiledAssemblyReferences ?? new string[0],
 				AssemblyFlags.None);
 
-#if UNITY_2020_2_OR_NEWER
+#if UNITY_EDITOR_2020_2_OR_NEWER
 			assembly.compilerOptions.RoslynAnalyzerRulesetPath = roslynAnalyzerRuleSetPath;
 #endif
 			assembly.compilerOptions.AllowUnsafeCode = unsafeSettings;

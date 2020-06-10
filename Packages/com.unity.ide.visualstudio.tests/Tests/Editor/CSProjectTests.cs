@@ -585,6 +585,7 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 	        [Test]
 	        public void RoslynAnalyzerDlls_WillBeIncluded()
 	        {
+#if UNITY_EDITOR_2020_2_OR_NEWER
 		        string roslynAnalyzerDllPath = "Assets/RoslynAnalyzer.dll";
 
 		        m_Builder.WithRoslynAnalyzers(new[] { roslynAnalyzerDllPath })
@@ -594,12 +595,13 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 		        XMLUtilities.AssertAnalyzerDllsAreIncluded(
 			        XMLUtilities.FromText(m_Builder.ReadProjectFile(m_Builder.Assembly)),
 			        new[] { roslynAnalyzerDllPath });
+#endif
 	        }
 
 	        [Test]
 	        public void RoslynAnalyzerRulesetPaths_WillBeIncluded()
 	        {
-#if UNITY_2020_2_OR_NEWER
+#if UNITY_EDITOR_2020_2_OR_NEWER
 		        var roslynAnalyzerRuleSetPath = "Assets/SampleRuleSet.ruleset";
 		        m_Builder.WithAssemblyData(files: new[] { "file.cs" }, roslynAnalyzerRuleSetPath: roslynAnalyzerRuleSetPath)
 			        .Build()
