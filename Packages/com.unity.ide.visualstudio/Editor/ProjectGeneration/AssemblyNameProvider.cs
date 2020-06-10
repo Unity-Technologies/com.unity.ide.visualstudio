@@ -21,6 +21,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
         UnityEditor.PackageManager.PackageInfo FindForAssetPath(string assetPath);
         ResponseFileData ParseResponseFile(string responseFilePath, string projectDirectory, string[] systemReferenceDirectories);
         void ToggleProjectGeneration(ProjectGenerationFlag preference);
+        IEnumerable<string> GetRoslynAnalyzerPaths();
     }
 
     public class AssemblyNameProvider : IAssemblyNameProvider
@@ -165,6 +166,13 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		public string GetAssemblyName(string assemblyOutputPath, string assemblyName)
 		{
 			return assemblyOutputPath.EndsWith(@"\Player\", StringComparison.Ordinal) ? assemblyName + ".Player" : assemblyName;
+		}
+		        
+		public IEnumerable<string> GetRoslynAnalyzerPaths()
+		{
+			return PluginImporter.GetAllImporters()
+				.Where(i => !i.isNativePlugin && AssetDatabase.GetLabels(i).SingleOrDefault(l => l == "RoslynAnalyzer") != null)
+				.Select(i => i.assetPath);
 		}
 	}
 }

@@ -6,8 +6,11 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using UnityEditor;
 using UnityEngine;
+
+[assembly: InternalsVisibleTo("Unity.VisualStudio.EditorTests")]
 
 namespace Microsoft.Unity.VisualStudio.Editor
 {

@@ -15,7 +15,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 {
 	internal static class Discovery
 	{
-		public static IEnumerable<VisualStudioInstallation> GetVisualStudioInstallations()
+		public static IEnumerable<IVisualStudioInstallation> GetVisualStudioInstallations()
 		{
 			if (VisualStudioEditor.IsWindows)
 			{
@@ -45,7 +45,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			return false;
 		}
 
-		public static bool TryDiscoverInstallation(string editorPath, out VisualStudioInstallation installation)
+		public static bool TryDiscoverInstallation(string editorPath, out IVisualStudioInstallation installation)
 		{
 			installation = null;
 

@@ -18,7 +18,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 	[InitializeOnLoad]
 	public class VisualStudioEditor : IExternalCodeEditor
 	{
-		private static readonly VisualStudioInstallation[] _installations;
+		private static readonly IVisualStudioInstallation[] _installations;
 
 		internal static bool IsOSX => Application.platform == RuntimePlatform.OSXEditor;
 		internal static bool IsWindows => !IsOSX && Path.DirectorySeparatorChar == '\\' && Environment.NewLine == "\r\n";
@@ -63,8 +63,8 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		public void Initialize(string editorInstallationPath)
 		{
 		}
-
-		internal bool TryGetVisualStudioInstallationForPath(string editorPath, out VisualStudioInstallation installation)
+		
+		public virtual bool TryGetVisualStudioInstallationForPath(string editorPath, out IVisualStudioInstallation installation)
 		{
 			// lookup for well known installations
 			foreach (var candidate in _installations)
@@ -79,7 +79,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			return Discovery.TryDiscoverInstallation(editorPath, out installation);
 		}
 
-		public bool TryGetInstallationForPath(string editorPath, out CodeEditor.Installation installation)
+		public virtual bool TryGetInstallationForPath(string editorPath, out CodeEditor.Installation installation)
 		{
 			var result = TryGetVisualStudioInstallationForPath(editorPath, out var vsi);
 			installation = vsi == null ? default : vsi.ToCodeEditorInstallation();

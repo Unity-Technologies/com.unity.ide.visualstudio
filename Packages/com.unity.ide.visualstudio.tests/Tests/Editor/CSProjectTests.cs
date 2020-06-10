@@ -582,6 +582,35 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 
         class References : SolutionGenerationTestBase
         {
+	        [Test]
+	        public void RoslynAnalyzerDlls_WillBeIncluded()
+	        {
+		        string roslynAnalyzerDllPath = "Assets/RoslynAnalyzer.dll";
+
+		        m_Builder.WithRoslynAnalyzers(new[] { roslynAnalyzerDllPath })
+			        .Build()
+			        .Sync();
+				
+		        XMLUtilities.AssertAnalyzerDllsAreIncluded(
+			        XMLUtilities.FromText(m_Builder.ReadProjectFile(m_Builder.Assembly)),
+			        new[] { roslynAnalyzerDllPath });
+	        }
+
+	        [Test]
+	        public void RoslynAnalyzerRulesetPaths_WillBeIncluded()
+	        {
+#if UNITY_2020_2_OR_NEWER
+		        var roslynAnalyzerRuleSetPath = "Assets/SampleRuleSet.ruleset";
+		        m_Builder.WithAssemblyData(files: new[] { "file.cs" }, roslynAnalyzerRuleSetPath: roslynAnalyzerRuleSetPath)
+			        .Build()
+			        .Sync();
+
+		        XMLUtilities.AssertAnalyzerRuleSetsAreIncluded(
+			        XMLUtilities.FromText(m_Builder.ReadProjectFile(m_Builder.Assembly)),
+			        roslynAnalyzerRuleSetPath);
+#endif
+	        }
+	        
             [Test]
             public void DllInSourceFiles_WillBeAddedAsReference()
             {

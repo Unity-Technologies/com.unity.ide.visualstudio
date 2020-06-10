@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Linq;
 using Moq;
+using Unity.CodeEditor;
 using UnityEditor.Compilation;
 
 namespace Microsoft.Unity.VisualStudio.Editor.Tests
@@ -88,7 +89,13 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 			return this;
 		}
 
-		public SynchronizerBuilder WithAssemblyData(string[] files = null, string[] defines = null, Assembly[] assemblyReferences = null, string[] compiledAssemblyReferences = null, bool unsafeSettings = false)
+		public SynchronizerBuilder WithAssemblyData(
+			string[] files = null,
+			string[] defines = null,
+			Assembly[] assemblyReferences = null,
+			string[] compiledAssemblyReferences = null,
+			bool unsafeSettings = false,
+			string roslynAnalyzerRuleSetPath = null)
 		{
 			var assembly = new Assembly(
 				"Test",
@@ -98,10 +105,13 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 				assemblyReferences ?? new Assembly[0],
 				compiledAssemblyReferences ?? new string[0],
 				AssemblyFlags.None);
+
+#if UNITY_2020_2_OR_NEWER
+			assembly.compilerOptions.RoslynAnalyzerRulesetPath = roslynAnalyzerRuleSetPath;
+#endif
 			assembly.compilerOptions.AllowUnsafeCode = unsafeSettings;
-			return WithAssembly(
-				assembly
-			);
+
+			return WithAssembly(assembly);
 		}
 
 		public SynchronizerBuilder WithAssembly(Assembly assembly)
@@ -157,6 +167,35 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 		{
 			m_AssemblyProvider.Setup(x => x.GetAssemblyName(outputPath, assemblyName)).Returns(resAssemblyName);
 			return this;
+		}
+		
+		public SynchronizerBuilder WithRoslynAnalyzers(string[] roslynAnalyzerDllPaths)
+		{
+			var myMock = new MyMockIExternalCodeEditor();
+			CodeEditor.Register(myMock);
+
+			m_AssemblyProvider.Setup(p => p.GetRoslynAnalyzerPaths()).Returns(roslynAnalyzerDllPaths);
+
+			return this;
+		}
+
+		public class MyMockIExternalCodeEditor : VisualStudioEditor
+		{
+			public override bool TryGetInstallationForPath(string editorPath, out CodeEditor.Installation installation)
+			{
+				installation = new CodeEditor.Installation();
+				return true;
+			}
+
+			public override bool TryGetVisualStudioInstallationForPath(string editorPath, out IVisualStudioInstallation installation)
+			{
+				var mock = new Mock<IVisualStudioInstallation>();
+				mock.Setup(x => x.SupportsAnalyzers).Returns(true);
+
+				installation = mock.Object;
+
+				return true;
+			}
 		}
 	}
 }
