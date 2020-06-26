@@ -559,7 +559,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
             try
             {
-#if UNITY_EDITOR_2020_2_OR_NEWER
+#if UNITY_2020_2_OR_NEWER
 	            return string.Format(GetProjectHeaderTemplate(roslynAnalyzerDllPaths, assembly.compilerOptions.RoslynAnalyzerRulesetPath), arguments);
 #else
                 return string.Format(GetProjectHeaderTemplate(roslynAnalyzerDllPaths, null), arguments);
@@ -707,7 +707,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
             // Only add analyzer block for compatible Visual Studio
             if (m_CurrentInstallation != null && m_CurrentInstallation.SupportsAnalyzers)
             {
-#if UNITY_EDITOR_2020_2_OR_NEWER
+#if UNITY_2020_2_OR_NEWER
 	            if (roslynAnalyzerRulesetPath != null)
 	            {
 		            lines.Add(@"  <PropertyGroup>");
