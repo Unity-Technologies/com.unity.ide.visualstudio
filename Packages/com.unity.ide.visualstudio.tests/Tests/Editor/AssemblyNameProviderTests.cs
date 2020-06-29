@@ -120,5 +120,17 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 				Assert.IsTrue(collectedAssemblies.Any(assembly => assembly.name == playerAssembly.name && assembly.outputPath == @"Temp\Bin\Debug\Player\"), $"{playerAssembly.name}: was not found in collection.");
 			}
         }
+
+        [Test]
+        public void AsDefaultArgument_ProjectGeneration_WillBeLocalAndEmbedded()
+        {
+            EditorPrefs.DeleteKey("unity_project_generation_flag");
+            m_AssemblyNameProvider = new AssemblyNameProvider();
+
+            Assert.That(
+                m_AssemblyNameProvider.ProjectGenerationFlag,
+                Is.EqualTo(ProjectGenerationFlag.Local | ProjectGenerationFlag.Embedded),
+                "The default ProjectGenerationFlag should be (Local | Embedded)");
+        }
     }
 }
