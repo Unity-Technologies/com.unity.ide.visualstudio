@@ -15,17 +15,16 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 
         public static void AssertNonCompileItemsMatchExactly(XmlDocument projectXml, IEnumerable<string> expectedNoncompileItems)
         {
-            var nonCompileItems = projectXml.SelectAttributeValues("/msb:Project/msb:ItemGroup/msb:None/@Include").ToArray();
-            CollectionAssert.AreEquivalent(expectedNoncompileItems, nonCompileItems);
+	        var nonCompileItems = projectXml.SelectAttributeValues("/msb:Project/msb:ItemGroup/msb:None/@Include").ToArray();
+	        CollectionAssert.AreEquivalent(expectedNoncompileItems, nonCompileItems);
         }
 
         public static void AssertAnalyzerDllsAreIncluded(XmlDocument projectXml, IEnumerable<string> expectedAnalyzerDllPaths)
-        {
+        { 
 	        foreach (string path in expectedAnalyzerDllPaths.Select(FileUtility.Normalize))
 	        {
 		        CollectionAssert.Contains(
-			        projectXml.SelectAttributeValues("/msb:Project/msb:ItemGroup/msb:Analyzer/@Include"),
-			        path);
+			        projectXml.SelectAttributeValues("/msb:Project/msb:ItemGroup/msb:Analyzer/@Include"), path);
 	        }
         }
 
