@@ -596,6 +596,8 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 		        XMLUtilities.AssertAnalyzerDllsAreIncluded(
 			        XMLUtilities.FromText(m_Builder.ReadProjectFile(m_Builder.Assembly)),
 			        new[] { roslynAnalyzerDllPath });
+
+		        m_Builder.CleanUp();
 	        }
 
 	        [Test]

@@ -44,6 +44,7 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 		}
 
 		Assembly[] m_Assemblies;
+		private MyMockIExternalCodeEditor m_MockExternalCodeEditor; 
 
 		public SynchronizerBuilder()
 		{
@@ -171,12 +172,20 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 		
 		public SynchronizerBuilder WithRoslynAnalyzers(string[] roslynAnalyzerDllPaths)
 		{
-			var myMock = new MyMockIExternalCodeEditor();
-			CodeEditor.Register(myMock);
+			m_MockExternalCodeEditor = new MyMockIExternalCodeEditor();
+			CodeEditor.Register(m_MockExternalCodeEditor);
 
 			m_AssemblyProvider.Setup(p => p.GetRoslynAnalyzerPaths()).Returns(roslynAnalyzerDllPaths);
 
 			return this;
+		}
+
+		public void CleanUp()
+		{
+			if (m_MockExternalCodeEditor != null)
+			{
+				CodeEditor.Unregister(m_MockExternalCodeEditor);	
+			}
 		}
 
 		public class MyMockIExternalCodeEditor : VisualStudioEditor
