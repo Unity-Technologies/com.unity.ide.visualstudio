@@ -544,6 +544,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
                 projectType + ":" + (int)projectType,
                 EditorUserBuildSettings.activeBuildTarget + ":" + (int)EditorUserBuildSettings.activeBuildTarget,
                 Application.unityVersion,
+                VisualStudioIntegration.PackageVersion()
             };
 
             try
@@ -676,6 +677,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
                 @"  <PropertyGroup>",
                 @"    <ProjectTypeGuids>{{E097FAD1-6243-4DAD-9C02-E9B9EFC3FFC1}};{{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}}</ProjectTypeGuids>",
                 @"    <UnityProjectGenerator>Package</UnityProjectGenerator>",
+                @"    <UnityProjectGeneratorVersion>{17}</UnityProjectGeneratorVersion>",
                 @"    <UnityProjectType>{14}</UnityProjectType>",
                 @"    <UnityBuildTarget>{15}</UnityBuildTarget>",
                 @"    <UnityVersion>{16}</UnityVersion>",
