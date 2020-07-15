@@ -531,9 +531,13 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
             if (m_CurrentInstallation != null && m_CurrentInstallation.SupportsCSharp8)
             {
-                // Current installation is compatible with C# 8.
-                // But Unity has no support for C# 8 constructs so far, so tell the compiler to accept only C# 7.3 or lower.
+                // Current VS installation is compatible with C# 8.
+
+#if !UNITY_2020_2_OR_NEWER
+                // Unity 2020.2.0a12 added support for C# 8
+                // <=2020.1 has no support for C# 8 constructs, so tell the compiler to accept only C# 7.3 or lower.
                 targetLanguageVersion = "7.3";
+#endif
             }
 
             var projectType = ProjectTypeOf(assembly.name);
