@@ -66,6 +66,21 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
             }
         }
 
+#if UNITY_2020_2_OR_NEWER
+        [Test]
+        public void EditorAssemblies_WillIncludeRootNamespace()
+        {
+            var editorAssemblies = CompilationPipeline.GetAssemblies(AssembliesType.Editor);
+            var collectedAssemblies = m_AssemblyNameProvider.GetAssemblies(s => true).ToList();
+
+            var editorTestAssembly = editorAssemblies.Single(a => a.name == "Unity.VisualStudio.EditorTests");
+            Assert.AreEqual("Microsoft.Unity.VisualStudio.Editor.Tests", editorTestAssembly.rootNamespace);
+
+            var collectedTestAssembly = collectedAssemblies.Single(a => a.name == editorTestAssembly.name);
+            Assert.AreEqual(editorTestAssembly.rootNamespace, collectedTestAssembly.rootNamespace);
+        }
+#endif
+
         [Test]
         public void AllEditorAssemblies_HaveAReferenceToUnityEditorAndUnityEngine()
         {
@@ -107,15 +122,15 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
         }
 
         [Test]
-        public void AllPlayerAssemblies_HaveAReferenceToUnityEngine()
+        public void AsDefaultArgument_ProjectGeneration_WillBeLocalAndEmbedded()
         {
-            var playerAssemblies = CompilationPipeline.GetAssemblies(AssembliesType.Player);
+            EditorPrefs.DeleteKey("unity_project_generation_flag");
+            m_AssemblyNameProvider = new AssemblyNameProvider();
 
-            foreach (Assembly playerAssembly in playerAssemblies)
-            {
-                Assert.IsTrue(playerAssembly.allReferences.Any(reference => reference.EndsWith("UnityEngine.dll")));
-                Assert.IsFalse(playerAssembly.allReferences.Any(reference => reference.EndsWith("UnityEditor.dll")));
-            }
+            Assert.That(
+                m_AssemblyNameProvider.ProjectGenerationFlag,
+                Is.EqualTo(ProjectGenerationFlag.Local | ProjectGenerationFlag.Embedded),
+                "The default ProjectGenerationFlag should be (Local | Embedded)");
         }
     }
 }

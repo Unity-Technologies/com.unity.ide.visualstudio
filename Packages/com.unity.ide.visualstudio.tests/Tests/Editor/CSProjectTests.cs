@@ -5,7 +5,6 @@ using System.Xml;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEditor.Compilation;
-using UnityEditorInternal;
 using UnityEngine;
 
 namespace Microsoft.Unity.VisualStudio.Editor.Tests
@@ -118,6 +117,7 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
                 var projectType = ProjectTypeOf(m_Builder.Assembly.name);
                 var buildTarget = projectType + ":" + (int)projectType;
                 var unityVersion = Application.unityVersion;
+                var packageVersion = UnityEditor.PackageManager.PackageInfo.FindForAssembly(typeof(AssemblyNameProvider).Assembly).version;
 
                 var content = new[]
                 {
@@ -170,6 +170,7 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
                     "  <PropertyGroup>",
                     "    <ProjectTypeGuids>{E097FAD1-6243-4DAD-9C02-E9B9EFC3FFC1};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>",
                     "    <UnityProjectGenerator>Package</UnityProjectGenerator>",
+                    $"    <UnityProjectGeneratorVersion>{packageVersion}</UnityProjectGeneratorVersion>",
                     $"    <UnityProjectType>{buildTarget}</UnityProjectType>",
                     $"    <UnityBuildTarget>{EditorUserBuildSettings.activeBuildTarget + ":" + (int)EditorUserBuildSettings.activeBuildTarget}</UnityBuildTarget>",
                     $"    <UnityVersion>{unityVersion}</UnityVersion>",
@@ -549,6 +550,26 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
                 "uxml", "uss", "shader", "compute", "cginc", "hlsl", "glslinc", "template", "raytrace"
             };
         }
+
+#if UNITY_2020_2_OR_NEWER
+        class RootNamespace : SolutionGenerationTestBase
+        {
+            [Test]
+            public void RootNamespaceFromAssembly_AddBlockToCsproj()
+            {
+                var @namespace = "TestNamespace";
+
+                var synchronizer = m_Builder
+                    .WithAssemblyData(rootNamespace: @namespace)
+                    .Build();
+
+                synchronizer.Sync();
+
+                var csprojFileContents = m_Builder.ReadProjectFile(m_Builder.Assembly);
+                StringAssert.Contains($"<RootNamespace>{@namespace}</RootNamespace>", csprojFileContents);
+            }
+        }
+#endif
 
         class CompilerOptions : SolutionGenerationTestBase
         {
