@@ -80,7 +80,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
         public ProjectGeneration(string tempDirectory, IAssemblyNameProvider assemblyNameProvider, IFileIO fileIoProvider, IGUIDGenerator guidGenerator)
         {
-            ProjectDirectory = tempDirectory.Replace('\\', '/');
+            ProjectDirectory = FileUtility.NormalizeWindowsToUnix(tempDirectory);
             m_ProjectName = Path.GetFileName(ProjectDirectory);
             m_AssemblyNameProvider = assemblyNameProvider;
             m_FileIOProvider = fileIoProvider;
@@ -209,7 +209,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
             return ScriptingLanguageFor(files[0]);
         }
 
-        static ScriptingLanguage ScriptingLanguageFor(string path)
+        internal static ScriptingLanguage ScriptingLanguageFor(string path)
         {
             return GetExtensionWithoutDot(path) == "cs" ? ScriptingLanguage.CSharp : ScriptingLanguage.None;
         }
