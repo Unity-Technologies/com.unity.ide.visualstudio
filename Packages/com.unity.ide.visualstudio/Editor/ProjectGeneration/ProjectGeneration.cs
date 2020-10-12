@@ -15,7 +15,6 @@ using System.Text.RegularExpressions;
 using Unity.CodeEditor;
 using UnityEditor;
 using UnityEditor.Compilation;
-using UnityEditor.PackageManager;
 using UnityEditorInternal;
 using UnityEngine;
 
@@ -105,6 +104,10 @@ namespace Microsoft.Unity.VisualStudio.Editor
         {
             SetupProjectSupportedExtensions();
 
+            // See https://devblogs.microsoft.com/setup/configure-visual-studio-across-your-organization-with-vsconfig/
+            // We create a .vsconfig file to make sure our ManagedGame workload is installed
+            CreateVsConfigIfNotFound();
+
             // Don't sync if we haven't synced before
             if (HasSolutionBeenGenerated() && HasFilesBeenModified(affectedFiles, reimportedFiles))
             {
@@ -112,6 +115,28 @@ namespace Microsoft.Unity.VisualStudio.Editor
                 return true;
             }
             return false;
+        }
+
+        private void CreateVsConfigIfNotFound()
+        {
+            try
+            {
+                var vsConfigFile = VsConfigFile();
+                if (m_FileIOProvider.Exists(vsConfigFile))
+                    return;
+
+                var content = $@"{{
+  ""version"": ""1.0"",
+  ""components"": [ 
+    ""{Discovery.ManagedWorkload}""
+  ]
+}} 
+";
+                m_FileIOProvider.WriteAllText(vsConfigFile, content);
+            }
+            catch (IOException)
+            {
+            }
         }
 
         bool HasFilesBeenModified(IEnumerable<string> affectedFiles, IEnumerable<string> reimportedFiles)
@@ -501,6 +526,11 @@ namespace Microsoft.Unity.VisualStudio.Editor
         public string SolutionFile()
         {
             return Path.Combine(FileUtility.Normalize(ProjectDirectory), $"{InvalidCharactersRegexPattern.Replace(m_ProjectName,"_")}.sln");
+        }
+
+        internal string VsConfigFile()
+        {
+            return Path.Combine(FileUtility.Normalize(ProjectDirectory), ".vsconfig");
         }
 
         string ProjectHeader(
