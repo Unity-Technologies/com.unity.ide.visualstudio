@@ -177,17 +177,17 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 		private static void CheckCurrentEditorInstallation()
 		{
-			var filePath = CodeEditor.CurrentEditorInstallation;
+			var editorPath = CodeEditor.CurrentEditorInstallation;
 			try
 			{
-				if (File.Exists(filePath))
+				if (Discovery.TryDiscoverInstallation(editorPath, out _))
 					return;
 			}
 			catch (IOException)
 			{
 			}
 
-			UnityEngine.Debug.LogWarning($"Visual Studio executable {filePath} is not found. Please change your settings in Edit > Preferences > External Tools.");
+			UnityEngine.Debug.LogWarning($"Visual Studio executable {editorPath} is not found. Please change your settings in Edit > Preferences > External Tools.");
 		}
 
 		public bool OpenProject(string path, int line, int column)
