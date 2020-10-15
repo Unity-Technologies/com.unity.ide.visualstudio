@@ -41,6 +41,8 @@ namespace Microsoft.Unity.VisualStudio.Editor
     public class ProjectGeneration : IGenerator
     {
         public static readonly string MSBuildNamespaceUri = "http://schemas.microsoft.com/developer/msbuild/2003";
+        
+        public IAssemblyNameProvider AssemblyNameProvider => m_AssemblyNameProvider;
 
         const string k_WindowsNewline = "\r\n";
 
@@ -67,7 +69,6 @@ namespace Microsoft.Unity.VisualStudio.Editor
         readonly IAssemblyNameProvider m_AssemblyNameProvider;
         readonly IFileIO m_FileIOProvider;
         readonly IGUIDGenerator m_GUIDGenerator;
-        public IAssemblyNameProvider AssemblyNameProvider => m_AssemblyNameProvider;
         bool m_ShouldGenerateAll;
         IVisualStudioInstallation m_CurrentInstallation;
         
@@ -226,14 +227,16 @@ namespace Microsoft.Unity.VisualStudio.Editor
             var assemblyList = assemblies.ToList();
 
             SyncSolution(assemblyList);
+            
             var allProjectAssemblies = RelevantAssembliesForMode(assemblyList).ToList();
+            
             foreach (Assembly assembly in allProjectAssemblies)
             {
 	            SyncProject(assembly,
 		            allAssetProjectParts, 
 		            responseFilesData: ParseResponseFileData(assembly),
 		            allProjectAssemblies,
-		            m_AssemblyNameProvider.GetRoslynAnalyzerPaths().ToArray());
+		            assembly.compilerOptions.RoslynAnalyzerDllPaths);
             }
         }
 
