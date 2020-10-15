@@ -236,7 +236,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		            allAssetProjectParts, 
 		            responseFilesData: ParseResponseFileData(assembly),
 		            allProjectAssemblies,
-		            assembly.compilerOptions.RoslynAnalyzerDllPaths);
+		            m_AssemblyNameProvider.GetRoslynAnalyzerPaths().ToArray());
             }
         }
 
