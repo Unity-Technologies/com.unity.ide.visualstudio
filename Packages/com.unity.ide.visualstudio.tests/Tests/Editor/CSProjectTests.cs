@@ -607,24 +607,27 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 	        [Test]
 	        public void RoslynAnalyzerDlls_WillBeIncluded()
 	        {
+		        try
+		        {
+			        string roslynAnalyzerDllPath = "Assets/RoslynAnalyzer.dll";
 
-		        string roslynAnalyzerDllPath = "Assets/RoslynAnalyzer.dll";
+			        m_Builder.WithRoslynAnalyzers(new[] { roslynAnalyzerDllPath })
+				        .Build()
+				        .Sync();
 
-		        m_Builder.WithRoslynAnalyzers(new[] { roslynAnalyzerDllPath })
-			        .Build()
-			        .Sync();
-				
-		        XMLUtilities.AssertAnalyzerDllsAreIncluded(
-			        XMLUtilities.FromText(m_Builder.ReadProjectFile(m_Builder.Assembly)),
-			        new[] { roslynAnalyzerDllPath });
-
-		        m_Builder.CleanUp();
+			        XMLUtilities.AssertAnalyzerDllsAreIncluded(
+				        XMLUtilities.FromText(m_Builder.ReadProjectFile(m_Builder.Assembly)),
+				        new[] { roslynAnalyzerDllPath });
+		        }
+		        finally
+		        {
+			        m_Builder.CleanUp();    
+		        }
 	        }
 
 	        [Test]
 	        public void RoslynAnalyzerRulesetPaths_WillBeIncluded()
 	        {
-
 		        var roslynAnalyzerRuleSetPath = "Assets/SampleRuleSet.ruleset";
 		        m_Builder.WithAssemblyData(files: new[] { "file.cs" }, roslynAnalyzerRuleSetPath: roslynAnalyzerRuleSetPath)
 			        .Build()

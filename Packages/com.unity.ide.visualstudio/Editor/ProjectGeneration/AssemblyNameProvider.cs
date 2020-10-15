@@ -21,7 +21,6 @@ namespace Microsoft.Unity.VisualStudio.Editor
         UnityEditor.PackageManager.PackageInfo FindForAssetPath(string assetPath);
         ResponseFileData ParseResponseFile(string responseFilePath, string projectDirectory, string[] systemReferenceDirectories);
         void ToggleProjectGeneration(ProjectGenerationFlag preference);
-        IEnumerable<string> GetRoslynAnalyzerPaths();
     }
 
     public class AssemblyNameProvider : IAssemblyNameProvider
@@ -55,7 +54,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
             {
                 if (assembly.sourceFiles.Any(shouldFileBePartOfSolution))
                 {
-                    var options = new ScriptCompilerOptions()
+                    var options = new ScriptCompilerOptions
                     {
                         ResponseFiles = assembly.compilerOptions.ResponseFiles,
                         AllowUnsafeCode = assembly.compilerOptions.AllowUnsafeCode,
@@ -80,7 +79,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
             {
                 foreach (var assembly in CompilationPipeline.GetAssemblies(AssembliesType.Player).Where(assembly => assembly.sourceFiles.Any(shouldFileBePartOfSolution)))
                 {
-                    var options = new ScriptCompilerOptions()
+                    var options = new ScriptCompilerOptions
                     {
                         ResponseFiles = assembly.compilerOptions.ResponseFiles,
                         AllowUnsafeCode = assembly.compilerOptions.AllowUnsafeCode,
@@ -105,14 +104,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
         public string GetCompileOutputPath(string assemblyName)
         {
-            if (assemblyName.EndsWith(".Player", StringComparison.Ordinal))
-            {
-                return @"Temp\Bin\Debug\Player\";
-            }
-            else
-            {
-                return @"Temp\Bin\Debug\";
-            }
+            return assemblyName.EndsWith(".Player", StringComparison.Ordinal) ? @"Temp\Bin\Debug\Player\" : @"Temp\Bin\Debug\";
         }
 
         public IEnumerable<string> GetAllAssetPaths()
@@ -188,12 +180,5 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		{
 			return assemblyOutputPath.EndsWith(@"\Player\", StringComparison.Ordinal) ? assemblyName + ".Player" : assemblyName;
 		}
-		        
-		public IEnumerable<string> GetRoslynAnalyzerPaths()
-		{
-			return PluginImporter.GetAllImporters()
-				.Where(i => !i.isNativePlugin && AssetDatabase.GetLabels(i).SingleOrDefault(l => l == "RoslynAnalyzer") != null)
-				.Select(i => i.assetPath);
-		}
-	}
+    }
 }

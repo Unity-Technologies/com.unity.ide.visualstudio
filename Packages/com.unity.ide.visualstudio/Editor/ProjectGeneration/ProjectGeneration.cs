@@ -15,7 +15,6 @@ using System.Text.RegularExpressions;
 using Unity.CodeEditor;
 using UnityEditor;
 using UnityEditor.Compilation;
-using UnityEditor.PackageManager;
 using UnityEditorInternal;
 using UnityEngine;
 
@@ -41,8 +40,8 @@ namespace Microsoft.Unity.VisualStudio.Editor
     public class ProjectGeneration : IGenerator
     {
         public static readonly string MSBuildNamespaceUri = "http://schemas.microsoft.com/developer/msbuild/2003";
-        
         public IAssemblyNameProvider AssemblyNameProvider => m_AssemblyNameProvider;
+        public string ProjectDirectory { get; }
 
         const string k_WindowsNewline = "\r\n";
 
@@ -62,16 +61,14 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
         string[] m_ProjectSupportedExtensions = new string[0];
         string[] m_BuiltinSupportedExtensions = new string[0];
-
-        public string ProjectDirectory { get; }
-
+       
         readonly string m_ProjectName;
         readonly IAssemblyNameProvider m_AssemblyNameProvider;
         readonly IFileIO m_FileIOProvider;
         readonly IGUIDGenerator m_GUIDGenerator;
         bool m_ShouldGenerateAll;
         IVisualStudioInstallation m_CurrentInstallation;
-        
+
         public ProjectGeneration() : this(Directory.GetParent(Application.dataPath).FullName)
         {
         }
@@ -82,7 +79,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
         public ProjectGeneration(string tempDirectory, IAssemblyNameProvider assemblyNameProvider, IFileIO fileIoProvider, IGUIDGenerator guidGenerator)
         {
-            ProjectDirectory = tempDirectory.Replace('\\', '/');
+            ProjectDirectory = FileUtility.NormalizeWindowsToUnix(tempDirectory);
             m_ProjectName = Path.GetFileName(ProjectDirectory);
             m_AssemblyNameProvider = assemblyNameProvider;
             m_FileIOProvider = fileIoProvider;
@@ -107,6 +104,10 @@ namespace Microsoft.Unity.VisualStudio.Editor
         {
             SetupProjectSupportedExtensions();
 
+            // See https://devblogs.microsoft.com/setup/configure-visual-studio-across-your-organization-with-vsconfig/
+            // We create a .vsconfig file to make sure our ManagedGame workload is installed
+            CreateVsConfigIfNotFound();
+
             // Don't sync if we haven't synced before
             if (HasSolutionBeenGenerated() && HasFilesBeenModified(affectedFiles, reimportedFiles))
             {
@@ -114,6 +115,28 @@ namespace Microsoft.Unity.VisualStudio.Editor
                 return true;
             }
             return false;
+        }
+
+        private void CreateVsConfigIfNotFound()
+        {
+            try
+            {
+                var vsConfigFile = VsConfigFile();
+                if (m_FileIOProvider.Exists(vsConfigFile))
+                    return;
+
+                var content = $@"{{
+  ""version"": ""1.0"",
+  ""components"": [ 
+    ""{Discovery.ManagedWorkload}""
+  ]
+}} 
+";
+                m_FileIOProvider.WriteAllText(vsConfigFile, content);
+            }
+            catch (IOException)
+            {
+            }
         }
 
         bool HasFilesBeenModified(IEnumerable<string> affectedFiles, IEnumerable<string> reimportedFiles)
@@ -211,7 +234,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
             return ScriptingLanguageFor(files[0]);
         }
 
-        static ScriptingLanguage ScriptingLanguageFor(string path)
+        internal static ScriptingLanguage ScriptingLanguageFor(string path)
         {
             return GetExtensionWithoutDot(path) == "cs" ? ScriptingLanguage.CSharp : ScriptingLanguage.None;
         }
@@ -233,10 +256,14 @@ namespace Microsoft.Unity.VisualStudio.Editor
             foreach (Assembly assembly in allProjectAssemblies)
             {
 	            SyncProject(assembly,
-		            allAssetProjectParts, 
+		            allAssetProjectParts,
 		            responseFilesData: ParseResponseFileData(assembly),
 		            allProjectAssemblies,
-		            m_AssemblyNameProvider.GetRoslynAnalyzerPaths().ToArray());
+#if UNITY_2020_2_OR_NEWER
+		            assembly.compilerOptions.RoslynAnalyzerDllPaths);
+#else 
+					new string[0]);
+#endif
             }
         }
 
@@ -452,8 +479,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
               assembly.compiledAssemblyReferences
                 .Union(responseRefs)
                 .Union(references)
-                .Union(internalAssemblyReferences)
-                .Except(roslynAnalyzerDllPaths);
+                .Union(internalAssemblyReferences);
             
             foreach (var reference in allReferences)
             {
@@ -516,6 +542,11 @@ namespace Microsoft.Unity.VisualStudio.Editor
             return Path.Combine(FileUtility.Normalize(ProjectDirectory), $"{InvalidCharactersRegexPattern.Replace(m_ProjectName,"_")}.sln");
         }
 
+        internal string VsConfigFile()
+        {
+            return Path.Combine(FileUtility.Normalize(ProjectDirectory), ".vsconfig");
+        }
+
         string ProjectHeader(
             Assembly assembly,
             IEnumerable<ResponseFileData> responseFilesData,
@@ -568,9 +599,9 @@ namespace Microsoft.Unity.VisualStudio.Editor
             try
             {
 #if UNITY_2020_2_OR_NEWER
-	            return string.Format(GetProjectHeaderTemplate(roslynAnalyzerDllPaths, assembly.compilerOptions.RoslynAnalyzerRulesetPath), arguments);
+                return string.Format(GetProjectHeaderTemplate(roslynAnalyzerDllPaths, assembly.compilerOptions.RoslynAnalyzerRulesetPath), arguments);
 #else
-                return string.Format(GetProjectHeaderTemplate(roslynAnalyzerDllPaths, null), arguments);
+                return string.Format(GetProjectHeaderTemplate(new string[0], null), arguments);
 #endif
             }
             catch (Exception)
@@ -717,19 +748,21 @@ namespace Microsoft.Unity.VisualStudio.Editor
             if (m_CurrentInstallation != null && m_CurrentInstallation.SupportsAnalyzers)
             {
 #if UNITY_2020_2_OR_NEWER
-	            if (roslynAnalyzerRulesetPath != null)
-	            {
-		            lines.Add(@"  <PropertyGroup>");
-		            lines.Add($"    <CodeAnalysisRuleSet>{roslynAnalyzerRulesetPath}</CodeAnalysisRuleSet>");
-		            lines.Add(@"  </PropertyGroup>");
-	            }
+                if (roslynAnalyzerRulesetPath != null)
+                {
+                    lines.Add(@"  <PropertyGroup>"); 
+                    lines.Add($"    <CodeAnalysisRuleSet>{roslynAnalyzerRulesetPath}</CodeAnalysisRuleSet>");
+                    lines.Add(@"  </PropertyGroup>");
+                }
 #endif
+
+	            string[] analyzers = m_CurrentInstallation.GetAnalyzers();
+	            string[] allAnalyzers = analyzers != null ? analyzers.Concat(roslynAnalyzerDllPaths).ToArray() : roslynAnalyzerDllPaths;
 	            
-                var analyzers = m_CurrentInstallation.GetAnalyzers().Concat(roslynAnalyzerDllPaths);
-                if (analyzers.Any())
+                if (allAnalyzers.Any())
                 {
                     lines.Add(@"  <ItemGroup>");
-                    foreach (var analyzer in analyzers)
+                    foreach (var analyzer in allAnalyzers)
                     {
 	                    lines.Add(string.Format(@"    <Analyzer Include=""{0}"" />", EscapedRelativePathFor(analyzer)));
                     }

@@ -15,6 +15,8 @@ namespace Microsoft.Unity.VisualStudio.Editor
 {
 	internal static class Discovery
 	{
+		internal const string ManagedWorkload = "Microsoft.VisualStudio.Workload.ManagedGame";
+		
 		public static IEnumerable<IVisualStudioInstallation> GetVisualStudioInstallations()
 		{
 			if (VisualStudioEditor.IsWindows)

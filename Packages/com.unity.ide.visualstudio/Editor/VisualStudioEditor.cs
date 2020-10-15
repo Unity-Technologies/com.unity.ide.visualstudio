@@ -7,7 +7,6 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text;
 using UnityEditor;
 using UnityEngine;
 using Unity.CodeEditor;
@@ -21,7 +20,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		private static readonly IVisualStudioInstallation[] _installations;
 
 		internal static bool IsOSX => Application.platform == RuntimePlatform.OSXEditor;
-		internal static bool IsWindows => !IsOSX && Path.DirectorySeparatorChar == '\\' && Environment.NewLine == "\r\n";
+		internal static bool IsWindows => !IsOSX && Path.DirectorySeparatorChar == FileUtility.WinSeparator && Environment.NewLine == "\r\n";
 
 		CodeEditor.Installation[] IExternalCodeEditor.Installations => _installations
 			.Select(i => i.ToCodeEditorInstallation())
@@ -39,7 +38,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			}
 			catch (Exception ex)
 			{
-				UnityEngine.Debug.Log($"Error detecting Visual Studio installations: {ex}");
+				UnityEngine.Debug.LogError($"Error detecting Visual Studio installations: {ex}");
 				_installations = Array.Empty<VisualStudioInstallation>();
 			}
 
@@ -63,8 +62,8 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		public void Initialize(string editorInstallationPath)
 		{
 		}
-		
-		public virtual bool TryGetVisualStudioInstallationForPath(string editorPath, out IVisualStudioInstallation installation)
+
+		internal virtual bool TryGetVisualStudioInstallationForPath(string editorPath, out IVisualStudioInstallation installation)
 		{
 			// lookup for well known installations
 			foreach (var candidate in _installations)
@@ -176,10 +175,30 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			return false;
 		}
 
+		private static void CheckCurrentEditorInstallation()
+		{
+			var editorPath = CodeEditor.CurrentEditorInstallation;
+			try
+			{
+				if (Discovery.TryDiscoverInstallation(editorPath, out _))
+					return;
+			}
+			catch (IOException)
+			{
+			}
+
+			UnityEngine.Debug.LogWarning($"Visual Studio executable {editorPath} is not found. Please change your settings in Edit > Preferences > External Tools.");
+		}
+
 		public bool OpenProject(string path, int line, int column)
 		{
+			CheckCurrentEditorInstallation();
+
 			if (!IsSupportedPath(path))
 				return false;
+
+			if (!IsProjectGeneratedFor(path, out var missingFlag))
+				UnityEngine.Debug.LogWarning($"You are trying to open {path} outside a generated project. This might cause problems with IntelliSense and debugging. To avoid this, you can change your .csproj preferences in Edit > Preferences > External Tools and enable {GetProjectGenerationFlagDescription(missingFlag)} generation.");
 
 			if (IsOSX)
 				return OpenOSXApp(path, line, column);
@@ -187,6 +206,67 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			if (IsWindows)
 				return OpenWindowsApp(path, line);
 
+			return false;
+		}
+
+		private static string GetProjectGenerationFlagDescription(ProjectGenerationFlag flag)
+		{
+			switch (flag)
+			{
+				case ProjectGenerationFlag.BuiltIn:
+					return "Built-in packages";
+				case ProjectGenerationFlag.Embedded:
+					return "Embedded packages";
+				case ProjectGenerationFlag.Git:
+					return "Git packages";
+				case ProjectGenerationFlag.Local:
+					return "Local packages";
+				case ProjectGenerationFlag.LocalTarBall:
+					return "Local tarball";
+				case ProjectGenerationFlag.PlayerAssemblies:
+					return "Player projects";
+				case ProjectGenerationFlag.Registry:
+					return "Registry packages";
+				case ProjectGenerationFlag.Unknown:
+					return "Packages from unknown sources";
+				case ProjectGenerationFlag.None:
+				default:
+					return string.Empty;
+			}
+		}
+
+		private bool IsProjectGeneratedFor(string path, out ProjectGenerationFlag missingFlag)
+		{
+			missingFlag = ProjectGenerationFlag.None;
+
+			// No need to check when opening the whole solution
+			if (string.IsNullOrEmpty(path))
+				return true;
+
+			// We only want to check for cs scripts
+			if (ProjectGeneration.ScriptingLanguageFor(path) != ScriptingLanguage.CSharp)
+				return true;
+
+			// Even on windows, the package manager requires relative path + unix style separators for queries
+			var basePath = _generator.ProjectDirectory;
+			var relativePath = FileUtility
+				.NormalizeWindowsToUnix(path)
+				.Replace(basePath, string.Empty)
+				.Trim(FileUtility.UnixSeparator);
+
+			var packageInfo = UnityEditor.PackageManager.PackageInfo.FindForAssetPath(relativePath);
+			if (packageInfo == null)
+				return true;
+
+			var source = packageInfo.source;
+			if (!Enum.TryParse<ProjectGenerationFlag>(source.ToString(), out var flag))
+				return true;
+
+			if (_generator.AssemblyNameProvider.ProjectGenerationFlag.HasFlag(flag))
+				return true;
+
+			// Return false if we found a source not flagged for generation
+			missingFlag = flag;
 			return false;
 		}
 

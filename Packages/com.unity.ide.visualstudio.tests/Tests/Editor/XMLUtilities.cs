@@ -15,22 +15,22 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 
         public static void AssertNonCompileItemsMatchExactly(XmlDocument projectXml, IEnumerable<string> expectedNoncompileItems)
         {
-	        var nonCompileItems = projectXml.SelectAttributeValues("/msb:Project/msb:ItemGroup/msb:None/@Include").ToArray();
-	        CollectionAssert.AreEquivalent(expectedNoncompileItems, nonCompileItems);
+            var nonCompileItems = projectXml.SelectAttributeValues("/msb:Project/msb:ItemGroup/msb:None/@Include").ToArray();
+            CollectionAssert.AreEquivalent(expectedNoncompileItems, nonCompileItems);
         }
 
         public static void AssertAnalyzerDllsAreIncluded(XmlDocument projectXml, IEnumerable<string> expectedAnalyzerDllPaths)
-        { 
-	        foreach (string path in expectedAnalyzerDllPaths.Select(FileUtility.Normalize))
+        {
+            foreach (string path in expectedAnalyzerDllPaths.Select(FileUtility.Normalize))
 	        {
 		        CollectionAssert.Contains(
 			        projectXml.SelectAttributeValues("/msb:Project/msb:ItemGroup/msb:Analyzer/@Include"), path);
-	        }
+            }
         }
 
         internal static void AssertAnalyzerRuleSetsAreIncluded(XmlDocument projectXml, string expectedRuleSetPath)
         {
-	        CollectionAssert.Contains(projectXml.SelectElementValues("/msb:Project/msb:PropertyGroup/msb:CodeAnalysisRuleSet"), expectedRuleSetPath);
+            CollectionAssert.Contains(projectXml.SelectElementValues("/msb:Project/msb:PropertyGroup/msb:CodeAnalysisRuleSet"), expectedRuleSetPath);
         }
         
         static XmlNamespaceManager GetModifiedXmlNamespaceManager(XmlDocument projectXml)
@@ -49,9 +49,11 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 
         static IEnumerable<string> SelectElementValues(this XmlDocument xmlDocument, string xpathQuery)
         {
-	        var result = xmlDocument.SelectNodes(xpathQuery, GetModifiedXmlNamespaceManager(xmlDocument));
-	        foreach (XmlElement attribute in result)
-		        yield return attribute.InnerXml;
+            var result = xmlDocument.SelectNodes(xpathQuery, GetModifiedXmlNamespaceManager(xmlDocument));
+            foreach (XmlElement attribute in result)
+            { 
+                yield return attribute.InnerXml;
+            }
         }
 
         public static XmlDocument FromText(string textContent)

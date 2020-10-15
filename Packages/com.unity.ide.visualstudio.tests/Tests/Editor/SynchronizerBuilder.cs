@@ -17,11 +17,13 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 
 		ProjectGeneration m_ProjectGeneration;
 		Mock<IAssemblyNameProvider> m_AssemblyProvider = new Mock<IAssemblyNameProvider>();
-		public const string projectDirectory = "/FullPath/Example";
-
+		Assembly[] m_Assemblies;
+		MyMockIExternalCodeEditor m_MockExternalCodeEditor; 
 		MockFileIO m_FileIoMock = new MockFileIO();
 		Mock<IGUIDGenerator> m_GUIDGenerator = new Mock<IGUIDGenerator>();
 
+		public const string projectDirectory = "/FullPath/Example";
+		
 		public string ReadFile(string fileName) => m_FileIoMock.ReadAllText(fileName);
 		public string ProjectFilePath(Assembly assembly) => Path.Combine(projectDirectory, $"{assembly.name}.csproj");
 		public string ReadProjectFile(Assembly assembly) => ReadFile(ProjectFilePath(assembly));
@@ -42,9 +44,6 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 				throw new BuilderError("An empty list of assemblies has been populated, and then the first assembly was requested.");
 			}
 		}
-
-		Assembly[] m_Assemblies;
-		private MyMockIExternalCodeEditor m_MockExternalCodeEditor; 
 
 		public SynchronizerBuilder()
 		{
@@ -166,23 +165,19 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 			return this;
 		}
 		
+		#if UNITY_2020_2_OR_NEWER
 		public SynchronizerBuilder WithRoslynAnalyzers(string[] roslynAnalyzerDllPaths)
-		{
+		{			
 			m_MockExternalCodeEditor = new MyMockIExternalCodeEditor();
 			CodeEditor.Register(m_MockExternalCodeEditor);
 
-			m_AssemblyProvider.Setup(p => p.GetRoslynAnalyzerPaths()).Returns(roslynAnalyzerDllPaths);
-
+			foreach (Assembly assembly in m_Assemblies)
+			{
+				assembly.compilerOptions.RoslynAnalyzerDllPaths = roslynAnalyzerDllPaths;
+			}
 			return this;
 		}
-
-		public void CleanUp()
-		{
-			if (m_MockExternalCodeEditor != null)
-			{
-				CodeEditor.Unregister(m_MockExternalCodeEditor);	
-			}
-		}
+		#endif
 
 		public class MyMockIExternalCodeEditor : VisualStudioEditor
 		{
@@ -191,8 +186,8 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 				installation = new CodeEditor.Installation();
 				return true;
 			}
-
-			public override bool TryGetVisualStudioInstallationForPath(string editorPath, out IVisualStudioInstallation installation)
+			
+            internal override bool TryGetVisualStudioInstallationForPath(string editorPath, out IVisualStudioInstallation installation)
 			{
 				var mock = new Mock<IVisualStudioInstallation>();
 				mock.Setup(x => x.SupportsAnalyzers).Returns(true);
@@ -200,6 +195,14 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 				installation = mock.Object;
 
 				return true;
+			}
+		}
+
+		public void CleanUp()
+		{
+			if (m_MockExternalCodeEditor != null)
+			{
+				CodeEditor.Unregister(m_MockExternalCodeEditor);	
 			}
 		}
 	}

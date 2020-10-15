@@ -10,7 +10,7 @@ using IOPath = System.IO.Path;
 
 namespace Microsoft.Unity.VisualStudio.Editor
 {
-	public interface IVisualStudioInstallation
+	internal interface IVisualStudioInstallation
 	{
 		string Path { get; }
 		bool SupportsAnalyzers { get; }
