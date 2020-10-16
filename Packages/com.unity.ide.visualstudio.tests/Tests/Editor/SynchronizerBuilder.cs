@@ -89,7 +89,13 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 			return this;
 		}
 
-		public SynchronizerBuilder WithAssemblyData(string[] files = null, string[] defines = null, Assembly[] assemblyReferences = null, string[] compiledAssemblyReferences = null, bool unsafeSettings = false, string rootNamespace = "")
+		public SynchronizerBuilder WithAssemblyData(
+			string[] files = null,
+			string[] defines = null,
+			Assembly[] assemblyReferences = null,
+			string[] compiledAssemblyReferences = null,
+			bool unsafeSettings = false,
+			string rootNamespace = "")
 		{
 			var options = new ScriptCompilerOptions() { AllowUnsafeCode = unsafeSettings };
 
@@ -177,8 +183,20 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 			}
 			return this;
 		}
-		#endif
 
+		public SynchronizerBuilder WithRulesetPath(string rulesetFilePath)
+		{
+			m_MockExternalCodeEditor = new MyMockIExternalCodeEditor();
+			CodeEditor.Register(m_MockExternalCodeEditor);
+
+			foreach (Assembly assembly in m_Assemblies)
+			{
+				assembly.compilerOptions.RoslynAnalyzerRulesetPath = rulesetFilePath;
+			}
+			return this;
+		}
+		#endif
+ 
 		public class MyMockIExternalCodeEditor : VisualStudioEditor
 		{
 			public override bool TryGetInstallationForPath(string editorPath, out CodeEditor.Installation installation)

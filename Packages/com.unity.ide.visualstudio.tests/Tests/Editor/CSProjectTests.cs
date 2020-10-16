@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -609,7 +610,7 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 	        {
 		        try
 		        {
-			        string roslynAnalyzerDllPath = "Assets/RoslynAnalyzer.dll";
+			        const string roslynAnalyzerDllPath = "Assets/RoslynAnalyzer.dll";
 
 			        m_Builder.WithRoslynAnalyzers(new[] { roslynAnalyzerDllPath })
 				        .Build()
@@ -621,21 +622,28 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 		        }
 		        finally
 		        {
-			        m_Builder.CleanUp();    
+			        m_Builder.CleanUp();
 		        }
 	        }
 
 	        [Test]
 	        public void RoslynAnalyzerRulesetPaths_WillBeIncluded()
 	        {
-		        var roslynAnalyzerRuleSetPath = "Assets/SampleRuleSet.ruleset";
-		        m_Builder.WithAssemblyData(files: new[] { "file.cs" }, roslynAnalyzerRuleSetPath: roslynAnalyzerRuleSetPath)
-			        .Build()
-			        .Sync();
+		        try
+		        {
+			        const string roslynAnalyzerRuleSetPath = "Assets/SampleRuleSet.ruleset";
+			        m_Builder.WithRulesetPath(roslynAnalyzerRuleSetPath)
+				        .Build()
+				        .Sync();
 
-		        XMLUtilities.AssertAnalyzerRuleSetsAreIncluded(
-			        XMLUtilities.FromText(m_Builder.ReadProjectFile(m_Builder.Assembly)),
-			        roslynAnalyzerRuleSetPath);
+			        XMLUtilities.AssertAnalyzerRuleSetsAreIncluded(
+				        XMLUtilities.FromText(m_Builder.ReadProjectFile(m_Builder.Assembly)),
+				        roslynAnalyzerRuleSetPath);
+		        }
+		        finally
+		        {
+			        m_Builder.CleanUp();
+		        }
 	        }
 #endif	        
 	        
