@@ -103,9 +103,11 @@ run_feature_test_project_{{ platform.name }}_{{ editor.version }}:
     type: {{ platform.type }}
     image: {{ platform.image }}
     flavor: {{ platform.flavor}}
+  {% if platform.name == "linux" %}
   variables:
     PATH: /home/bokken/bin:/home/bokken/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/sbin:/home/bokken/.npm-global/bin::/home/bokken/npm-global/bin
     DISPLAY: ":0"
+  {% endif -%} 
   commands:
 {% if platform.name == "linux" -%}
     - pip install unity-downloader-cli --index-url https://artifactory.prd.it.unity3d.com/artifactory/api/pypi/pypi/simple --upgrade --user
