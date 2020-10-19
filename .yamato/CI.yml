@@ -81,7 +81,7 @@ run_vetting_test_project:
     PATH: /home/bokken/bin:/home/bokken/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/sbin:/home/bokken/.npm-global/bin::/home/bokken/npm-global/bin
     DISPLAY: ":0"
   commands:
-    - pip install unity-downloader-cli --user --upgrade --extra-index https://artifactory.eu-cph-1.unityops.net/api/pypi/common-python/simple   
+    - pip install unity-downloader-cli --user --upgrade --extra-index https://artifactory.prd.it.unity3d.com/artifactory/api/pypi/pypi/simple 
     - npm config set prefix '~/npm-global'
     - npm install upm-ci-utils@stable -g --registry https://artifactory.prd.cds.internal.unity3d.com/artifactory/api/npm/upm-n
     - unity-downloader-cli -u trunk -c editor --wait --published-only
