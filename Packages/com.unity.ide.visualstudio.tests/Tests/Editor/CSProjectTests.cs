@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -603,6 +604,49 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 
         class References : SolutionGenerationTestBase
         {
+#if UNITY_2020_2_OR_NEWER
+	        [Test]
+	        public void RoslynAnalyzerDlls_WillBeIncluded()
+	        {
+		        try
+		        {
+			        const string roslynAnalyzerDllPath = "Assets/RoslynAnalyzer.dll";
+
+			        m_Builder.WithRoslynAnalyzers(new[] { roslynAnalyzerDllPath })
+				        .Build()
+				        .Sync();
+
+			        XMLUtilities.AssertAnalyzerDllsAreIncluded(
+				        XMLUtilities.FromText(m_Builder.ReadProjectFile(m_Builder.Assembly)),
+				        new[] { roslynAnalyzerDllPath });
+		        }
+		        finally
+		        {
+			        m_Builder.CleanUp();
+		        }
+	        }
+
+	        [Test]
+	        public void RoslynAnalyzerRulesetPaths_WillBeIncluded()
+	        {
+		        try
+		        {
+			        const string roslynAnalyzerRuleSetPath = "Assets/SampleRuleSet.ruleset";
+			        m_Builder.WithRulesetPath(roslynAnalyzerRuleSetPath)
+				        .Build()
+				        .Sync();
+
+			        XMLUtilities.AssertAnalyzerRuleSetsAreIncluded(
+				        XMLUtilities.FromText(m_Builder.ReadProjectFile(m_Builder.Assembly)),
+				        roslynAnalyzerRuleSetPath);
+		        }
+		        finally
+		        {
+			        m_Builder.CleanUp();
+		        }
+	        }
+#endif	        
+	        
             [Test]
             public void DllInSourceFiles_WillBeAddedAsReference()
             {

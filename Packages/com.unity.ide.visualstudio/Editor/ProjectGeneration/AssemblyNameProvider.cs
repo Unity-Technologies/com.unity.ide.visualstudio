@@ -54,7 +54,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
             {
                 if (assembly.sourceFiles.Any(shouldFileBePartOfSolution))
                 {
-                    var options = new ScriptCompilerOptions()
+                    var options = new ScriptCompilerOptions
                     {
                         ResponseFiles = assembly.compilerOptions.ResponseFiles,
                         AllowUnsafeCode = assembly.compilerOptions.AllowUnsafeCode,
@@ -79,24 +79,25 @@ namespace Microsoft.Unity.VisualStudio.Editor
             {
                 foreach (var assembly in CompilationPipeline.GetAssemblies(AssembliesType.Player).Where(assembly => assembly.sourceFiles.Any(shouldFileBePartOfSolution)))
                 {
-                    var options = new ScriptCompilerOptions()
+                    var options = new ScriptCompilerOptions
                     {
                         ResponseFiles = assembly.compilerOptions.ResponseFiles,
                         AllowUnsafeCode = assembly.compilerOptions.AllowUnsafeCode,
                         ApiCompatibilityLevel = assembly.compilerOptions.ApiCompatibilityLevel
                     };
 
-					yield return new Assembly(assembly.name, @"Temp\Bin\Debug\Player\", 
-                        assembly.sourceFiles, 
-                        new[] { "DEBUG", "TRACE" }.Concat(assembly.defines).ToArray(), 
-                        assembly.assemblyReferences, 
-                        assembly.compiledAssemblyReferences, 
-                        assembly.flags,
+                    yield return 
+                        new Assembly(assembly.name, @"Temp\Bin\Debug\Player\", 
+                            assembly.sourceFiles, 
+                            new[] { "DEBUG", "TRACE" }.Concat(assembly.defines).ToArray(), 
+                            assembly.assemblyReferences, 
+                            assembly.compiledAssemblyReferences, 
+                            assembly.flags,
 #if UNITY_2020_2_OR_NEWER
-                        options,
-                        assembly.rootNamespace);
+                            options,
+                            assembly.rootNamespace);
 #else
-                        options);
+                            options);
 #endif
                 }
             }
@@ -104,14 +105,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
         public string GetCompileOutputPath(string assemblyName)
         {
-            if (assemblyName.EndsWith(".Player", StringComparison.Ordinal))
-            {
-                return @"Temp\Bin\Debug\Player\";
-            }
-            else
-            {
-                return @"Temp\Bin\Debug\";
-            }
+            return assemblyName.EndsWith(".Player", StringComparison.Ordinal) ? @"Temp\Bin\Debug\Player\" : @"Temp\Bin\Debug\";
         }
 
         public IEnumerable<string> GetAllAssetPaths()
@@ -187,5 +181,5 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		{
 			return assemblyOutputPath.EndsWith(@"\Player\", StringComparison.Ordinal) ? assemblyName + ".Player" : assemblyName;
 		}
-	}
+    }
 }
