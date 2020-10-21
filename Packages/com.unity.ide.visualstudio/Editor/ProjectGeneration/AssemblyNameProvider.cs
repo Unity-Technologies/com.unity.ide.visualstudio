@@ -86,17 +86,18 @@ namespace Microsoft.Unity.VisualStudio.Editor
                         ApiCompatibilityLevel = assembly.compilerOptions.ApiCompatibilityLevel
                     };
 
-					yield return new Assembly(assembly.name, @"Temp\Bin\Debug\Player\", 
-                        assembly.sourceFiles, 
-                        new[] { "DEBUG", "TRACE" }.Concat(assembly.defines).ToArray(), 
-                        assembly.assemblyReferences, 
-                        assembly.compiledAssemblyReferences, 
-                        assembly.flags,
+                    yield return 
+                        new Assembly(assembly.name, @"Temp\Bin\Debug\Player\", 
+                            assembly.sourceFiles, 
+                            new[] { "DEBUG", "TRACE" }.Concat(assembly.defines).ToArray(), 
+                            assembly.assemblyReferences, 
+                            assembly.compiledAssemblyReferences, 
+                            assembly.flags,
 #if UNITY_2020_2_OR_NEWER
-                        options,
-                        assembly.rootNamespace);
+                            options,
+                            assembly.rootNamespace);
 #else
-                        options);
+                            options);
 #endif
                 }
             }

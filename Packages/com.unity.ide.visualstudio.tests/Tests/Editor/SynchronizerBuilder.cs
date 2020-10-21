@@ -88,14 +88,7 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 			}
 			return this;
 		}
-
-		public SynchronizerBuilder WithAssemblyData(
-			string[] files = null,
-			string[] defines = null,
-			Assembly[] assemblyReferences = null,
-			string[] compiledAssemblyReferences = null,
-			bool unsafeSettings = false,
-			string rootNamespace = "")
+		public SynchronizerBuilder WithAssemblyData(string[] files = null, string[] defines = null, Assembly[] assemblyReferences = null, string[] compiledAssemblyReferences = null, bool unsafeSettings = false, string rootNamespace = "")
 		{
 			var options = new ScriptCompilerOptions() { AllowUnsafeCode = unsafeSettings };
 
