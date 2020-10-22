@@ -18,12 +18,12 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 		ProjectGeneration m_ProjectGeneration;
 		Mock<IAssemblyNameProvider> m_AssemblyProvider = new Mock<IAssemblyNameProvider>();
 		Assembly[] m_Assemblies;
-		MyMockIExternalCodeEditor m_MockExternalCodeEditor; 
+		MyMockIExternalCodeEditor m_MockExternalCodeEditor = null;
 		MockFileIO m_FileIoMock = new MockFileIO();
 		Mock<IGUIDGenerator> m_GUIDGenerator = new Mock<IGUIDGenerator>();
 
 		public const string projectDirectory = "/FullPath/Example";
-		
+
 		public string ReadFile(string fileName) => m_FileIoMock.ReadAllText(fileName);
 		public string ProjectFilePath(Assembly assembly) => Path.Combine(projectDirectory, $"{assembly.name}.csproj");
 		public string ReadProjectFile(Assembly assembly) => ReadFile(ProjectFilePath(assembly));
@@ -163,8 +163,8 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 			m_AssemblyProvider.Setup(x => x.GetAssemblyName(outputPath, assemblyName)).Returns(resAssemblyName);
 			return this;
 		}
-		
-		#if UNITY_2020_2_OR_NEWER
+
+#if UNITY_2020_2_OR_NEWER
 		public SynchronizerBuilder WithRoslynAnalyzers(string[] roslynAnalyzerDllPaths)
 		{			
 			m_MockExternalCodeEditor = new MyMockIExternalCodeEditor();
@@ -188,8 +188,8 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 			}
 			return this;
 		}
-		#endif
- 
+#endif
+
 		public class MyMockIExternalCodeEditor : VisualStudioEditor
 		{
 			public override bool TryGetInstallationForPath(string editorPath, out CodeEditor.Installation installation)
@@ -197,8 +197,8 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 				installation = new CodeEditor.Installation();
 				return true;
 			}
-			
-            internal override bool TryGetVisualStudioInstallationForPath(string editorPath, out IVisualStudioInstallation installation)
+
+			internal override bool TryGetVisualStudioInstallationForPath(string editorPath, out IVisualStudioInstallation installation)
 			{
 				var mock = new Mock<IVisualStudioInstallation>();
 				mock.Setup(x => x.SupportsAnalyzers).Returns(true);
@@ -213,7 +213,7 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 		{
 			if (m_MockExternalCodeEditor != null)
 			{
-				CodeEditor.Unregister(m_MockExternalCodeEditor);	
+				CodeEditor.Unregister(m_MockExternalCodeEditor);
 			}
 		}
 	}

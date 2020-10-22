@@ -18,7 +18,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		string[] GetAnalyzers();
 		CodeEditor.Installation ToCodeEditorInstallation();
 	}
-	
+
 	internal class VisualStudioInstallation : IVisualStudioInstallation
 	{
 		public string Name { get; set; }

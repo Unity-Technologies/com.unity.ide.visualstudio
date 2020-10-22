@@ -24,7 +24,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 		CodeEditor.Installation[] IExternalCodeEditor.Installations => _installations
 			.Select(i => i.ToCodeEditorInstallation())
-			.ToArray(); 
+			.ToArray();
 
 		private readonly IGenerator _generator = new ProjectGeneration();
 
@@ -116,14 +116,14 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		}
 
 		void RegenerateProjectFiles()
-        {
-            var rect = EditorGUI.IndentedRect(EditorGUILayout.GetControlRect(new GUILayoutOption[] {}));
-            rect.width = 252;
-            if (GUI.Button(rect, "Regenerate project files"))
-            {
-                _generator.Sync();
-            }
-        }
+		{
+			var rect = EditorGUI.IndentedRect(EditorGUILayout.GetControlRect(new GUILayoutOption[] { }));
+			rect.width = 252;
+			if (GUI.Button(rect, "Regenerate project files"))
+			{
+				_generator.Sync();
+			}
+		}
 
 		void SettingsButton(ProjectGenerationFlag preference, string guiMessage, string toolTip)
 		{
