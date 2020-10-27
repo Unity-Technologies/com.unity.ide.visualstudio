@@ -5,30 +5,30 @@ using UnityEditor.Compilation;
 
 namespace Microsoft.Unity.VisualStudio.Editor.Tests
 {
-    public class AssemblyNameProviderTests
-    {
-        AssemblyNameProvider m_AssemblyNameProvider;
-        ProjectGenerationFlag m_Flag;
+	public class AssemblyNameProviderTests
+	{
+		AssemblyNameProvider m_AssemblyNameProvider;
+		ProjectGenerationFlag m_Flag;
 
-        [OneTimeSetUp]
-        public void OneTimeSetUp()
-        {
-            m_AssemblyNameProvider = new AssemblyNameProvider();
-            m_Flag = m_AssemblyNameProvider.ProjectGenerationFlag;
-        }
+		[OneTimeSetUp]
+		public void OneTimeSetUp()
+		{
+			m_AssemblyNameProvider = new AssemblyNameProvider();
+			m_Flag = m_AssemblyNameProvider.ProjectGenerationFlag;
+		}
 
-        [OneTimeTearDown]
-        public void OneTimeTearDown()
-        {
-            m_AssemblyNameProvider.ToggleProjectGeneration(ProjectGenerationFlag.None);
-            m_AssemblyNameProvider.ToggleProjectGeneration(m_Flag);
-        }
+		[OneTimeTearDown]
+		public void OneTimeTearDown()
+		{
+			m_AssemblyNameProvider.ToggleProjectGeneration(ProjectGenerationFlag.None);
+			m_AssemblyNameProvider.ToggleProjectGeneration(m_Flag);
+		}
 
-        [SetUp]
-        public void SetUp()
-        {
-            m_AssemblyNameProvider.ResetProjectGenerationFlag();
-        }
+		[SetUp]
+		public void SetUp()
+		{
+			m_AssemblyNameProvider.ResetProjectGenerationFlag();
+		}
 
 		[TestCase(@"Temp\Bin\Debug\", "AssemblyName", "AssemblyName")]
 		[TestCase(@"Temp\Bin\Debug\", "My.Player.AssemblyName", "My.Player.AssemblyName")]
@@ -41,30 +41,30 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 		}
 
 		[Test]
-        public void AllEditorAssemblies_AreCollected()
-        {
-            var editorAssemblies = CompilationPipeline.GetAssemblies(AssembliesType.Editor);
+		public void AllEditorAssemblies_AreCollected()
+		{
+			var editorAssemblies = CompilationPipeline.GetAssemblies(AssembliesType.Editor);
 
-            var collectedAssemblies = m_AssemblyNameProvider.GetAssemblies(s => true).ToList();
+			var collectedAssemblies = m_AssemblyNameProvider.GetAssemblies(s => true).ToList();
 
-            foreach (Assembly editorAssembly in editorAssemblies)
-            {
+			foreach (Assembly editorAssembly in editorAssemblies)
+			{
 				Assert.IsTrue(collectedAssemblies.Any(assembly => assembly.name == editorAssembly.name && assembly.outputPath == @"Temp\Bin\Debug\"), $"{editorAssembly.name}: was not found in collection.");
 			}
-        }
+		}
 
-        [Test]
-        public void EditorAssemblies_WillIncludeEditorSettingsDefines()
-        {
-            var defines = new[] { "DEBUG", "TRACE" }.Concat(EditorUserBuildSettings.activeScriptCompilationDefines);
+		[Test]
+		public void EditorAssemblies_WillIncludeEditorSettingsDefines()
+		{
+			var defines = new[] { "DEBUG", "TRACE" }.Concat(EditorUserBuildSettings.activeScriptCompilationDefines);
 
-            var collectedAssemblies = m_AssemblyNameProvider.GetAssemblies(s => true).ToList();
+			var collectedAssemblies = m_AssemblyNameProvider.GetAssemblies(s => true).ToList();
 
-            foreach (Assembly editorAssembly in collectedAssemblies)
-            {
-                CollectionAssert.IsSubsetOf(defines, editorAssembly.defines);
-            }
-        }
+			foreach (Assembly editorAssembly in collectedAssemblies)
+			{
+				CollectionAssert.IsSubsetOf(defines, editorAssembly.defines);
+			}
+		}
 
 #if UNITY_2020_2_OR_NEWER
         [Test]
@@ -81,56 +81,56 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
         }
 #endif
 
-        [Test]
-        public void AllEditorAssemblies_HaveAReferenceToUnityEditorAndUnityEngine()
-        {
-            var editorAssemblies = CompilationPipeline.GetAssemblies(AssembliesType.Editor);
+		[Test]
+		public void AllEditorAssemblies_HaveAReferenceToUnityEditorAndUnityEngine()
+		{
+			var editorAssemblies = CompilationPipeline.GetAssemblies(AssembliesType.Editor);
 
-            foreach (Assembly editorAssembly in editorAssemblies)
-            {
-                Assert.IsTrue(editorAssembly.allReferences.Any(reference => reference.EndsWith("UnityEngine.dll")));
-                Assert.IsTrue(editorAssembly.allReferences.Any(reference => reference.EndsWith("UnityEditor.dll")));
-            }
-        }
+			foreach (Assembly editorAssembly in editorAssemblies)
+			{
+				Assert.IsTrue(editorAssembly.allReferences.Any(reference => reference.EndsWith("UnityEngine.dll")));
+				Assert.IsTrue(editorAssembly.allReferences.Any(reference => reference.EndsWith("UnityEditor.dll")));
+			}
+		}
 
-        [Test]
-        public void PlayerAssemblies_AreNotCollected_BeforeToggling()
-        {
-            var playerAssemblies = CompilationPipeline.GetAssemblies(AssembliesType.Player);
+		[Test]
+		public void PlayerAssemblies_AreNotCollected_BeforeToggling()
+		{
+			var playerAssemblies = CompilationPipeline.GetAssemblies(AssembliesType.Player);
 
-            var collectedAssemblies = m_AssemblyNameProvider.GetAssemblies(s => true).ToList();
+			var collectedAssemblies = m_AssemblyNameProvider.GetAssemblies(s => true).ToList();
 
-            foreach (Assembly playerAssembly in playerAssemblies)
-            {
+			foreach (Assembly playerAssembly in playerAssemblies)
+			{
 				Assert.IsFalse(collectedAssemblies.Any(assembly => assembly.name == playerAssembly.name && assembly.outputPath == @"Temp\Bin\Debug\Player\"), $"{playerAssembly.name}: was found in collection.");
 			}
-        }
+		}
 
-        [Test]
-        public void AllPlayerAssemblies_AreCollected_AfterToggling()
-        {
-            var playerAssemblies = CompilationPipeline.GetAssemblies(AssembliesType.Player);
+		[Test]
+		public void AllPlayerAssemblies_AreCollected_AfterToggling()
+		{
+			var playerAssemblies = CompilationPipeline.GetAssemblies(AssembliesType.Player);
 
-            m_AssemblyNameProvider.ToggleProjectGeneration(ProjectGenerationFlag.PlayerAssemblies);
+			m_AssemblyNameProvider.ToggleProjectGeneration(ProjectGenerationFlag.PlayerAssemblies);
 
-            var collectedAssemblies = m_AssemblyNameProvider.GetAssemblies(s => true).ToList();
+			var collectedAssemblies = m_AssemblyNameProvider.GetAssemblies(s => true).ToList();
 
-            foreach (Assembly playerAssembly in playerAssemblies)
-            {
+			foreach (Assembly playerAssembly in playerAssemblies)
+			{
 				Assert.IsTrue(collectedAssemblies.Any(assembly => assembly.name == playerAssembly.name && assembly.outputPath == @"Temp\Bin\Debug\Player\"), $"{playerAssembly.name}: was not found in collection.");
 			}
-        }
+		}
 
-        [Test]
-        public void AsDefaultArgument_ProjectGeneration_WillBeLocalAndEmbedded()
-        {
-            EditorPrefs.DeleteKey("unity_project_generation_flag");
-            m_AssemblyNameProvider = new AssemblyNameProvider();
+		[Test]
+		public void AsDefaultArgument_ProjectGeneration_WillBeLocalAndEmbedded()
+		{
+			EditorPrefs.DeleteKey("unity_project_generation_flag");
+			m_AssemblyNameProvider = new AssemblyNameProvider();
 
-            Assert.That(
-                m_AssemblyNameProvider.ProjectGenerationFlag,
-                Is.EqualTo(ProjectGenerationFlag.Local | ProjectGenerationFlag.Embedded),
-                "The default ProjectGenerationFlag should be (Local | Embedded)");
-        }
-    }
+			Assert.That(
+				m_AssemblyNameProvider.ProjectGenerationFlag,
+				Is.EqualTo(ProjectGenerationFlag.Local | ProjectGenerationFlag.Embedded),
+				"The default ProjectGenerationFlag should be (Local | Embedded)");
+		}
+	}
 }

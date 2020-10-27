@@ -38,6 +38,24 @@ pack:
         - "**/upm-ci~/packages/**/*"
 
 
+commit_ci_release:
+  name: CI For Release PRs
+  triggers:
+    pull_requests:
+    - sources:
+        only:
+          - "/.*/"
+      targets:
+        only:
+          - next/master
+  dependencies:
+  {% for editor in editors %}
+  {% for platform in platforms %}
+  - .yamato/CI.yml#run_feature_test_project_{{ platform.name }}_{{ editor.version }}
+  {% endfor %}
+  {% endfor %}
+
+
 commit_ci:
   name: CI Per Commit
   triggers:
@@ -49,13 +67,37 @@ commit_ci:
         - publish-release
   dependencies:
   {% for editor in editors %}
-  - .yamato/CI.yml#run_test_project_linux_{{ editor.version }}
+  - .yamato/CI.yml#run_feature_test_project_linux_{{ editor.version }}
   {% endfor %}
+
+
+run_vetting_test_project:
+  name: Build and TestProject version on Linux
+  agent:
+    type: Unity::VM
+    image: package-ci/ubuntu:stable
+    flavor: b1.large
+  variables:
+    PATH: /home/bokken/bin:/home/bokken/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/sbin:/home/bokken/.npm-global/bin::/home/bokken/npm-global/bin
+    DISPLAY: ":0"
+  commands:
+    - pip install unity-downloader-cli --user --upgrade --extra-index https://artifactory.prd.it.unity3d.com/artifactory/api/pypi/pypi/simple 
+    - npm config set prefix '~/npm-global'
+    - npm install upm-ci-utils@stable -g --registry https://artifactory.prd.cds.internal.unity3d.com/artifactory/api/npm/upm-n
+    - unity-downloader-cli -u trunk -c editor --wait --published-only
+    - upm-ci project test -u .Editor --project-path . --platform editmode --type vetting-tests
+  artifacts:
+    logs:
+      paths:
+        - "upm-ci~/test-results/**/*"
+        - "upm-ci~/utr/**/*"
+  dependencies:
+    - .yamato/CI.yml#pack
 
 
   {% for editor in editors %}
   {% for platform in platforms %}
-run_test_project_{{ platform.name }}_{{ editor.version }}:
+run_feature_test_project_{{ platform.name }}_{{ editor.version }}:
   name: Build and TestProject version {{ editor.version }} on {{ platform.name }}
   agent:
     type: {{ platform.type }}
@@ -65,7 +107,7 @@ run_test_project_{{ platform.name }}_{{ editor.version }}:
   variables:
     PATH: /home/bokken/bin:/home/bokken/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/sbin:/home/bokken/.npm-global/bin::/home/bokken/npm-global/bin
     DISPLAY: ":0"
-  {% endif %}
+  {% endif -%} 
   commands:
 {% if platform.name == "linux" -%}
     - pip install unity-downloader-cli --index-url https://artifactory.prd.it.unity3d.com/artifactory/api/pypi/pypi/simple --upgrade --user
@@ -113,11 +155,7 @@ publish_release:
         - publish-release
   dependencies:
     - .yamato/CI.yml#pack
-    {% for editor in editors %}
-    {% for platform in platforms %}
-    - .yamato/CI.yml#run_test_project_{{ platform.name }}_{{ editor.version }}
-    {% endfor %}
-    {% endfor %}
+    - .yamato/CI.yml#run_vetting_test_project
   agent:
     type: Unity::VM
     image: package-ci/win10:stable

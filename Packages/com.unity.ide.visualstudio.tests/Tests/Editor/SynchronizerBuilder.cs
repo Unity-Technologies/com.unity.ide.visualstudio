@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Linq;
 using Moq;
+using Unity.CodeEditor;
 using UnityEditor.Compilation;
 
 namespace Microsoft.Unity.VisualStudio.Editor.Tests
@@ -16,10 +17,12 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 
 		ProjectGeneration m_ProjectGeneration;
 		Mock<IAssemblyNameProvider> m_AssemblyProvider = new Mock<IAssemblyNameProvider>();
-		public const string projectDirectory = "/FullPath/Example";
-
+		Assembly[] m_Assemblies;
+		MyMockIExternalCodeEditor m_MockExternalCodeEditor = null;
 		MockFileIO m_FileIoMock = new MockFileIO();
 		Mock<IGUIDGenerator> m_GUIDGenerator = new Mock<IGUIDGenerator>();
+
+		public const string projectDirectory = "/FullPath/Example";
 
 		public string ReadFile(string fileName) => m_FileIoMock.ReadAllText(fileName);
 		public string ProjectFilePath(Assembly assembly) => Path.Combine(projectDirectory, $"{assembly.name}.csproj");
@@ -41,8 +44,6 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 				throw new BuilderError("An empty list of assemblies has been populated, and then the first assembly was requested.");
 			}
 		}
-
-		Assembly[] m_Assemblies;
 
 		public SynchronizerBuilder()
 		{
@@ -87,7 +88,6 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 			}
 			return this;
 		}
-
 		public SynchronizerBuilder WithAssemblyData(string[] files = null, string[] defines = null, Assembly[] assemblyReferences = null, string[] compiledAssemblyReferences = null, bool unsafeSettings = false, string rootNamespace = "")
 		{
 			var options = new ScriptCompilerOptions() { AllowUnsafeCode = unsafeSettings };
@@ -162,6 +162,59 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 		{
 			m_AssemblyProvider.Setup(x => x.GetAssemblyName(outputPath, assemblyName)).Returns(resAssemblyName);
 			return this;
+		}
+
+#if UNITY_2020_2_OR_NEWER
+		public SynchronizerBuilder WithRoslynAnalyzers(string[] roslynAnalyzerDllPaths)
+		{			
+			m_MockExternalCodeEditor = new MyMockIExternalCodeEditor();
+			CodeEditor.Register(m_MockExternalCodeEditor);
+
+			foreach (Assembly assembly in m_Assemblies)
+			{
+				assembly.compilerOptions.RoslynAnalyzerDllPaths = roslynAnalyzerDllPaths;
+			}
+			return this;
+		}
+
+		public SynchronizerBuilder WithRulesetPath(string rulesetFilePath)
+		{
+			m_MockExternalCodeEditor = new MyMockIExternalCodeEditor();
+			CodeEditor.Register(m_MockExternalCodeEditor);
+
+			foreach (Assembly assembly in m_Assemblies)
+			{
+				assembly.compilerOptions.RoslynAnalyzerRulesetPath = rulesetFilePath;
+			}
+			return this;
+		}
+#endif
+
+		public class MyMockIExternalCodeEditor : VisualStudioEditor
+		{
+			public override bool TryGetInstallationForPath(string editorPath, out CodeEditor.Installation installation)
+			{
+				installation = new CodeEditor.Installation();
+				return true;
+			}
+
+			internal override bool TryGetVisualStudioInstallationForPath(string editorPath, out IVisualStudioInstallation installation)
+			{
+				var mock = new Mock<IVisualStudioInstallation>();
+				mock.Setup(x => x.SupportsAnalyzers).Returns(true);
+
+				installation = mock.Object;
+
+				return true;
+			}
+		}
+
+		public void CleanUp()
+		{
+			if (m_MockExternalCodeEditor != null)
+			{
+				CodeEditor.Unregister(m_MockExternalCodeEditor);
+			}
 		}
 	}
 }

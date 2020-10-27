@@ -136,7 +136,7 @@ static NSArray<NSRunningApplication*>* QueryRunningInstances(NSString *appPath)
             [instances addObject: runningApp];
         }
     }
-    
+
     return instances;
 }
 
@@ -145,7 +145,7 @@ enum {
     kCurrentSelectedSolutionPathEventID = 1129534288 /* 'CSSP' FourCC */
 };
 
-static NSString* QueryCurrentSolutionPath(NSRunningApplication* runningApp)
+static BOOL TryQueryCurrentSolutionPath(NSRunningApplication* runningApp, NSString** solutionPath)
 {
     NSAppleEventDescriptor* targetDescriptor = [NSAppleEventDescriptor
         descriptorWithProcessIdentifier: runningApp.processIdentifier];
@@ -166,16 +166,13 @@ static NSString* QueryCurrentSolutionPath(NSRunningApplication* runningApp)
         kAEDefaultTimeout);
 
     if (sendResult != noErr) {
-        return NULL;
+        return NO;
     }
 
     NSAppleEventDescriptor *reply = [[NSAppleEventDescriptor alloc] initWithAEDescNoCopy: &aeReply];
-    return [[reply descriptorForKeyword: keyDirectObject] stringValue];
-}
+    *solutionPath = [[reply descriptorForKeyword: keyDirectObject] stringValue];
 
-static BOOL IsRunningApplicationOpenedOnSolution(NSRunningApplication* runningApp, NSString* solutionPath)
-{
-    return [QueryCurrentSolutionPath(runningApp) isEqual: solutionPath];
+    return *solutionPath != NULL;
 }
 
 static NSRunningApplication* QueryRunningApplicationOpenedOnSolution(NSString* appPath, NSString* solutionPath)
@@ -190,7 +187,15 @@ static NSRunningApplication* QueryRunningApplicationOpenedOnSolution(NSString* a
             return runningApp;
         }
 
-        if (IsRunningApplicationOpenedOnSolution(runningApp, solutionPath)) {
+        NSString* currentSolutionPath;
+        if (TryQueryCurrentSolutionPath(runningApp, &currentSolutionPath)) {
+            if ([solutionPath isEqual:currentSolutionPath]) {
+    	        return runningApp;
+            }
+        } else {
+            // If VSM doesn't respond to the query opened solution event
+            // we fallback to the previous behavior too
+            OpenFileAtLineWithAppleEvent(runningApp, solutionPath, -1);
             return runningApp;
         }
     }
