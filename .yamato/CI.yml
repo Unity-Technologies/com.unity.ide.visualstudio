@@ -3,6 +3,7 @@ test_suite_name: VisualStudio
 
 editors:
   - version: 2020.1
+  - version: 2020.2
   - version: trunk
 platforms:
   - name: win
@@ -71,8 +72,9 @@ commit_ci:
   {% endfor %}
 
 
-run_vetting_test_project:
-  name: Build and TestProject version on Linux
+  {% for editor in editors %}
+run_vetting_test_project_{{ editor.version }}:
+  name: Run vetting tests
   agent:
     type: Unity::VM
     image: package-ci/ubuntu:stable
@@ -81,10 +83,14 @@ run_vetting_test_project:
     PATH: /home/bokken/bin:/home/bokken/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/sbin:/home/bokken/.npm-global/bin::/home/bokken/npm-global/bin
     DISPLAY: ":0"
   commands:
-    - pip install unity-downloader-cli --user --upgrade --extra-index https://artifactory.prd.it.unity3d.com/artifactory/api/pypi/pypi/simple 
+{% if platform.name == "linux" -%}
+    - pip install unity-downloader-cli --index-url https://artifactory.prd.it.unity3d.com/artifactory/api/pypi/pypi/simple --upgrade --user
+{% else -%}
+    - pip install unity-downloader-cli --index-url https://artifactory.prd.it.unity3d.com/artifactory/api/pypi/pypi/simple --upgrade
+{% endif -%}
     - npm config set prefix '~/npm-global'
-    - npm install upm-ci-utils@stable -g --registry https://artifactory.prd.cds.internal.unity3d.com/artifactory/api/npm/upm-n
-    - unity-downloader-cli -u trunk -c editor --wait --published-only
+    - npm install upm-ci-utils@latest -g --registry https://artifactory.prd.cds.internal.unity3d.com/artifactory/api/npm/upm-npm
+    - unity-downloader-cli -u {{editor.version}} -c editor --wait --published-only
     - upm-ci project test -u .Editor --project-path . --platform editmode --type vetting-tests
   artifacts:
     logs:
@@ -93,6 +99,7 @@ run_vetting_test_project:
         - "upm-ci~/utr/**/*"
   dependencies:
     - .yamato/CI.yml#pack
+  {% endfor %}
 
 
   {% for editor in editors %}
@@ -155,7 +162,9 @@ publish_release:
         - publish-release
   dependencies:
     - .yamato/CI.yml#pack
-    - .yamato/CI.yml#run_vetting_test_project
+{% for editor in editors %}
+    - .yamato/CI.yml#run_vetting_test_project_{{ editor.version }}
+{% endfor %}
   agent:
     type: Unity::VM
     image: package-ci/win10:stable
@@ -163,7 +172,7 @@ publish_release:
   commands:
     - npm install upm-ci-utils@latest -g --registry https://artifactory.prd.cds.internal.unity3d.com/artifactory/api/npm/upm-npm
     - upm-ci project publish
-    - git push origin HEAD:refs/heads/next/master HEAD:refs/heads/master -f
+    - git push origin HEAD:refs/heads/master -f
 
 
 prepare_promotion:

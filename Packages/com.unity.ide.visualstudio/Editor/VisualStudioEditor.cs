@@ -142,8 +142,12 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			foreach (var file in importedFiles.Where(a => Path.GetExtension(a) == ".pdb"))
 			{
 				var pdbFile = FileUtility.GetAssetFullPath(file);
-				var asmFile = Path.ChangeExtension(pdbFile, ".dll");
 
+				// skip Unity packages like com.unity.ext.nunit
+				if (pdbFile.IndexOf($"{Path.DirectorySeparatorChar}com.unity.", StringComparison.OrdinalIgnoreCase) > 0)
+					continue;
+
+				var asmFile = Path.ChangeExtension(pdbFile, ".dll");
 				if (!File.Exists(asmFile) || !Image.IsAssembly(asmFile))
 					continue;
 
