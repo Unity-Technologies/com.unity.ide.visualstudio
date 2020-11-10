@@ -539,7 +539,7 @@ int wmain(int argc, wchar_t* argv[]) {
 	int lineNumber = std::stoi(argv[4]);
 
 	if (FAILED(CoInitialize(nullptr))) {
-		std::wcout << "Using the existing Visual Studio session." << std::endl;
+		std::wcerr << "CoInitialize failed." << std::endl;
 		return EXIT_FAILURE;
     }
 
