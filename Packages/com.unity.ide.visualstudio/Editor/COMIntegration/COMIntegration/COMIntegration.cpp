@@ -165,7 +165,7 @@ std::wstring ErrorCodeToMsg(DWORD code)
 }
 
 
-// Get an environment variable as a core::string:
+// Get an environment variable
 static std::wstring GetEnvironmentVariableValue(std::wstring variableName) {
 	DWORD currentBufferSize = MAX_PATH;
 	std::wstring variableValue;
@@ -182,6 +182,7 @@ static std::wstring GetEnvironmentVariableValue(std::wstring variableName) {
 			return std::wstring();
 	}
 
+	variableValue.resize(requiredBufferSize);
 	return variableValue;
 }
 
