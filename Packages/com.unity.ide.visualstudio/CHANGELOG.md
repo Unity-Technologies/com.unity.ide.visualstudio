@@ -6,6 +6,18 @@ Integration:
 
 Disable legacy pdb symbol checking for Unity packages
 
+## [2.0.4] - 2020-10-15
+
+Project generation:
+
+Added support for embedded Roslyn analyzer DLLs and ruleset files.
+Warn the user when the opened script is not part of the generation scope.
+Warn the user when the selected Visual Studio installation is not found.
+Generate a .vsconfig file to ensure Visual Studio installation is compatible.
+
+Integration:
+
+Fix automation issues on MacOS, where a new Visual Studio instance is opened every time.
 
 ## [2.0.3] - 2020-09-09
 
