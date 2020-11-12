@@ -4,6 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 using System;
 using System.IO;
+using System.Linq;
 using Microsoft.Win32;
 using Unity.CodeEditor;
 using IOPath = System.IO.Path;
@@ -14,7 +15,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 	{
 		string Path { get; }
 		bool SupportsAnalyzers { get; }
-		bool SupportsCSharp8 { get; }
+		Version LatestLanguageVersionSupported { get; }
 		string[] GetAnalyzers();
 		CodeEditor.Installation ToCodeEditorInstallation();
 	}
@@ -40,17 +41,52 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			}
 		}
 
-		public bool SupportsCSharp8
+		// C# language version support for Visual Studio
+		private static Version[][] WindowsVersionTable =
+		{
+			// VisualStudio 2019
+			new [] { new Version(16,9), new Version(9,0) },
+			new [] { new Version(16,0), new Version(8,0) },
+			
+			// VisualStudio 2017
+			new [] { new Version(15,7), new Version(7,3) },
+			new [] { new Version(15,5), new Version(7,2) },
+			new [] { new Version(15,3), new Version(7,1) },
+			new [] { new Version(15,0), new Version(7,0) },
+		};
+
+		// C# language version support for Visual Studio for Mac
+		private static Version[][] OSXVersionTable =
+		{
+			// VisualStudio for Mac 8.x
+			new [] { new Version(8,9), new Version(9,0) },
+			new [] { new Version(8,3), new Version(8,0) },
+			new [] { new Version(8,0), new Version(7,3) },
+		};
+
+		public Version LatestLanguageVersionSupported
 		{
 			get
 			{
+				Version[][] versions = null;
+
 				if (VisualStudioEditor.IsWindows)
-					return Version >= new Version(16, 0);
+					versions = WindowsVersionTable;
 
 				if (VisualStudioEditor.IsOSX)
-					return Version >= new Version(8, 2);
+					versions = OSXVersionTable;
 
-				return false;
+				if (versions != null)
+				{
+					foreach(var entry in versions)
+					{
+						if (Version >= entry.First())
+							return entry.Last();
+					}
+				}
+
+				// default to 7.0 given we support at least VS 2017
+				return new Version(7,0);
 			}
 		}
 
