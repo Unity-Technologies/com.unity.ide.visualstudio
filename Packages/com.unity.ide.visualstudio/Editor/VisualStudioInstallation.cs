@@ -42,33 +42,33 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		}
 
 		// C# language version support for Visual Studio
-		private static Version[][] WindowsVersionTable =
+		private static VersionPair[] WindowsVersionTable =
 		{
 			// VisualStudio 2019
-			new [] { new Version(16,9), new Version(9,0) },
-			new [] { new Version(16,0), new Version(8,0) },
+			new VersionPair(16,8, /* => */ 9,0),
+			new VersionPair(16,0, /* => */ 8,0),
 			
 			// VisualStudio 2017
-			new [] { new Version(15,7), new Version(7,3) },
-			new [] { new Version(15,5), new Version(7,2) },
-			new [] { new Version(15,3), new Version(7,1) },
-			new [] { new Version(15,0), new Version(7,0) },
+			new VersionPair(15,7, /* => */ 7,3),
+			new VersionPair(15,5, /* => */ 7,2),
+			new VersionPair(15,3, /* => */ 7,1),
+			new VersionPair(15,0, /* => */ 7,0),
 		};
 
 		// C# language version support for Visual Studio for Mac
-		private static Version[][] OSXVersionTable =
+		private static VersionPair[] OSXVersionTable =
 		{
 			// VisualStudio for Mac 8.x
-			new [] { new Version(8,9), new Version(9,0) },
-			new [] { new Version(8,3), new Version(8,0) },
-			new [] { new Version(8,0), new Version(7,3) },
+			new VersionPair(8,8, /* => */ 9,0),
+			new VersionPair(8,3, /* => */ 8,0),
+			new VersionPair(8,0, /* => */ 7,3),
 		};
 
 		public Version LatestLanguageVersionSupported
 		{
 			get
 			{
-				Version[][] versions = null;
+				VersionPair[] versions = null;
 
 				if (VisualStudioEditor.IsWindows)
 					versions = WindowsVersionTable;
@@ -80,8 +80,8 @@ namespace Microsoft.Unity.VisualStudio.Editor
 				{
 					foreach(var entry in versions)
 					{
-						if (Version >= entry.First())
-							return entry.Last();
+						if (Version >= entry.IdeVersion)
+							return entry.LanguageVersion;
 					}
 				}
 
