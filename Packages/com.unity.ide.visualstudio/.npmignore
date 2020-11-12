@@ -11,7 +11,7 @@ build.bat*
 *.mm.meta'
 Editor/AppleEventIntegration
 Editor/AppleEventIntegration.meta
-Editor/COMIntegration/COMIntegration.meta
+Editor/COMIntegration/COMIntegration*
 upm-ci~/**
 .Editor/**
 .yamato/**
