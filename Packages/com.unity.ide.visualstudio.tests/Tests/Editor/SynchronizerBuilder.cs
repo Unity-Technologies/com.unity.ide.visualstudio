@@ -194,7 +194,11 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 		{
 			public override bool TryGetInstallationForPath(string editorPath, out CodeEditor.Installation installation)
 			{
-				installation = new CodeEditor.Installation();
+				installation = new CodeEditor.Installation
+				{
+					Name = editorPath,
+					Path = editorPath
+				};
 				return true;
 			}
 
