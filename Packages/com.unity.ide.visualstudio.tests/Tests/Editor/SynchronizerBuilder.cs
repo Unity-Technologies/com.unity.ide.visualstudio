@@ -88,6 +88,7 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 			}
 			return this;
 		}
+
 		public SynchronizerBuilder WithAssemblyData(string[] files = null, string[] defines = null, Assembly[] assemblyReferences = null, string[] compiledAssemblyReferences = null, bool unsafeSettings = false, string rootNamespace = "")
 		{
 			var options = new ScriptCompilerOptions() { AllowUnsafeCode = unsafeSettings };
@@ -107,6 +108,14 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 				options);
 #endif
 			return WithAssembly(assembly);
+		}
+
+		public SynchronizerBuilder WithLatestLanguageVersionSupported(Version version)
+		{
+			m_MockExternalCodeEditor = new MyMockIExternalCodeEditor(version);
+			CodeEditor.Register(m_MockExternalCodeEditor);
+
+			return this;
 		}
 
 		public SynchronizerBuilder WithAssembly(Assembly assembly)
@@ -166,7 +175,7 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 
 #if UNITY_2020_2_OR_NEWER
 		public SynchronizerBuilder WithRoslynAnalyzers(string[] roslynAnalyzerDllPaths)
-		{			
+		{
 			m_MockExternalCodeEditor = new MyMockIExternalCodeEditor();
 			CodeEditor.Register(m_MockExternalCodeEditor);
 
@@ -192,6 +201,13 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 
 		public class MyMockIExternalCodeEditor : VisualStudioEditor
 		{
+			private Version LatestLanguageVersionSupported = new Version(7, 3);
+			public MyMockIExternalCodeEditor(Version version = null)
+			{
+				if (version != null)
+					LatestLanguageVersionSupported = version;
+			}
+
 			public override bool TryGetInstallationForPath(string editorPath, out CodeEditor.Installation installation)
 			{
 				installation = new CodeEditor.Installation
@@ -206,7 +222,7 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 			{
 				var mock = new Mock<IVisualStudioInstallation>();
 				mock.Setup(x => x.SupportsAnalyzers).Returns(true);
-				mock.Setup(x => x.LatestLanguageVersionSupported).Returns(new Version(7, 2));
+				mock.Setup(x => x.LatestLanguageVersionSupported).Returns(() => LatestLanguageVersionSupported);
 
 				installation = mock.Object;
 
