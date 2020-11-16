@@ -206,6 +206,7 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 			{
 				var mock = new Mock<IVisualStudioInstallation>();
 				mock.Setup(x => x.SupportsAnalyzers).Returns(true);
+				mock.Setup(x => x.LatestLanguageVersionSupported).Returns(new Version(7, 2));
 
 				installation = mock.Object;
 
