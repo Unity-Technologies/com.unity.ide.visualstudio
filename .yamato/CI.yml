@@ -8,7 +8,7 @@ editors:
 platforms:
   - name: win
     type: Unity::VM
-    image: package-ci/win10:stable
+    image: scripting/scripting-bokken-images:latest
     flavor: b1.large
     envsetup: echo
   - name: mac
