@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using NUnit.Framework;
 using UnityEditor.Compilation;
 
@@ -87,11 +88,11 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 			{
 				var synchronizer = m_Builder.Build();
 
-				Assert.IsFalse(synchronizer.SyncIfNeeded(new string[0], new[] { $"reimport.{reimportedFile}" }), "Before sync has been called, we should not allow SyncIfNeeded");
+				Assert.IsFalse(synchronizer.SyncIfNeeded(new List<string>(), new[] { $"reimport.{reimportedFile}" }), "Before sync has been called, we should not allow SyncIfNeeded");
 
 				synchronizer.Sync();
 
-				Assert.IsTrue(synchronizer.SyncIfNeeded(new string[0], new[] { $"reimport.{reimportedFile}" }));
+				Assert.IsTrue(synchronizer.SyncIfNeeded(new List<string>(), new[] { $"reimport.{reimportedFile}" }));
 			}
 
 			[Test]
@@ -101,7 +102,7 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 
 				synchronizer.Sync();
 
-				Assert.IsFalse(synchronizer.SyncIfNeeded(new string[0], new[] { "ShouldNotSync.shader" }));
+				Assert.IsFalse(synchronizer.SyncIfNeeded(new List<string>(), new[] { "ShouldNotSync.shader" }));
 			}
 
 			[Test]
@@ -111,7 +112,7 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 
 				synchronizer.Sync();
 
-				Assert.IsFalse(synchronizer.SyncIfNeeded(new[] { "reimport.random" }, new string[0]));
+				Assert.IsFalse(synchronizer.SyncIfNeeded(new List<string> { "reimport.random" }, new string[0]));
 			}
 
 			[Test]
@@ -123,7 +124,7 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 
 				m_Builder.WithUserSupportedExtensions(new[] { "random" });
 
-				Assert.IsTrue(synchronizer.SyncIfNeeded(new[] { "reimport.random" }, new string[0]));
+				Assert.IsTrue(synchronizer.SyncIfNeeded(new List<string> { "reimport.random" }, new string[0]));
 			}
 
 			[Test, TestCaseSource(nameof(s_ExtensionsRequireReSync))]
@@ -131,11 +132,11 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 			{
 				var synchronizer = m_Builder.Build();
 
-				Assert.IsFalse(synchronizer.SyncIfNeeded(new[] { $"reimport.{fileExtension}" }, new string[0]), "Before sync has been called, we should not allow SyncIfNeeded");
+				Assert.IsFalse(synchronizer.SyncIfNeeded(new List<string> { $"reimport.{fileExtension}" }, new string[0]), "Before sync has been called, we should not allow SyncIfNeeded");
 
 				synchronizer.Sync();
 
-				Assert.IsTrue(synchronizer.SyncIfNeeded(new[] { $"reimport.{fileExtension}" }, new string[0]));
+				Assert.IsTrue(synchronizer.SyncIfNeeded(new List<string> { $"reimport.{fileExtension}" }, new string[0]));
 			}
 
 			static string[] s_ExtensionsRequireReSync =

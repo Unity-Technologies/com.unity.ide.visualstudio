@@ -12,7 +12,9 @@ using System.Security;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
+using NUnit.Framework;
 using Unity.CodeEditor;
+using Unity.Profiling;
 using UnityEditor;
 using UnityEditor.Compilation;
 using UnityEditorInternal;
@@ -28,7 +30,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 	public interface IGenerator
 	{
-		bool SyncIfNeeded(IEnumerable<string> affectedFiles, IEnumerable<string> reimportedFiles);
+		bool SyncIfNeeded(List<string> affectedFiles, string[] reimportedFiles);
 		void Sync();
 		bool HasSolutionBeenGenerated();
 		bool IsSupportedFile(string path);
@@ -100,18 +102,60 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		/// <param name="reimportedFiles">
 		/// A set of files that got reimported
 		/// </param>
-		public bool SyncIfNeeded(IEnumerable<string> affectedFiles, IEnumerable<string> reimportedFiles)
+		public bool SyncIfNeeded(List<string> affectedFiles, string[] reimportedFiles)
 		{
-			SetupProjectSupportedExtensions();
+            using (solutionSyncMarker.Auto())
+            {
+                SetupProjectSupportedExtensions();
 
-			// Don't sync if we haven't synced before
-			if (HasSolutionBeenGenerated() && HasFilesBeenModified(affectedFiles, reimportedFiles))
-			{
-				Sync();
-				return true;
-			}
-			return false;
-		}
+                // See https://devblogs.microsoft.com/setup/configure-visual-studio-across-your-organization-with-vsconfig/
+                // We create a .vsconfig file to make sure our ManagedGame workload is installed
+                CreateVsConfigIfNotFound();
+
+                // Don't sync if we haven't synced before
+                if (HasSolutionBeenGenerated() && HasFilesBeenModified(affectedFiles, reimportedFiles))
+                {
+                    var assemblies = m_AssemblyNameProvider.GetAssemblies(ShouldFileBePartOfSolution);
+                    var allProjectAssemblies = RelevantAssembliesForMode(assemblies).ToList();
+                    SyncSolution(allProjectAssemblies);
+
+                    var allAssetProjectParts = GenerateAllAssetProjectParts();
+
+                    var affectedNames = affectedFiles
+                        .Select(asset => m_AssemblyNameProvider.GetAssemblyNameFromScriptPath(asset))
+                        .Where(name => !string.IsNullOrWhiteSpace(name)).Select(name =>
+                            name.Split(new[] {".dll"}, StringSplitOptions.RemoveEmptyEntries)[0]);
+                    var reimportedNames = reimportedFiles
+                        .Select(asset => m_AssemblyNameProvider.GetAssemblyNameFromScriptPath(asset))
+                        .Where(name => !string.IsNullOrWhiteSpace(name)).Select(name =>
+                            name.Split(new[] {".dll"}, StringSplitOptions.RemoveEmptyEntries)[0]);
+                    var affectedAndReimported = new HashSet<string>(affectedNames.Concat(reimportedNames));
+                    var assemblyNames =
+                        new HashSet<string>(allProjectAssemblies.Select(assembly =>
+                            Path.GetFileName(assembly.outputPath)));
+
+                    foreach (var assembly in allProjectAssemblies)
+                    {
+                        if (!affectedAndReimported.Contains(assembly.name))
+                            continue;
+
+                        SyncProject(assembly,
+                            allAssetProjectParts,
+                            responseFilesData: ParseResponseFileData(assembly),
+                            allProjectAssemblies,
+#if UNITY_2020_2_OR_NEWER
+                            assembly.compilerOptions.RoslynAnalyzerDllPaths);
+#else
+					    Array.Empty<string>());
+#endif
+                    }
+
+                    return true;
+                }
+
+                return false;
+            }
+        }
 
 		private void CreateVsConfigIfNotFound()
 		{
@@ -123,10 +167,10 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 				var content = $@"{{
   ""version"": ""1.0"",
-  ""components"": [ 
+  ""components"": [
     ""{Discovery.ManagedWorkload}""
   ]
-}} 
+}}
 ";
 				m_FileIOProvider.WriteAllText(vsConfigFile, content);
 			}
@@ -151,10 +195,12 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			editor?.TryGetVisualStudioInstallationForPath(CodeEditor.CurrentEditorInstallation, searchInstallations: true, out m_CurrentInstallation);
 		}
 
+        static ProfilerMarker solutionSyncMarker = new ProfilerMarker("SolutionSynchronizerSync");
+
 		public void Sync()
-		{
-			// We need the exact VS version/capabilities to tweak project generation (analyzers/langversion)
-			RefreshCurrentInstallation();
+        {
+            // We need the exact VS version/capabilities to tweak project generation (analyzers/langversion)
+            RefreshCurrentInstallation();
 
 			SetupProjectSupportedExtensions();
 
@@ -166,12 +212,13 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 			var externalCodeAlreadyGeneratedProjects = OnPreGeneratingCSProjectFiles();
 
-			if (!externalCodeAlreadyGeneratedProjects)
-			{
-				GenerateAndWriteSolutionAndProjects();
-			}
-			OnGeneratedCSProjectFiles();
-		}
+            if (!externalCodeAlreadyGeneratedProjects)
+            {
+                GenerateAndWriteSolutionAndProjects();
+            }
+
+            OnGeneratedCSProjectFiles();
+        }
 
 		public bool HasSolutionBeenGenerated()
 		{
@@ -310,7 +357,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 				if (IsSupportedFile(asset) && ScriptingLanguage.None == ScriptingLanguageFor(asset))
 				{
 					// Find assembly the asset belongs to by adding script extension and using compilation pipeline.
-					var assemblyName = m_AssemblyNameProvider.GetAssemblyNameFromScriptPath(asset + ".cs");
+					var assemblyName = m_AssemblyNameProvider.GetAssemblyNameFromScriptPath(asset);
 
 					if (string.IsNullOrEmpty(assemblyName))
 					{
@@ -759,7 +806,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 #if UNITY_2020_2_OR_NEWER
                 if (roslynAnalyzerRulesetPath != null)
                 {
-                    lines.Add(@"  <PropertyGroup>"); 
+                    lines.Add(@"  <PropertyGroup>");
                     lines.Add($"    <CodeAnalysisRuleSet>{roslynAnalyzerRulesetPath}</CodeAnalysisRuleSet>");
                     lines.Add(@"  </PropertyGroup>");
                 }

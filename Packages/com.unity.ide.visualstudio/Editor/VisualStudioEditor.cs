@@ -147,7 +147,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 		public void SyncIfNeeded(string[] addedFiles, string[] deletedFiles, string[] movedFiles, string[] movedFromFiles, string[] importedFiles)
 		{
-			_generator.SyncIfNeeded(addedFiles.Union(deletedFiles).Union(movedFiles).Union(movedFromFiles), importedFiles);
+			_generator.SyncIfNeeded(addedFiles.Union(deletedFiles).Union(movedFiles).Union(movedFromFiles).ToList(), importedFiles);
 
 			foreach (var file in importedFiles.Where(a => Path.GetExtension(a) == ".pdb"))
 			{

@@ -120,6 +120,7 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 
 		public SynchronizerBuilder WithAssembly(Assembly assembly)
 		{
+			AssignFilesToAssembly(assembly.sourceFiles, assembly);
 			return WithAssemblies(new[] { assembly });
 		}
 
@@ -131,7 +132,7 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 
 		public SynchronizerBuilder AssignFilesToAssembly(string[] files, Assembly assembly)
 		{
-			m_AssemblyProvider.Setup(x => x.GetAssemblyNameFromScriptPath(It.Is<string>(file => files.Contains(file.Substring(0, file.Length - ".cs".Length))))).Returns(assembly.name);
+			m_AssemblyProvider.Setup(x => x.GetAssemblyNameFromScriptPath(It.Is<string>(file => files.Contains(file)))).Returns(assembly.name);
 			return this;
 		}
 
