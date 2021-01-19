@@ -5,7 +5,10 @@
   "version": "2.0.5",
   "unity": "2020.1",
   "unityRelease": "0a12",
-  "dependencies": {},
+  "dependencies": {
+    "com.unity.nuget.newtonsoft-json": "1.1.2",
+    "com.unity.test-framework": "1.1.9"
+  },
   "relatedPackages": {
     "com.unity.ide.visualstudio.tests": "2.0.5"
   }
