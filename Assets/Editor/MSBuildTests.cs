@@ -67,7 +67,6 @@ namespace Microsoft.Unity.VisualStudio.Standalone.EditorTests
 
 		[TestCase(ProjectGenerationFlag.Embedded)]
 		[TestCase(ProjectGenerationFlag.Local)]
-		[TestCase(ProjectGenerationFlag.Registry)]
 		[TestCase(ProjectGenerationFlag.Git)]
 		[TestCase(ProjectGenerationFlag.BuiltIn)]
 		[TestCase(ProjectGenerationFlag.LocalTarBall)]
