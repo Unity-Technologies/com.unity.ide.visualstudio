@@ -1,8 +1,9 @@
 {
   "disableProjectUpdate": true,
   "dependencies": {
+    "com.unity.nuget.newtonsoft-json": "1.1.2",
     "com.unity.package-validation-suite": "0.7.10-preview",
-    "com.unity.test-framework": "1.0.9",
+    "com.unity.test-framework": "1.1.9",
     "com.unity.modules.imgui": "1.0.0",
     "com.unity.modules.jsonserialize": "1.0.0"
   }

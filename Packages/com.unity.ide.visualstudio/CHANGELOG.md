@@ -1,11 +1,32 @@
 # Code Editor Package for Visual Studio
 
+## [2.0.6] - 2021-01-20
+
+Integration
+Improved language version detection
+Added support for the VS Test Runner
+Added initial support for displaying asset usage
+Fixed remaining issues with special characters in file/path
+
+
 ## [2.0.5] - 2020-10-30
 
 Integration:
 
 Disable legacy pdb symbol checking for Unity packages
 
+## [2.0.4] - 2020-10-15
+
+Project generation:
+
+Added support for embedded Roslyn analyzer DLLs and ruleset files.
+Warn the user when the opened script is not part of the generation scope.
+Warn the user when the selected Visual Studio installation is not found.
+Generate a .vsconfig file to ensure Visual Studio installation is compatible.
+
+Integration:
+
+Fix automation issues on MacOS, where a new Visual Studio instance is opened every time.
 
 ## [2.0.3] - 2020-09-09
 

@@ -1,6 +1,6 @@
 # How to publish new version
 
-All you have to do is create a PR that targets *next/master*. The important part is to make the PR title the version number i.e. 2.0.3 or the target version. Also to add the changelog to the description of the PR. Then add the unity employee as a reviewer. Once we have reviewed it, and all tests are passing we will merge it to next/master.
+All you have to do is create a PR that targets *next/master*. The important part is to make the PR title the version number i.e. 2.0.3 or the target version. Also to add the changelog to the description of the PR. Then add the unity employee as a reviewer. Once we have reviewed it, and all tests are passing we will merge it to next/master (a real merge commit must be used, and not a squash!).
 
 *next/master* is a CI branch that will update the source code as following:
 

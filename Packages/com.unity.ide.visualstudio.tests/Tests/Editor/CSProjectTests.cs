@@ -572,6 +572,71 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
         }
 #endif
 
+		class LanguageVersion : SolutionGenerationTestBase
+		{
+			[Test]
+			public void OldVS2017_Supports70()
+			{
+				try
+				{
+					var synchronizer = m_Builder
+						.WithLatestLanguageVersionSupported(new Version(7, 0))
+						.Build();
+
+					synchronizer.Sync();
+
+					var csprojFileContents = m_Builder.ReadProjectFile(m_Builder.Assembly);
+					StringAssert.Contains($"<LangVersion>7.0</LangVersion>", csprojFileContents);
+				}
+				finally
+				{
+					m_Builder.CleanUp();
+				}
+			}
+
+#if UNITY_2020_2_OR_NEWER
+			[Test]
+			public void Unity2020_2_Supports80()
+			{
+				try
+				{
+					var synchronizer = m_Builder
+						.WithLatestLanguageVersionSupported(new Version(99, 0))
+						.Build();
+
+					synchronizer.Sync();
+
+					var csprojFileContents = m_Builder.ReadProjectFile(m_Builder.Assembly);
+					StringAssert.Contains($"<LangVersion>8.0</LangVersion>", csprojFileContents);
+				}
+				finally
+				{
+					m_Builder.CleanUp();
+				}
+			}
+#else
+			[Test]
+			public void Unity2020_1_Supports73()
+			{
+				try
+				{
+					var synchronizer = m_Builder
+						.WithLatestLanguageVersionSupported(new Version(99, 0))
+						.Build();
+
+					synchronizer.Sync();
+
+					var csprojFileContents = m_Builder.ReadProjectFile(m_Builder.Assembly);
+					StringAssert.Contains($"<LangVersion>7.3</LangVersion>", csprojFileContents);
+				}
+				finally
+				{
+					m_Builder.CleanUp();
+				}
+			}
+#endif
+		}
+
 		class CompilerOptions : SolutionGenerationTestBase
 		{
 			[Test]

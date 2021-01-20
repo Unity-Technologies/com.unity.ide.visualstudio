@@ -10,7 +10,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.TestTools;
 
-namespace VisualStudioEditor.Runtime_spec.CSProject
+namespace Microsoft.Unity.VisualStudio.Standalone.EditorTests
 {
 	[TestFixture]
 	[Serializable]
@@ -37,7 +37,7 @@ public class SimpleCSharpScript : MonoBehaviour
 }";
 
 		[SetUp]
-		public void SetUp()
+		public virtual void SetUp()
 		{
 			var projectDirectory = Directory.GetParent(Application.dataPath).FullName;
 			m_ProjectGeneration = new ProjectGeneration(projectDirectory);
