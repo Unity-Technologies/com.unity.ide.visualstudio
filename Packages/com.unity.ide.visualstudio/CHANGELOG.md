@@ -8,12 +8,11 @@ Added support for the VS Test Runner
 Added initial support for displaying asset usage
 Fixed remaining issues with special characters in file/path
 
-
 ## [2.0.5] - 2020-10-30
 
 Integration:
 
-Disable legacy pdb symbol checking for Unity packages
+Disable legacy pdb symbol checking for Unity packages.
 
 ## [2.0.4] - 2020-10-15
 
