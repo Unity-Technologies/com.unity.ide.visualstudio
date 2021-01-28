@@ -61,17 +61,17 @@ Add support for selective project generation (embedded, local, registry, git, bu
 
 ## [2.0.0] - 2019-11-06
 
-- Improved Visual Studio and Visual Studio for Mac automatic discovery
-- Added support for the VSTU messaging system (start/stop features from Visual Studio)
-- Added support for solution roundtrip (preserves references to external projects and solution properties)
-- Added support for VSTU Analyzers (requires Visual Studio 2019 16.3, Visual Studio for Mac 8.3)
-- Added a warning when using legacy pdb symbol files.
-- Fixed issues while Opening Visual Studio on Windows
-- Fixed issues while Opening Visual Studio on Mac
+Improved Visual Studio and Visual Studio for Mac automatic discovery.
+Added support for the VSTU messaging system (start/stop features from Visual Studio).
+Added support for solution roundtrip (preserves references to external projects and solution properties).
+Added support for VSTU Analyzers (requires Visual Studio 2019 16.3, Visual Studio for Mac 8.3).
+Added a warning when using legacy pdb symbol files.
+Fixed issues while Opening Visual Studio on Windows.
+Fixed issues while Opening Visual Studio on Mac.
 
 ## [1.1.1] - 2019-05-29
 
-Fix Bridge assembly loading with non VS2017 editors
+Fix Bridge assembly loading with non VS2017 editors.
 
 ## [1.1.0] - 2019-05-27
 
@@ -83,13 +83,13 @@ Fix detection of visual studio for mac installation.
 
 ## [1.0.10] - 2019-05-04
 
-Fix ignored comintegration executable
+Fix ignored comintegration executable.
 
 
 ## [1.0.9] - 2019-03-05
 
-Updated MonoDevelop support, to pass correct arguments, and not import VSTU plugin
-Use release build of COMIntegration for Visual Studio
+Updated MonoDevelop support, to pass correct arguments, and not import VSTU plugin.
+Use release build of COMIntegration for Visual Studio.
 
 
 ## [1.0.7] - 2019-04-30
@@ -107,8 +107,8 @@ Fix opening editor on mac.
 
 ## [1.0.4] - 2019-04-12
 
-- Fixing null reference issue for callbacks to AssetPostProcessor.
-- Ensure Path.GetFullPath does not get an empty string.
+Fixing null reference issue for callbacks to AssetPostProcessor.
+Ensure Path.GetFullPath does not get an empty string.
 
 ## [1.0.3] - 2019-01-01
 
