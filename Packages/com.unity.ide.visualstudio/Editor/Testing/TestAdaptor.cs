@@ -1,37 +1,39 @@
-﻿using System.Linq;
+﻿using System;
+
 using UnityEditor.TestTools.TestRunner.Api;
 
 namespace Microsoft.Unity.VisualStudio.Editor.Testing
 {
+	[Serializable]
+	internal class TestAdaptorContainer
+	{
+		public TestAdaptor[] TestAdaptors;
+	}
+
+	[Serializable]
 	internal class TestAdaptor
 	{
-		private ITestAdaptor _testAdaptor;
-		private TestAdaptor[] _children;
+		public string Id;
+		public string Name;
+		public string FullName;
 
-		public string Id => _testAdaptor.Id;
-		public string Name => _testAdaptor.Name;
-		public string FullName => _testAdaptor.FullName;
+		public string Type;
+		public string Method;
+		public string Assembly;
 
-		public string Type => _testAdaptor.TypeInfo?.FullName;
-		public string Method => _testAdaptor?.Method?.Name;
-		public string Assembly => _testAdaptor.TypeInfo?.Assembly?.Location;
+		public int Parent;
 
-		public TestAdaptor[] Children
+		public TestAdaptor(ITestAdaptor testAdaptor, int parent)
 		{
-			get
-			{
-				if (_children == null)
-				{
-					_children = _testAdaptor.Children.Select(ta => new TestAdaptor(ta)).ToArray();
-				}
+			Id = testAdaptor.Id;
+			Name = testAdaptor.Name;
+			FullName = testAdaptor.FullName;
 
-				return _children;
-			}
-		}
+			Type = testAdaptor.TypeInfo?.FullName;
+			Method = testAdaptor?.Method?.Name;
+			Assembly = testAdaptor.TypeInfo?.Assembly?.Location;
 
-		public TestAdaptor(ITestAdaptor testAdaptor)
-		{
-			_testAdaptor = testAdaptor;
+			Parent = parent;
 		}
 	}
 }

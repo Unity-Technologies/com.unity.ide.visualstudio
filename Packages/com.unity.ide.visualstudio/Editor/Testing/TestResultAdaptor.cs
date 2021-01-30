@@ -1,62 +1,60 @@
 ﻿using System;
-using System.Linq;
+
 using UnityEditor.TestTools.TestRunner.Api;
 
 namespace Microsoft.Unity.VisualStudio.Editor.Testing
 {
+	[Serializable]
+	internal class TestResultAdaptorContainer
+	{
+		public TestResultAdaptor[] TestResultAdaptors;
+	}
+
+	[Serializable]
 	internal class TestResultAdaptor
 	{
-		private ITestResultAdaptor _testResultAdaptor;
-		private TestResultAdaptor[] _children;
+		public string Name;
+		public string FullName;
 
-		public string Name => _testResultAdaptor.Name;
-		public string FullName => _testResultAdaptor.FullName;
+		public int PassCount;
+		public int FailCount;
+		public int InconclusiveCount;
+		public int SkipCount;
 
-		public int PassCount => _testResultAdaptor.PassCount;
-		public int FailCount => _testResultAdaptor.FailCount;
-		public int InconclusiveCount => _testResultAdaptor.InconclusiveCount;
-		public int SkipCount => _testResultAdaptor.SkipCount;
+		public string ResultState;
+		public string StackTrace;
 
-		public string ResultState => _testResultAdaptor.ResultState;
-		public string StackTrace => _testResultAdaptor.StackTrace;
+		public TestStatusAdaptor TestStatus;
 
-		public TestStatusAdaptor TestStatus
+		public int Parent;
+
+		public TestResultAdaptor(ITestResultAdaptor testResultAdaptor, int parent)
 		{
-			get
+			Name = testResultAdaptor.Name;
+			FullName = testResultAdaptor.FullName;
+
+			PassCount = testResultAdaptor.PassCount;
+			FailCount = testResultAdaptor.FailCount;
+			InconclusiveCount = testResultAdaptor.InconclusiveCount;
+			SkipCount = testResultAdaptor.SkipCount;
+
+			switch (testResultAdaptor.TestStatus)
 			{
-				switch (_testResultAdaptor.TestStatus)
-				{
-					case UnityEditor.TestTools.TestRunner.Api.TestStatus.Passed:
-						return TestStatusAdaptor.Passed;
-					case UnityEditor.TestTools.TestRunner.Api.TestStatus.Skipped:
-						return TestStatusAdaptor.Skipped;
-					case UnityEditor.TestTools.TestRunner.Api.TestStatus.Inconclusive:
-						return TestStatusAdaptor.Inconclusive;
-					case UnityEditor.TestTools.TestRunner.Api.TestStatus.Failed:
-						return TestStatusAdaptor.Failed;
-				}
-
-				throw new NotSupportedException();
+				case UnityEditor.TestTools.TestRunner.Api.TestStatus.Passed:
+					TestStatus = TestStatusAdaptor.Passed;
+					break;
+				case UnityEditor.TestTools.TestRunner.Api.TestStatus.Skipped:
+					TestStatus = TestStatusAdaptor.Skipped;
+					break;
+				case UnityEditor.TestTools.TestRunner.Api.TestStatus.Inconclusive:
+					TestStatus = TestStatusAdaptor.Inconclusive;
+					break;
+				case UnityEditor.TestTools.TestRunner.Api.TestStatus.Failed:
+					TestStatus = TestStatusAdaptor.Failed;
+					break;
 			}
-		}
 
-
-		public TestResultAdaptor[] Children
-		{
-			get
-			{
-				if (_children == null)
-				{
-					_children = _testResultAdaptor.Children.Select(ta => new TestResultAdaptor(ta)).ToArray();
-				}
-
-				return _children;
-			}
-		}
-
-		public TestResultAdaptor(ITestResultAdaptor testResultAdaptor)
-		{
-			_testResultAdaptor = testResultAdaptor;
+			Parent = parent;
 		}
 	}
 }
