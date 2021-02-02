@@ -5,17 +5,19 @@
 using System;
 using System.IO;
 using System.Linq;
-using Newtonsoft.Json;
+
+using UnityEngine;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine.SceneManagement;
 
 namespace Microsoft.Unity.VisualStudio.Editor
 {
+	[Serializable]
 	internal class FileUsage
 	{
-		public string Path { get; set; }
-		public string[] GameObjectPath { get; set; }
+		public string Path;
+		public string[] GameObjectPath;
 	}
 
 	internal static class UsageUtility
@@ -24,7 +26,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		{
 			try
 			{
-				var usage = JsonConvert.DeserializeObject<FileUsage>(json);
+				var usage = JsonUtility.FromJson<FileUsage>(json);
 				ShowUsage(usage.Path, usage.GameObjectPath);
 			}
 			catch (Exception)

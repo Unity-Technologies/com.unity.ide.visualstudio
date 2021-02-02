@@ -1,5 +1,8 @@
-﻿namespace Microsoft.Unity.VisualStudio.Editor.Testing
+﻿using System;
+
+namespace Microsoft.Unity.VisualStudio.Editor.Testing
 {
+	[Serializable]
 	internal enum TestStatusAdaptor
 	{
 		Passed,
