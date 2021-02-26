@@ -53,19 +53,6 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 			}
 		}
 
-		[Test]
-		public void EditorAssemblies_WillIncludeEditorSettingsDefines()
-		{
-			var defines = new[] { "DEBUG", "TRACE" }.Concat(EditorUserBuildSettings.activeScriptCompilationDefines);
-
-			var collectedAssemblies = m_AssemblyNameProvider.GetAssemblies(s => true).ToList();
-
-			foreach (Assembly editorAssembly in collectedAssemblies)
-			{
-				CollectionAssert.IsSubsetOf(defines, editorAssembly.defines);
-			}
-		}
-
 #if UNITY_2020_2_OR_NEWER
         [Test]
         public void EditorAssemblies_WillIncludeRootNamespace()
