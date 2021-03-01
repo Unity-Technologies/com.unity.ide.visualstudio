@@ -88,6 +88,11 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			}
 		}
 
+		public string GetCompileOutputPath(string assemblyName)
+		{
+			return assemblyName.EndsWith(".Player", StringComparison.Ordinal) ? @"Temp\Bin\Debug\Player\" : @"Temp\Bin\Debug\";
+		}
+
 		public IEnumerable<string> GetAllAssetPaths()
 		{
 			return AssetDatabase.GetAllAssetPaths();
