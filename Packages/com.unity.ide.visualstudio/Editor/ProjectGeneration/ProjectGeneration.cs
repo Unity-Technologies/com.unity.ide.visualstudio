@@ -322,7 +322,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 						stringBuilders[assemblyName] = projectBuilder;
 					}
 
-					projectBuilder.Append("     <None Include=\"").Append(EscapedRelativePathFor(asset)).Append("\" />").Append(k_WindowsNewline);
+					projectBuilder.Append("    <None Include=\"").Append(EscapedRelativePathFor(asset)).Append("\" />").Append(k_WindowsNewline);
 				}
 			}
 
@@ -466,11 +466,18 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			}
 			projectBuilder.Append(@"  </ItemGroup>").Append(k_WindowsNewline);
 
-			projectBuilder.Append(@"  <ItemGroup>").Append(k_WindowsNewline);
-
 			// Append additional non-script files that should be included in project generation.
 			if (allAssetsProjectParts.TryGetValue(assembly.name, out var additionalAssetsForProject))
+			{
+				projectBuilder.Append(@"  <ItemGroup>").Append(k_WindowsNewline);
+
 				projectBuilder.Append(additionalAssetsForProject);
+
+				projectBuilder.Append(@"  </ItemGroup>").Append(k_WindowsNewline);
+
+			}
+
+			projectBuilder.Append(@"  <ItemGroup>").Append(k_WindowsNewline);
 
 			var responseRefs = responseFilesData.SelectMany(x => x.FullPathReferences.Select(r => r));
 			var internalAssemblyReferences = assembly.assemblyReferences
