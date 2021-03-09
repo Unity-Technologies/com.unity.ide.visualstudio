@@ -209,6 +209,8 @@ static win::ComPtr<EnvDTE::_DTE> FindRunningVisualStudioWithSolution(
 	win::ComPtr<IUnknown> punk = nullptr;
 	win::ComPtr<EnvDTE::_DTE> dte = nullptr;
 
+	CRetryMessageFilter retryMessageFilter;
+
 	// Search through the Running Object Table for an instance of Visual Studio
 	// to use that either has the correct solution already open or does not have
 	// any solution open.
