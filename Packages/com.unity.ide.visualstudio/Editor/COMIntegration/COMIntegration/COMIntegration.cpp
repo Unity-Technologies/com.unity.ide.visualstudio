@@ -164,7 +164,7 @@ static bool StartVisualStudioProcess(const std::wstring &vsExe, const std::wstri
 	if (!vsArgsWide.empty())
 		commandLineStream << vsArgsWide << L" ";
 
-	commandLineStream << QuoteString(solutionFile) << '\0';
+	commandLineStream << QuoteString(solutionFile);
 
 	std::wstring commandLine = commandLineStream.str();
 
@@ -196,7 +196,7 @@ static bool StartVisualStudioProcess(const std::wstring &vsExe, const std::wstri
 }
 
 static win::ComPtr<EnvDTE::_DTE> FindRunningVisualStudioWithSolution(
-	const std::wstring &visualStudioInstallationPathToUse,
+	const std::wstring &visualStudioExecutable,
 	const std::wstring &solutionPathToFind)
 {
 	win::ComPtr<IUnknown> punk = nullptr;
@@ -254,8 +254,8 @@ static win::ComPtr<EnvDTE::_DTE> FindRunningVisualStudioWithSolution(
 		// If we don't have a Visual Studio installation path to use, just use this solution.
 		if (std::filesystem::equivalent(currentSolutionPath, solutionPathToFind)) {
 			std::wcout << "We found a running Visual Studio session with the solution open." << std::endl;
-			if (!visualStudioInstallationPathToUse.empty()) {
-				if (std::filesystem::equivalent(currentVisualStudioExecutablePath, visualStudioInstallationPathToUse)) {
+			if (!visualStudioExecutable.empty()) {
+				if (std::filesystem::equivalent(currentVisualStudioExecutablePath, visualStudioExecutable)) {
 					return dte;
 				}
 				else {
