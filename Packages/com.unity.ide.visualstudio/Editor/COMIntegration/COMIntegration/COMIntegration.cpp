@@ -3,14 +3,11 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-// COMIntegration.cpp : This file contains the 'main' function. Program execution begins and ends there.
-//
 
 #include <iostream>
 #include <sstream>
-#include <codecvt>
 #include <string>
-#include <algorithm>
+#include <filesystem>
 #include <windows.h>
 #include <shlwapi.h>
 
@@ -18,45 +15,46 @@
 #include "ComPtr.h"
 #include "dte80a.tlh"
 
-const int kDefaultPathBufferSize = MAX_PATH * 4;
-
-#define RETRY_INTERVAL_MS 101
-#define TIMEOUT_MS 10000
-
-#define RETURN_ON_FAIL(expression) \
-	result = ( expression );	\
-	if ( FAILED( result ) )		\
-	{							\
-		std::wcout << #expression" result = 0x" << std::hex << result << std::endl;  \
-		ClearProgressbar();	 	\
-		return false;			\
-	}							\
-	else // To prevent danging else condition
+constexpr int RETRY_INTERVAL_MS = 150;
+constexpr int TIMEOUT_MS = 10000;
 
 // Often a DTE call made to Visual Studio can fail after Visual Studio has just started. Usually the
 // return value will be RPC_E_CALL_REJECTED, meaning that Visual Studio is probably busy on another
 // thread. This types filter the RPC messages and retries to send the message until VS accepts it.
-class CRetryMessageFilterBase : public IMessageFilter
+class CRetryMessageFilter : public IMessageFilter
 {
 private:
 	static bool ShouldRetryCall(DWORD dwTickCount, DWORD dwRejectType)
 	{
-		if (dwRejectType == SERVERCALL_RETRYLATER || dwRejectType == SERVERCALL_REJECTED)
+		if (dwRejectType == SERVERCALL_RETRYLATER || dwRejectType == SERVERCALL_REJECTED) {
 			return dwTickCount < TIMEOUT_MS;
+		}
 
 		return false;
 	}
 
-protected:
 	win::ComPtr<IMessageFilter> currentFilter;
 
 public:
+	CRetryMessageFilter()
+	{
+		HRESULT hr = CoRegisterMessageFilter(this, &currentFilter);
+		_ASSERT(SUCCEEDED(hr));
+	}
+
+	~CRetryMessageFilter()
+	{
+		win::ComPtr<IMessageFilter> messageFilter;
+		HRESULT hr = CoRegisterMessageFilter(currentFilter, &messageFilter);
+		_ASSERT(SUCCEEDED(hr));
+	}
+
 	// IUnknown methods
 	IFACEMETHODIMP QueryInterface(REFIID riid, void** ppv)
 	{
 		static const QITAB qit[] =
 		{
-			QITABENT(CRetryMessageFilterBase, IMessageFilter),
+			QITABENT(CRetryMessageFilter, IMessageFilter),
 			{ 0 },
 		};
 		return QISearch(this, qit, riid, ppv);
@@ -100,57 +98,16 @@ public:
 	}
 };
 
-class CRetryMessageFilter :
-	public CRetryMessageFilterBase
-{
-public:
-	CRetryMessageFilter()
-	{
-		HRESULT hr = CoRegisterMessageFilter(this, &currentFilter);
-		_ASSERT(SUCCEEDED(hr));
-	}
-
-	~CRetryMessageFilter()
-	{
-		win::ComPtr<IMessageFilter> messageFilter;
-		HRESULT hr = CoRegisterMessageFilter(currentFilter, &messageFilter);
-		_ASSERT(SUCCEEDED(hr));
-	}
-};
-
-void ClearProgressbar() {
+static void ClearProgressbar() {
 	std::wcout << "clearprogressbar" << std::endl;
 }
 
-static std::wstring ReplaceAll(std::wstring str, const std::wstring& from, const std::wstring& to) {
-    size_t start_pos = 0;
-    while((start_pos = str.find(from, start_pos)) != std::string::npos) {
-        str.replace(start_pos, from.length(), to);
-        start_pos += to.length(); // Handles case where 'to' is a substring of 'from'
-    }
-    return str;
-}
-
-static void ConvertSeparatorsToUnix(std::wstring& pathName)
-{
-    pathName = ReplaceAll(pathName, L"\\", L"/");
-}
-
-inline std::wstring QuoteString(const std::wstring& str)
+inline const std::wstring QuoteString(const std::wstring& str)
 {
 	return L"\"" + str + L"\"";
 }
 
-void ConvertSeparatorsToWindows(std::wstring& pathName) {
-    pathName = ReplaceAll(pathName, L"/", L"\\");
-}
-
-static bool BeginsWith(const std::wstring& str, const std::wstring& prefix)
-{
-	return str.size() >= prefix.size() && 0 == str.compare(0, prefix.size(), prefix);
-}
-
-std::wstring ErrorCodeToMsg(DWORD code)
+static std::wstring ErrorCodeToMsg(DWORD code)
 {
 	LPWSTR msgBuf = nullptr;
 	if (!FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
@@ -164,21 +121,21 @@ std::wstring ErrorCodeToMsg(DWORD code)
 	}
 }
 
-
 // Get an environment variable
-static std::wstring GetEnvironmentVariableValue(std::wstring variableName) {
+static std::wstring GetEnvironmentVariableValue(const std::wstring& variableName) {
 	DWORD currentBufferSize = MAX_PATH;
 	std::wstring variableValue;
 	variableValue.resize(currentBufferSize);
 
-	DWORD requiredBufferSize = GetEnvironmentVariableW(variableName.c_str(), &variableValue[0], currentBufferSize);
+	DWORD requiredBufferSize = GetEnvironmentVariableW(variableName.c_str(), variableValue.data(), currentBufferSize);
 	if (requiredBufferSize == 0) {
 		// Environment variable probably does not exist.
 		return std::wstring();
 	}
-	else if (currentBufferSize < requiredBufferSize) {
+
+	if (currentBufferSize < requiredBufferSize) {
 		variableValue.resize(requiredBufferSize);
-		if (GetEnvironmentVariableW(variableName.c_str(), &variableValue[0], currentBufferSize) == 0)
+		if (GetEnvironmentVariableW(variableName.c_str(), variableValue.data(), currentBufferSize) == 0)
 			return std::wstring();
 	}
 
@@ -195,48 +152,30 @@ static bool StartVisualStudioProcess(const std::wstring &vsExe, const std::wstri
 	si.cb = sizeof(si);
 	ZeroMemory(&pi, sizeof(pi));
 
-	// Get the normalized full path to VS
-	WCHAR vsFullPath[kDefaultPathBufferSize];
-	GetFullPathNameW(vsExe.c_str(), kDefaultPathBufferSize, vsFullPath, nullptr);
-
-	// Extra the VS directory to use it as the
-	// starting directory for the VS process.
-	WCHAR vsStartingDirectory[kDefaultPathBufferSize];
-	WCHAR vsDrive[10];
-	_wsplitpath(vsFullPath, vsDrive, vsStartingDirectory, nullptr, nullptr);
-
-	std::wstringstream startingDirectoryStream;
-	startingDirectoryStream << vsDrive << vsStartingDirectory;
-	std::wstring startingDirectory = startingDirectoryStream.str();
+	std::filesystem::path vsPath = std::filesystem::absolute(vsExe);
+	std::wstring startingDirectory = vsPath.parent_path();
 
 	// Build the command line that is passed as the argv of the VS process
 	// argv[0] must be the quoted full path to the VS exe
 	std::wstringstream commandLineStream;
-	commandLineStream << QuoteString(vsFullPath) << L" ";
+	commandLineStream << QuoteString(vsPath) << L" ";
 
 	std::wstring vsArgsWide = GetEnvironmentVariableValue(L"UNITY_VS_ARGS");
-	if (vsArgsWide.length() > 0)
+	if (!vsArgsWide.empty())
 		commandLineStream << vsArgsWide << L" ";
 
-	std::wstring solutionFileWide(solutionFile);
-	ConvertSeparatorsToWindows(solutionFileWide);
-
-	commandLineStream << QuoteString(solutionFileWide);
+	commandLineStream << QuoteString(solutionFile) << '\0';
 
 	std::wstring commandLine = commandLineStream.str();
-
-	// custom buffer, must be writable as CreateProcessW can alter it
-	LPWSTR commandLineBuffer = new WCHAR[commandLine.size() + 1]();
-	memcpy(commandLineBuffer, commandLine.c_str(), (commandLine.size() + 1) * sizeof(WCHAR));
 
 	std::wcout << "Starting Visual Studio process with: " << commandLine << std::endl;
 
 	result = CreateProcessW(
-		vsFullPath,					// Full path to VS, must not be quoted
-		commandLineBuffer,			// Command line, as passed as argv, separate arguments must be quoted if they contain spaces
+		vsPath.c_str(),					// Full path to VS, must not be quoted
+		commandLine.data(),			// Command line, as passed as argv, separate arguments must be quoted if they contain spaces
 		nullptr,					// Process handle not inheritable
 		nullptr,					// Thread handle not inheritable
-		FALSE,						// Set handle inheritance to FALSE
+		false,						// Set handle inheritance to FALSE
 		0,							// No creation flags
 		nullptr,					// Use parent's environment block
 		startingDirectory.c_str(),	// starting directory set to the VS directory
@@ -246,12 +185,8 @@ static bool StartVisualStudioProcess(const std::wstring &vsExe, const std::wstri
 	if (!result) {
 		DWORD error = GetLastError();
 		std::wcout << "Starting Visual Studio process failed: " << ErrorCodeToMsg(error) << std::endl;
-	}
-
-	delete[] commandLineBuffer;
-
-	if (!result)
 		return false;
+	}
 
 	*dwProcessId = pi.dwProcessId;
 	CloseHandle(pi.hProcess);
@@ -260,71 +195,67 @@ static bool StartVisualStudioProcess(const std::wstring &vsExe, const std::wstri
 	return true;
 }
 
-win::ComPtr<EnvDTE::_DTE> FindRunningVSProWithOurSolution(
+static win::ComPtr<EnvDTE::_DTE> FindRunningVisualStudioWithSolution(
 	const std::wstring &visualStudioInstallationPathToUse,
 	const std::wstring &solutionPathToFind)
 {
-	HRESULT result;
 	win::ComPtr<IUnknown> punk = nullptr;
 	win::ComPtr<EnvDTE::_DTE> dte = nullptr;
-
-	std::wstring wideSolutionPath(solutionPathToFind);
-	ConvertSeparatorsToWindows(wideSolutionPath);
 
 	// Search through the Running Object Table for an instance of Visual Studio
 	// to use that either has the correct solution already open or does not have
 	// any solution open.
 	win::ComPtr<IRunningObjectTable> ROT;
-	RETURN_ON_FAIL(GetRunningObjectTable(0, &ROT));
+	if (FAILED(GetRunningObjectTable(0, &ROT)))
+		return nullptr;
 
 	win::ComPtr<IBindCtx> bindCtx;
-	RETURN_ON_FAIL(CreateBindCtx(0, &bindCtx));
+	if (FAILED(CreateBindCtx(0, &bindCtx)))
+		return nullptr;
 
 	win::ComPtr<IEnumMoniker> enumMoniker;
-	RETURN_ON_FAIL(ROT->EnumRunning(&enumMoniker));
+	if (FAILED(ROT->EnumRunning(&enumMoniker)))
+		return nullptr;
 
 	win::ComPtr<IMoniker> moniker;
 	ULONG monikersFetched = 0;
-	while (enumMoniker->Next(1, &moniker, &monikersFetched) == S_OK) {
-		punk = nullptr;
-		result = ROT->GetObject(moniker, &punk);
-		moniker = nullptr;
-		if (result != S_OK)
+	while (SUCCEEDED(enumMoniker->Next(1, &moniker, &monikersFetched)) && monikersFetched) {
+		if (FAILED(ROT->GetObject(moniker, &punk)))
 			continue;
 
 		punk.As(&dte);
-
 		if (!dte)
 			continue;
+
 		// Okay, so we found an actual running instance of Visual Studio.
 
 		// Get the executable path of this running instance.
 		BStrHolder visualStudioExecutablePath;
-		result = dte->get_FullName(&visualStudioExecutablePath);
-		if (FAILED(result))
+		if (FAILED(dte->get_FullName(&visualStudioExecutablePath)))
 			continue;
 
-		std::wstring currentVisualStudioExecutablePath(visualStudioExecutablePath);
-		ConvertSeparatorsToUnix(currentVisualStudioExecutablePath);
+		std::wstring currentVisualStudioExecutablePath = visualStudioExecutablePath;
 
 		// Ask for its current solution.
 		win::ComPtr<EnvDTE::_Solution> solution;
-		result = dte->get_Solution(&solution);
-		if (FAILED(result))
+		if (FAILED(dte->get_Solution(&solution)))
 			continue;
 
 		// Get the name of that solution.
 		BStrHolder currentVisualStudioSolutionPath;
-		result = solution->get_FullName(&currentVisualStudioSolutionPath);
-		if (FAILED(result))
+		if (FAILED(solution->get_FullName(&currentVisualStudioSolutionPath)))
 			continue;
+
+		std::wstring currentSolutionPath = currentVisualStudioSolutionPath;
+		if (!currentSolutionPath.empty())
+			std::wcout << "Visual Studio opened on " << currentSolutionPath << std::endl;
 
 		// If the name matches the solution we want to open and we have a Visual Studio installation path to use and this one matches that path, then use it.
 		// If we don't have a Visual Studio installation path to use, just use this solution.
-		if (std::wstring(currentVisualStudioSolutionPath) == wideSolutionPath) {
-			std::wcout << "We found for a running Visual Studio session with the solution open." << std::endl;
+		if (std::filesystem::equivalent(currentSolutionPath, solutionPathToFind)) {
+			std::wcout << "We found a running Visual Studio session with the solution open." << std::endl;
 			if (!visualStudioInstallationPathToUse.empty()) {
-				if (BeginsWith(currentVisualStudioExecutablePath, visualStudioInstallationPathToUse)) {
+				if (std::filesystem::equivalent(currentVisualStudioExecutablePath, visualStudioInstallationPathToUse)) {
 					return dte;
 				}
 				else {
@@ -343,7 +274,9 @@ win::ComPtr<EnvDTE::_DTE> FindRunningVSProWithOurSolution(
 static bool
 MonikerIsVisualStudioProcess(const win::ComPtr<IMoniker> &moniker, const win::ComPtr<IBindCtx> &bindCtx, const DWORD dwProcessId) {
 	LPOLESTR oleMonikerName;
-	moniker->GetDisplayName(bindCtx, nullptr, &oleMonikerName);
+	if (FAILED(moniker->GetDisplayName(bindCtx, nullptr, &oleMonikerName)))
+		return false;
+
 	std::wstring monikerName(oleMonikerName);
 
 	// VisualStudio Moniker is "!VisualStudio.DTE.$Version:$PID"
@@ -361,38 +294,34 @@ MonikerIsVisualStudioProcess(const win::ComPtr<IMoniker> &moniker, const win::Co
 	return monikerName.length() - suffix.length() == monikerName.find(suffix);
 }
 
-win::ComPtr<EnvDTE::_DTE> FindRunningVSProWithPID(const DWORD dwProcessId) {
-	HRESULT result;
+static win::ComPtr<EnvDTE::_DTE> FindRunningVisualStudioWithPID(const DWORD dwProcessId) {
 	win::ComPtr<IUnknown> punk = nullptr;
 	win::ComPtr<EnvDTE::_DTE> dte = nullptr;
 
 	// Search through the Running Object Table for a Visual Studio
 	// process with the process ID specified
 	win::ComPtr<IRunningObjectTable> ROT;
-	RETURN_ON_FAIL(GetRunningObjectTable(0, &ROT));
+	if (FAILED(GetRunningObjectTable(0, &ROT)))
+		return nullptr;
 
 	win::ComPtr<IBindCtx> bindCtx;
-	RETURN_ON_FAIL(CreateBindCtx(0, &bindCtx));
+	if (FAILED(CreateBindCtx(0, &bindCtx)))
+		return nullptr;
 
 	win::ComPtr<IEnumMoniker> enumMoniker;
-	RETURN_ON_FAIL(ROT->EnumRunning(&enumMoniker));
+	if (FAILED(ROT->EnumRunning(&enumMoniker)))
+		return nullptr;
 
 	win::ComPtr<IMoniker> moniker;
 	ULONG monikersFetched = 0;
-	while (enumMoniker->Next(1, &moniker, &monikersFetched) == S_OK) {
-		punk = nullptr;
-		result = ROT->GetObject(moniker, &punk);
-		if (result != S_OK)
+	while (SUCCEEDED(enumMoniker->Next(1, &moniker, &monikersFetched)) && monikersFetched) {
+		if (FAILED(ROT->GetObject(moniker, &punk)))
 			continue;
 
-		bool isVs = MonikerIsVisualStudioProcess(moniker, bindCtx, dwProcessId);
-		moniker = nullptr;
-
-		if (!isVs)
+		if (!MonikerIsVisualStudioProcess(moniker, bindCtx, dwProcessId))
 			continue;
 
 		punk.As(&dte);
-
 		if (dte)
 			return dte;
 	}
@@ -400,27 +329,24 @@ win::ComPtr<EnvDTE::_DTE> FindRunningVSProWithPID(const DWORD dwProcessId) {
 	return nullptr;
 }
 
-bool HaveRunningVSProOpenFile(const win::ComPtr<EnvDTE::_DTE> &dte, const std::wstring &_filename, int line) {
-	HRESULT result;
-
-	std::wstring filename(_filename);
-	ConvertSeparatorsToWindows(filename);
-
-	BStrHolder bstrFileName(filename.c_str());
+static bool HaveRunningVisualStudioOpenFile(const win::ComPtr<EnvDTE::_DTE> &dte, const std::wstring &filename, int line) {
+	BStrHolder bstrFileName(std::filesystem::absolute(filename).c_str());
 	BStrHolder bstrKind(L"{00000000-0000-0000-0000-000000000000}"); // EnvDTE::vsViewKindPrimary
 	win::ComPtr<EnvDTE::Window> window = nullptr;
 
 	CRetryMessageFilter retryMessageFilter;
 
-	if (!_filename.empty()) {
+	if (!filename.empty()) {
 		std::wcout << "Getting operations API from the Visual Studio session." << std::endl;
 
 		win::ComPtr<EnvDTE::ItemOperations> item_ops;
-		RETURN_ON_FAIL(dte->get_ItemOperations(&item_ops));
+		if (FAILED(dte->get_ItemOperations(&item_ops)))
+			return false;
 
-		std::wcout << "Waiting for the Visual Studio session to open the file: " << bstrFileName << "." << std::endl;
+		std::wcout << "Waiting for the Visual Studio session to open the file: " << filename << "." << std::endl;
 
-		RETURN_ON_FAIL(item_ops->OpenFile(bstrFileName, bstrKind, &window));
+		if (FAILED(item_ops->OpenFile(bstrFileName, bstrKind, &window)))
+			return false;
 
 		if (line > 0) {
 			win::ComPtr<IDispatch> selection_dispatch;
@@ -429,7 +355,8 @@ bool HaveRunningVSProOpenFile(const win::ComPtr<EnvDTE::_DTE> &dte, const std::w
 				if (selection_dispatch &&
 					SUCCEEDED(selection_dispatch->QueryInterface(__uuidof(EnvDTE::TextSelection), &selection)) &&
 					selection) {
-					selection->GotoLine(line, TRUE);
+					selection->GotoLine(line, false);
+					selection->EndOfLine(false);
 				}
 			}
 		}
@@ -449,37 +376,28 @@ bool HaveRunningVSProOpenFile(const win::ComPtr<EnvDTE::_DTE> &dte, const std::w
 		window->Activate();
 	}
 
-	ClearProgressbar();
-
 	return true;
 }
 
-bool VSPro_OpenFile_COM(
+static bool VisualStudioOpenFile(
 	const std::wstring &userPreferenceVisualStudioInstallationPath,
-	const std::wstring &filename,
 	const std::wstring &solutionPath,
+	const std::wstring &filename,
 	int line)
 {
-	HRESULT result;
 	win::ComPtr<EnvDTE::_DTE> dte = nullptr;
 
 	std::wcout << "Looking for a running Visual Studio session." << std::endl;
-	std::wstring vsPath = userPreferenceVisualStudioInstallationPath;
-	ConvertSeparatorsToUnix(vsPath);
 
 	// TODO: If path does not exist pass empty, which will just try to match all windows with solution
-	dte = FindRunningVSProWithOurSolution(vsPath, solutionPath);
+	dte = FindRunningVisualStudioWithSolution(userPreferenceVisualStudioInstallationPath, solutionPath);
 
 	if (!dte) {
 		std::wcout << "No appropriate running Visual Studio session not found, creating a new one." << std::endl;
 
-		CRetryMessageFilter retryMessageFilter;
-
-		//DisplayProgressbar("Opening Visual Studio", "Starting up Visual Studio, this might take some time.", .5f, true);
 		std::wcout << "displayProgressBar" << std::endl;
 
-		DWORD dwProcessId = 0;
-
+		DWORD dwProcessId;
 		if (!StartVisualStudioProcess(userPreferenceVisualStudioInstallationPath, solutionPath, &dwProcessId)) {
 			ClearProgressbar();
 			return false;
@@ -488,13 +406,7 @@ bool VSPro_OpenFile_COM(
 		int timeWaited = 0;
 
 		while (timeWaited < TIMEOUT_MS) {
-			const float progress = 0.5f + (((float)timeWaited) / ((float)TIMEOUT_MS)) * 0.5f;
-
-			/*if (DisplayProgressbar("Opening Visual Studio", "Starting up Visual Studio, this might take some time.",
-				progress, true) == kPBSWantsToCancel)
-				break;*/
-
-			dte = FindRunningVSProWithPID(dwProcessId);
+			dte = FindRunningVisualStudioWithPID(dwProcessId);
 
 			if (dte)
 				break;
@@ -509,41 +421,38 @@ bool VSPro_OpenFile_COM(
 
 		if (!dte)
 			return false;
-
-		std::wcout << "Waiting for the newly launched Visual Studio session to be ready." << std::endl;
-
-		//EnvDTE::Window *window = nullptr;
-
-		//RETURN_ON_FAIL(dte->get_MainWindow(&window));
 	}
 	else {
 		std::wcout << "Using the existing Visual Studio session." << std::endl;
 	}
 
-	bool res = HaveRunningVSProOpenFile(dte, filename, line);
-
-	ClearProgressbar();
-	return res;
+	return HaveRunningVisualStudioOpenFile(dte, filename, line);
 }
 
 int wmain(int argc, wchar_t* argv[]) {
-	if (argc != 5) {
-		std::wcerr << argc << ": wrong number of arguments\n" << "Usage: com.exe installationPath fileName solutionPath lineNumber" << std::endl;
+	if (argc != 3 && argc != 5) {
+		std::wcerr << argc << ": wrong number of arguments\n" << "Usage: com.exe installationPath solutionPath [fileName lineNumber]" << std::endl;
 		for (int i = 0; i < argc; i++) {
 			std::wcerr << argv[i] << std::endl;
 		}
 		return EXIT_FAILURE;
 	}
-	std::wstring installationPath(argv[1]);
-	std::wstring fileName(argv[2]);
-	std::wstring solutionPath(argv[3]);
-	int lineNumber = std::stoi(argv[4]);
 
 	if (FAILED(CoInitialize(nullptr))) {
 		std::wcerr << "CoInitialize failed." << std::endl;
 		return EXIT_FAILURE;
-    }
+	}
 
-	VSPro_OpenFile_COM(installationPath, fileName, solutionPath, lineNumber);
+	std::wstring installationPath(argv[1]);
+	std::wstring solutionPath(argv[2]);
+
+	if (argc == 3) {
+		VisualStudioOpenFile(installationPath, solutionPath, L"", -1);
+		return EXIT_SUCCESS;
+	}
+
+	std::wstring fileName = argv[3];
+	int lineNumber = std::stoi(argv[4]);
+	VisualStudioOpenFile(installationPath, solutionPath, fileName, lineNumber);
 	return EXIT_SUCCESS;
 }
