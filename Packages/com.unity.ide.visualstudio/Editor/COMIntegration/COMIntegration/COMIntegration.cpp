@@ -98,6 +98,10 @@ public:
 	}
 };
 
+static void DisplayProgressbar() {
+	std::wcout << "displayProgressBar" << std::endl;
+}
+
 static void ClearProgressbar() {
 	std::wcout << "clearprogressbar" << std::endl;
 }
@@ -143,7 +147,11 @@ static std::wstring GetEnvironmentVariableValue(const std::wstring& variableName
 	return variableValue;
 }
 
-static bool StartVisualStudioProcess(const std::wstring &vsExe, const std::wstring &solutionFile, DWORD *dwProcessId) {
+static bool StartVisualStudioProcess(
+	const std::filesystem::path &visualStudioExecutablePath,
+	const std::filesystem::path &solutionPath,
+	DWORD *dwProcessId) {
+
 	STARTUPINFOW si;
 	PROCESS_INFORMATION pi;
 	BOOL result;
@@ -152,26 +160,25 @@ static bool StartVisualStudioProcess(const std::wstring &vsExe, const std::wstri
 	si.cb = sizeof(si);
 	ZeroMemory(&pi, sizeof(pi));
 
-	std::filesystem::path vsPath = std::filesystem::absolute(vsExe);
-	std::wstring startingDirectory = vsPath.parent_path();
+	std::wstring startingDirectory = visualStudioExecutablePath.parent_path();
 
 	// Build the command line that is passed as the argv of the VS process
 	// argv[0] must be the quoted full path to the VS exe
 	std::wstringstream commandLineStream;
-	commandLineStream << QuoteString(vsPath) << L" ";
+	commandLineStream << QuoteString(visualStudioExecutablePath) << L" ";
 
 	std::wstring vsArgsWide = GetEnvironmentVariableValue(L"UNITY_VS_ARGS");
 	if (!vsArgsWide.empty())
 		commandLineStream << vsArgsWide << L" ";
 
-	commandLineStream << QuoteString(solutionFile);
+	commandLineStream << QuoteString(solutionPath);
 
 	std::wstring commandLine = commandLineStream.str();
 
 	std::wcout << "Starting Visual Studio process with: " << commandLine << std::endl;
 
 	result = CreateProcessW(
-		vsPath.c_str(),					// Full path to VS, must not be quoted
+		visualStudioExecutablePath.c_str(),					// Full path to VS, must not be quoted
 		commandLine.data(),			// Command line, as passed as argv, separate arguments must be quoted if they contain spaces
 		nullptr,					// Process handle not inheritable
 		nullptr,					// Thread handle not inheritable
@@ -196,8 +203,8 @@ static bool StartVisualStudioProcess(const std::wstring &vsExe, const std::wstri
 }
 
 static win::ComPtr<EnvDTE::_DTE> FindRunningVisualStudioWithSolution(
-	const std::wstring &visualStudioExecutable,
-	const std::wstring &solutionPathToFind)
+	const std::filesystem::path &visualStudioExecutablePath,
+	const std::filesystem::path &solutionPath)
 {
 	win::ComPtr<IUnknown> punk = nullptr;
 	win::ComPtr<EnvDTE::_DTE> dte = nullptr;
@@ -230,11 +237,11 @@ static win::ComPtr<EnvDTE::_DTE> FindRunningVisualStudioWithSolution(
 		// Okay, so we found an actual running instance of Visual Studio.
 
 		// Get the executable path of this running instance.
-		BStrHolder visualStudioExecutablePath;
-		if (FAILED(dte->get_FullName(&visualStudioExecutablePath)))
+		BStrHolder visualStudioFullName;
+		if (FAILED(dte->get_FullName(&visualStudioFullName)))
 			continue;
 
-		std::wstring currentVisualStudioExecutablePath = visualStudioExecutablePath;
+		std::filesystem::path currentVisualStudioExecutablePath = std::wstring(visualStudioFullName);
 
 		// Ask for its current solution.
 		win::ComPtr<EnvDTE::_Solution> solution;
@@ -242,20 +249,20 @@ static win::ComPtr<EnvDTE::_DTE> FindRunningVisualStudioWithSolution(
 			continue;
 
 		// Get the name of that solution.
-		BStrHolder currentVisualStudioSolutionPath;
-		if (FAILED(solution->get_FullName(&currentVisualStudioSolutionPath)))
+		BStrHolder solutionFullName;
+		if (FAILED(solution->get_FullName(&solutionFullName)))
 			continue;
 
-		std::wstring currentSolutionPath = currentVisualStudioSolutionPath;
+		std::filesystem::path currentSolutionPath = std::wstring(solutionFullName);
 		if (!currentSolutionPath.empty())
-			std::wcout << "Visual Studio opened on " << currentSolutionPath << std::endl;
+			std::wcout << "Visual Studio opened on " << currentSolutionPath.wstring() << std::endl;
 
 		// If the name matches the solution we want to open and we have a Visual Studio installation path to use and this one matches that path, then use it.
 		// If we don't have a Visual Studio installation path to use, just use this solution.
-		if (std::filesystem::equivalent(currentSolutionPath, solutionPathToFind)) {
+		if (std::filesystem::equivalent(currentSolutionPath, solutionPath)) {
 			std::wcout << "We found a running Visual Studio session with the solution open." << std::endl;
-			if (!visualStudioExecutable.empty()) {
-				if (std::filesystem::equivalent(currentVisualStudioExecutablePath, visualStudioExecutable)) {
+			if (!visualStudioExecutablePath.empty()) {
+				if (std::filesystem::equivalent(currentVisualStudioExecutablePath, visualStudioExecutablePath)) {
 					return dte;
 				}
 				else {
@@ -329,8 +336,8 @@ static win::ComPtr<EnvDTE::_DTE> FindRunningVisualStudioWithPID(const DWORD dwPr
 	return nullptr;
 }
 
-static bool HaveRunningVisualStudioOpenFile(const win::ComPtr<EnvDTE::_DTE> &dte, const std::wstring &filename, int line) {
-	BStrHolder bstrFileName(std::filesystem::absolute(filename).c_str());
+static bool HaveRunningVisualStudioOpenFile(const win::ComPtr<EnvDTE::_DTE> &dte, const std::filesystem::path &filename, int line) {
+	BStrHolder bstrFileName(filename.c_str());
 	BStrHolder bstrKind(L"{00000000-0000-0000-0000-000000000000}"); // EnvDTE::vsViewKindPrimary
 	win::ComPtr<EnvDTE::Window> window = nullptr;
 
@@ -343,7 +350,7 @@ static bool HaveRunningVisualStudioOpenFile(const win::ComPtr<EnvDTE::_DTE> &dte
 		if (FAILED(dte->get_ItemOperations(&item_ops)))
 			return false;
 
-		std::wcout << "Waiting for the Visual Studio session to open the file: " << filename << "." << std::endl;
+		std::wcout << "Waiting for the Visual Studio session to open the file: " << filename.wstring() << "." << std::endl;
 
 		if (FAILED(item_ops->OpenFile(bstrFileName, bstrKind, &window)))
 			return false;
@@ -380,9 +387,9 @@ static bool HaveRunningVisualStudioOpenFile(const win::ComPtr<EnvDTE::_DTE> &dte
 }
 
 static bool VisualStudioOpenFile(
-	const std::wstring &userPreferenceVisualStudioInstallationPath,
-	const std::wstring &solutionPath,
-	const std::wstring &filename,
+	const std::filesystem::path &visualStudioExecutablePath,
+	const std::filesystem::path &solutionPath,
+	const std::filesystem::path &filename,
 	int line)
 {
 	win::ComPtr<EnvDTE::_DTE> dte = nullptr;
@@ -390,15 +397,15 @@ static bool VisualStudioOpenFile(
 	std::wcout << "Looking for a running Visual Studio session." << std::endl;
 
 	// TODO: If path does not exist pass empty, which will just try to match all windows with solution
-	dte = FindRunningVisualStudioWithSolution(userPreferenceVisualStudioInstallationPath, solutionPath);
+	dte = FindRunningVisualStudioWithSolution(visualStudioExecutablePath, solutionPath);
 
 	if (!dte) {
 		std::wcout << "No appropriate running Visual Studio session not found, creating a new one." << std::endl;
 
-		std::wcout << "displayProgressBar" << std::endl;
+		DisplayProgressbar();
 
 		DWORD dwProcessId;
-		if (!StartVisualStudioProcess(userPreferenceVisualStudioInstallationPath, solutionPath, &dwProcessId)) {
+		if (!StartVisualStudioProcess(visualStudioExecutablePath, solutionPath, &dwProcessId)) {
 			ClearProgressbar();
 			return false;
 		}
@@ -443,16 +450,17 @@ int wmain(int argc, wchar_t* argv[]) {
 		return EXIT_FAILURE;
 	}
 
-	std::wstring installationPath(argv[1]);
-	std::wstring solutionPath(argv[2]);
+	std::filesystem::path visualStudioExecutablePath = std::filesystem::absolute(argv[1]);
+	std::filesystem::path solutionPath = std::filesystem::absolute(argv[2]);
 
 	if (argc == 3) {
-		VisualStudioOpenFile(installationPath, solutionPath, L"", -1);
+		VisualStudioOpenFile(visualStudioExecutablePath, solutionPath, L"", -1);
 		return EXIT_SUCCESS;
 	}
 
-	std::wstring fileName = argv[3];
+	std::filesystem::path fileName = std::filesystem::absolute(argv[3]);
 	int lineNumber = std::stoi(argv[4]);
-	VisualStudioOpenFile(installationPath, solutionPath, fileName, lineNumber);
+
+	VisualStudioOpenFile(visualStudioExecutablePath, solutionPath, fileName, lineNumber);
 	return EXIT_SUCCESS;
 }
