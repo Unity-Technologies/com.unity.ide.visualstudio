@@ -8,7 +8,6 @@ using Microsoft.Win32;
 using Unity.CodeEditor;
 using IOPath = System.IO.Path;
 
-
 namespace Microsoft.Unity.VisualStudio.Editor
 {
 	internal interface IVisualStudioInstallation
@@ -78,7 +77,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 				if (versions != null)
 				{
-					foreach(var entry in versions)
+					foreach (var entry in versions)
 					{
 						if (Version >= entry.IdeVersion)
 							return entry.LanguageVersion;
@@ -86,7 +85,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 				}
 
 				// default to 7.0 given we support at least VS 2017
-				return new Version(7,0);
+				return new Version(7, 0);
 			}
 		}
 
@@ -106,7 +105,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		}
 
 		private string GetWindowsBridgeFromRegistry()
-        {
+		{
 			var keyName = $"Software\\Microsoft\\Microsoft Visual Studio {Version.Major}.0 Tools for Unity";
 			const string valueName = "UnityExtensionPath";
 
@@ -167,7 +166,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		public string[] GetAnalyzers()
 		{
 			static string[] GetAnalyzers(string path)
-            {
+			{
 				var analyzersDirectory = IOPath.GetFullPath(IOPath.Combine(path, "Analyzers"));
 
 				if (Directory.Exists(analyzersDirectory))
@@ -182,7 +181,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 				return GetAnalyzers(vstuPath);
 
 			if (VisualStudioEditor.IsWindows)
-            {
+			{
 				var analyzers = GetAnalyzers(vstuPath);
 				if (analyzers?.Length > 0)
 					return analyzers;
