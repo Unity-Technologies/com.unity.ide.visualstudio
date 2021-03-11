@@ -163,18 +163,18 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			return null;
 		}
 
+		private static string[] GetAnalyzers(string path)
+		{
+			var analyzersDirectory = IOPath.GetFullPath(IOPath.Combine(path, "Analyzers"));
+
+			if (Directory.Exists(analyzersDirectory))
+				return Directory.GetFiles(analyzersDirectory, "*Analyzers.dll", SearchOption.AllDirectories);
+
+			return Array.Empty<string>();
+		}
+
 		public string[] GetAnalyzers()
 		{
-			static string[] GetAnalyzers(string path)
-			{
-				var analyzersDirectory = IOPath.GetFullPath(IOPath.Combine(path, "Analyzers"));
-
-				if (Directory.Exists(analyzersDirectory))
-					return Directory.GetFiles(analyzersDirectory, "*Analyzers.dll", SearchOption.AllDirectories);
-
-				return Array.Empty<string>();
-			}
-
 			var vstuPath = GetExtensionPath();
 
 			if (VisualStudioEditor.IsOSX)
