@@ -4,10 +4,10 @@
  *--------------------------------------------------------------------------------------------*/
 using System;
 using System.IO;
-using System.Linq;
 using Microsoft.Win32;
 using Unity.CodeEditor;
 using IOPath = System.IO.Path;
+
 
 namespace Microsoft.Unity.VisualStudio.Editor
 {
@@ -105,31 +105,37 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			}
 		}
 
+		private string GetWindowsBridgeFromRegistry()
+        {
+			var keyName = $"Software\\Microsoft\\Microsoft Visual Studio {Version.Major}.0 Tools for Unity";
+			const string valueName = "UnityExtensionPath";
+
+			var bridge = ReadRegistry(Registry.CurrentUser, keyName, valueName);
+			if (string.IsNullOrEmpty(bridge))
+				bridge = ReadRegistry(Registry.LocalMachine, keyName, valueName);
+
+			return bridge;
+		}
+
 		// We only use this to find analyzers, we do not need to load this assembly anymore
-		private string GetBridgeLocation()
+		private string GetExtensionPath()
 		{
 			if (VisualStudioEditor.IsWindows)
 			{
-				// Registry, using legacy bridge location
-				var keyName = $"Software\\Microsoft\\Microsoft Visual Studio {Version.Major}.0 Tools for Unity";
-				const string valueName = "UnityExtensionPath";
+				const string extensionName = "Visual Studio Tools for Unity";
+				const string extensionAssembly = "SyntaxTree.VisualStudio.Unity.dll";
 
-				var bridge = ReadRegistry(Registry.CurrentUser, keyName, valueName);
-				if (string.IsNullOrEmpty(bridge))
-					bridge = ReadRegistry(Registry.LocalMachine, keyName, valueName);
+				var vsDirectory = IOPath.GetDirectoryName(Path);
+				var vstuDirectory = IOPath.Combine(vsDirectory, "Extensions", "Microsoft", extensionName);
 
-				return bridge;
+				if (File.Exists(IOPath.Combine(vstuDirectory, extensionAssembly)))
+					return vstuDirectory;
 			}
 
 			if (VisualStudioEditor.IsOSX)
 			{
-				// Environment,  useful when developing UnityVS for Mac 
-				var bridge = Environment.GetEnvironmentVariable("VSTUM_BRIDGE");
-				if (!string.IsNullOrEmpty(bridge) && File.Exists(bridge))
-					return bridge;
-
-				const string addinBridge = "Editor/SyntaxTree.VisualStudio.Unity.Bridge.dll";
 				const string addinName = "MonoDevelop.Unity";
+				const string addinAssembly = addinName + ".dll";
 
 				// user addins repository
 				var localAddins = IOPath.Combine(
@@ -138,22 +144,21 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 				// In the user addins repository, the addins are suffixed by their versions, like `MonoDevelop.Unity.1.0`
 				// When installing another local user addin, MD will remove files inside the folder
-				// So we browse all VSTUM addins, and return the one with a bridge, which is the one MD will load
+				// So we browse all VSTUM addins, and return the one with an addin assembly
 				if (Directory.Exists(localAddins))
 				{
 					foreach (var folder in Directory.GetDirectories(localAddins, addinName + "*", SearchOption.TopDirectoryOnly))
 					{
-						bridge = IOPath.Combine(folder, addinBridge);
-						if (File.Exists(bridge))
-							return bridge;
+						if (File.Exists(IOPath.Combine(folder, addinAssembly)))
+							return folder;
 					}
 				}
 
 				// Check in Visual Studio.app/
 				// In that case the name of the addin is used
-				bridge = IOPath.Combine(Path, $"Contents/Resources/lib/monodevelop/AddIns/{addinName}/{addinBridge}");
-				if (File.Exists(bridge))
-					return bridge;
+				var addinPath = IOPath.Combine(Path, $"Contents/Resources/lib/monodevelop/AddIns/{addinName}");
+				if (File.Exists(IOPath.Combine(addinPath, addinAssembly)))
+					return addinPath;
 			}
 
 			return null;
@@ -161,15 +166,30 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 		public string[] GetAnalyzers()
 		{
-			var bridge = GetBridgeLocation();
+			static string[] GetAnalyzers(string path)
+            {
+				var analyzersDirectory = IOPath.GetFullPath(IOPath.Combine(path, "Analyzers"));
 
-			if (!string.IsNullOrEmpty(bridge))
-			{
-				var baseLocation = IOPath.Combine(IOPath.GetDirectoryName(bridge), "..");
-				var analyzerLocation = IOPath.GetFullPath(IOPath.Combine(baseLocation, "Analyzers"));
+				if (Directory.Exists(analyzersDirectory))
+					return Directory.GetFiles(analyzersDirectory, "*Analyzers.dll", SearchOption.AllDirectories);
 
-				if (Directory.Exists(analyzerLocation))
-					return Directory.GetFiles(analyzerLocation, "*Analyzers.dll", SearchOption.AllDirectories);
+				return Array.Empty<string>();
+			}
+
+			var vstuPath = GetExtensionPath();
+
+			if (VisualStudioEditor.IsOSX)
+				return GetAnalyzers(vstuPath);
+
+			if (VisualStudioEditor.IsWindows)
+            {
+				var analyzers = GetAnalyzers(vstuPath);
+				if (analyzers?.Length > 0)
+					return analyzers;
+
+				var bridge = GetWindowsBridgeFromRegistry();
+				if (File.Exists(bridge))
+					return GetAnalyzers(IOPath.Combine(IOPath.GetDirectoryName(bridge), ".."));
 			}
 
 			// Local assets
