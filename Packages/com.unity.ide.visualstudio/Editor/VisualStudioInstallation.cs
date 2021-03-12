@@ -176,6 +176,8 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		public string[] GetAnalyzers()
 		{
 			var vstuPath = GetExtensionPath();
+			if (string.IsNullOrEmpty(vstuPath))
+				return Array.Empty<string>();
 
 			if (VisualStudioEditor.IsOSX)
 				return GetAnalyzers(vstuPath);
