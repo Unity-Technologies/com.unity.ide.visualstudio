@@ -614,7 +614,7 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 					m_Builder.CleanUp();
 				}
 			}
-#else
+#elif UNITY_2020_1
 			[Test]
 			public void Unity2020_1_Supports73()
 			{
