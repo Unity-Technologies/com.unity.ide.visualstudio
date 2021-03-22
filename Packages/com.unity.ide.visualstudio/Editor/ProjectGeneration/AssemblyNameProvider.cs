@@ -55,55 +55,35 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 		public IEnumerable<Assembly> GetAssemblies(Func<string, bool> shouldFileBePartOfSolution)
 		{
-			foreach (var assembly in CompilationPipeline.GetAssemblies())
+			IEnumerable<Assembly> assemblies = GetAssembliesByType(AssembliesType.Editor, shouldFileBePartOfSolution, @"Temp\Bin\Debug\");
+
+			if (!ProjectGenerationFlag.HasFlag(ProjectGenerationFlag.PlayerAssemblies))
+			{
+				return assemblies;
+			}
+			var playerAssemblies = GetAssembliesByType(AssembliesType.Player, shouldFileBePartOfSolution, @"Temp\Bin\Debug\Player\");
+			return assemblies.Concat(playerAssemblies);
+		}
+
+		private static IEnumerable<Assembly> GetAssembliesByType(AssembliesType type, Func<string, bool> shouldFileBePartOfSolution, string outputPath)
+		{
+			foreach (var assembly in CompilationPipeline.GetAssemblies(type))
 			{
 				if (assembly.sourceFiles.Any(shouldFileBePartOfSolution))
 				{
-					var options = new ScriptCompilerOptions
-					{
-						ResponseFiles = assembly.compilerOptions.ResponseFiles,
-						AllowUnsafeCode = assembly.compilerOptions.AllowUnsafeCode,
-						ApiCompatibilityLevel = assembly.compilerOptions.ApiCompatibilityLevel
-					};
-
-					yield return new Assembly(assembly.name, @"Temp\Bin\Debug\",
-						assembly.sourceFiles, new[] { "DEBUG", "TRACE" }.Concat(assembly.defines).Concat(EditorUserBuildSettings.activeScriptCompilationDefines).ToArray(),
+					yield return new Assembly(
+						assembly.name,
+						outputPath,
+						assembly.sourceFiles,
+						assembly.defines,
 						assembly.assemblyReferences,
 						assembly.compiledAssemblyReferences,
 						assembly.flags,
+						assembly.compilerOptions
 #if UNITY_2020_2_OR_NEWER
-                        options,
-                        assembly.rootNamespace);
-#else
-						options);
+						, assembly.rootNamespace
 #endif
-				}
-			}
-
-			if (ProjectGenerationFlag.HasFlag(ProjectGenerationFlag.PlayerAssemblies))
-			{
-				foreach (var assembly in CompilationPipeline.GetAssemblies(AssembliesType.Player).Where(assembly => assembly.sourceFiles.Any(shouldFileBePartOfSolution)))
-				{
-					var options = new ScriptCompilerOptions
-					{
-						ResponseFiles = assembly.compilerOptions.ResponseFiles,
-						AllowUnsafeCode = assembly.compilerOptions.AllowUnsafeCode,
-						ApiCompatibilityLevel = assembly.compilerOptions.ApiCompatibilityLevel
-					};
-
-					yield return
-						new Assembly(assembly.name, @"Temp\Bin\Debug\Player\",
-							assembly.sourceFiles,
-							new[] { "DEBUG", "TRACE" }.Concat(assembly.defines).ToArray(),
-							assembly.assemblyReferences,
-							assembly.compiledAssemblyReferences,
-							assembly.flags,
-#if UNITY_2020_2_OR_NEWER
-                            options,
-                            assembly.rootNamespace);
-#else
-							options);
-#endif
+					);
 				}
 			}
 		}
