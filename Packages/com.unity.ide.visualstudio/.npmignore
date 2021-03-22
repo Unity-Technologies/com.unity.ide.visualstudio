@@ -1,17 +1,6 @@
 build.bat*
 *.tgz*
 *.DotSettings.user*
-*.h
-*.h.meta
-*.cpp
-*.cpp.meta
-*.tlh
-*.tlh.meta
-*.mm
-*.mm.meta'
-Editor/AppleEventIntegration
-Editor/AppleEventIntegration.meta
-Editor/COMIntegration/COMIntegration*
 upm-ci~/**
 .Editor/**
 .yamato/**
