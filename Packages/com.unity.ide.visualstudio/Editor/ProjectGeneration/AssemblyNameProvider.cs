@@ -26,10 +26,19 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		UnityEditor.PackageManager.PackageInfo FindForAssetPath(string assetPath);
 		ResponseFileData ParseResponseFile(string responseFilePath, string projectDirectory, string[] systemReferenceDirectories);
 		void ToggleProjectGeneration(ProjectGenerationFlag preference);
+		void ResetPackageInfoCache();
 	}
 
 	public class AssemblyNameProvider : IAssemblyNameProvider
 	{
+		private Lazy<Dictionary<string, UnityEditor.PackageManager.PackageInfo>> m_PackageInfoCache = new Lazy<Dictionary<string, UnityEditor.PackageManager.PackageInfo>>(PopulatePackageInfoCache);
+
+		private static Dictionary<string, UnityEditor.PackageManager.PackageInfo> PopulatePackageInfoCache()
+		{
+			return UnityEditor.PackageManager.PackageInfo.GetAllRegisteredPackages()
+				.ToDictionary(p => p.assetPath);
+		}
+
 		ProjectGenerationFlag m_ProjectGenerationFlag = (ProjectGenerationFlag)EditorPrefs.GetInt(
 			"unity_project_generation_flag",
 			(int)(ProjectGenerationFlag.Local | ProjectGenerationFlag.Embedded));
@@ -100,7 +109,19 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 		public UnityEditor.PackageManager.PackageInfo FindForAssetPath(string assetPath)
 		{
-			return UnityEditor.PackageManager.PackageInfo.FindForAssetPath(assetPath);
+			var lowered = assetPath.ToLowerInvariant();
+			if (!lowered.StartsWith("packages/"))
+			{
+				return null;
+			}
+
+			var followupSeparator = lowered.IndexOf('/', "packages/".Length);
+			if (followupSeparator == -1)
+			{
+				return null;
+			}
+
+			return m_PackageInfoCache.Value[lowered.Substring(0, followupSeparator)];
 		}
 
 		public bool IsInternalizedPackagePath(string path)
@@ -155,6 +176,12 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			{
 				ProjectGenerationFlag |= preference;
 			}
+		}
+
+		public void ResetPackageInfoCache()
+		{
+			m_PackageInfoCache = new Lazy<Dictionary<string, UnityEditor.PackageManager.PackageInfo>>(PopulatePackageInfoCache);
+
 		}
 
 		public void ResetProjectGenerationFlag()
