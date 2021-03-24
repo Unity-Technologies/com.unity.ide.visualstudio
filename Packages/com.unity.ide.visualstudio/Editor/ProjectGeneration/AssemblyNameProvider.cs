@@ -26,10 +26,14 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		UnityEditor.PackageManager.PackageInfo FindForAssetPath(string assetPath);
 		ResponseFileData ParseResponseFile(string responseFilePath, string projectDirectory, string[] systemReferenceDirectories);
 		void ToggleProjectGeneration(ProjectGenerationFlag preference);
+	}
+
+	internal interface IPackageInfoCache
+	{
 		void ResetPackageInfoCache();
 	}
 
-	public class AssemblyNameProvider : IAssemblyNameProvider
+	public class AssemblyNameProvider : IAssemblyNameProvider, IPackageInfoCache
 	{
 		private readonly Dictionary<string, UnityEditor.PackageManager.PackageInfo> m_PackageInfoCache = new Dictionary<string, UnityEditor.PackageManager.PackageInfo>();
 
@@ -190,7 +194,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			}
 		}
 
-		public void ResetPackageInfoCache()
+		void IPackageInfoCache.ResetPackageInfoCache()
 		{
 			m_PackageInfoCache.Clear();
 		}
