@@ -594,7 +594,7 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 				}
 			}
 
-#if UNITY_2020_2_OR_NEWER
+#if UNITY_2020_2
 			[Test]
 			public void Unity2020_2_Supports80()
 			{
@@ -614,7 +614,7 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 					m_Builder.CleanUp();
 				}
 			}
-#else
+#elif UNITY_2020_1
 			[Test]
 			public void Unity2020_1_Supports73()
 			{
