@@ -28,12 +28,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		void ToggleProjectGeneration(ProjectGenerationFlag preference);
 	}
 
-	internal interface IPackageInfoCache
-	{
-		void ResetPackageInfoCache();
-	}
-
-	public class AssemblyNameProvider : IAssemblyNameProvider, IPackageInfoCache
+	public class AssemblyNameProvider : IAssemblyNameProvider
 	{
 		private readonly Dictionary<string, UnityEditor.PackageManager.PackageInfo> m_PackageInfoCache = new Dictionary<string, UnityEditor.PackageManager.PackageInfo>();
 
@@ -194,7 +189,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			}
 		}
 
-		void IPackageInfoCache.ResetPackageInfoCache()
+		internal void ResetPackageInfoCache()
 		{
 			m_PackageInfoCache.Clear();
 		}
