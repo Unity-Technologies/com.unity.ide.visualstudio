@@ -104,10 +104,6 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		{
 			SetupProjectSupportedExtensions();
 
-			// See https://devblogs.microsoft.com/setup/configure-visual-studio-across-your-organization-with-vsconfig/
-			// We create a .vsconfig file to make sure our ManagedGame workload is installed
-			CreateVsConfigIfNotFound();
-
 			// Don't sync if we haven't synced before
 			if (HasSolutionBeenGenerated() && HasFilesBeenModified(affectedFiles, reimportedFiles))
 			{
@@ -161,6 +157,13 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			RefreshCurrentInstallation();
 
 			SetupProjectSupportedExtensions();
+
+			(m_AssemblyNameProvider as AssemblyNameProvider)?.ResetPackageInfoCache();
+
+			// See https://devblogs.microsoft.com/setup/configure-visual-studio-across-your-organization-with-vsconfig/
+			// We create a .vsconfig file to make sure our ManagedGame workload is installed
+			CreateVsConfigIfNotFound();
+
 			var externalCodeAlreadyGeneratedProjects = OnPreGeneratingCSProjectFiles();
 
 			if (!externalCodeAlreadyGeneratedProjects)
