@@ -27,10 +27,7 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 
 		public void WriteAllText(string fileName, string content)
 		{
-			// do not count the special vsconfig file in the statistics
-			if (Path.GetFileName(fileName) != ".vsconfig")
-				++WriteTimes;
-
+			++WriteTimes;
 			var utf8 = Encoding.UTF8;
 			byte[] utfBytes = utf8.GetBytes(content);
 			fileToContent[fileName] = utf8.GetString(utfBytes, 0, utfBytes.Length);
