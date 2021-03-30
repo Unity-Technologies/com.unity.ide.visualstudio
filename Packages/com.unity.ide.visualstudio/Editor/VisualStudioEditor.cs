@@ -142,7 +142,6 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 		public void SyncIfNeeded(string[] addedFiles, string[] deletedFiles, string[] movedFiles, string[] movedFromFiles, string[] importedFiles)
 		{
-			(_generator.AssemblyNameProvider as AssemblyNameProvider)?.ResetPackageInfoCache();
 			_generator.SyncIfNeeded(addedFiles.Union(deletedFiles).Union(movedFiles).Union(movedFromFiles), importedFiles);
 
 			foreach (var file in importedFiles.Where(a => Path.GetExtension(a) == ".pdb"))
@@ -166,7 +165,6 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 		public void SyncAll()
 		{
-			(_generator.AssemblyNameProvider as AssemblyNameProvider)?.ResetPackageInfoCache();
 			AssetDatabase.Refresh();
 			_generator.Sync();
 		}
