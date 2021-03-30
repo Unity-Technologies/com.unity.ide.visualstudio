@@ -4,7 +4,7 @@
 
 Integration:
 
-Remove com.unity.nuget.newtonsoft-json dependency in favor of the built-in JsonUtility for the VS Test Runner.
+- Remove com.unity.nuget.newtonsoft-json dependency in favor of the built-in JsonUtility for the VS Test Runner.
 
 
 ## [2.0.6] - 2021-01-20
