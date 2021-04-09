@@ -47,10 +47,10 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 				var synchronizer = m_Builder.Build();
 
 				synchronizer.Sync();
-				Assert.AreEqual(2, m_Builder.WriteTimes); // Once for csproj and once for solution
+				Assert.AreEqual(3, m_Builder.WriteTimes); // 3 writes for csproj / solution / .vsconfig
 
 				synchronizer.Sync();
-				Assert.AreEqual(2, m_Builder.WriteTimes, "When content doesn't change we shouldn't re-sync");
+				Assert.AreEqual(3, m_Builder.WriteTimes, "When content doesn't change we shouldn't re-sync");
 			}
 
 			[Test]
@@ -59,12 +59,12 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 				var synchronizer = m_Builder.Build();
 
 				synchronizer.Sync();
-				Assert.AreEqual(2, m_Builder.WriteTimes); // Once for csproj and once for solution
+				Assert.AreEqual(3, m_Builder.WriteTimes); // 3 writes for csproj / solution / .vsconfig
 
 				m_Builder.WithAssemblies(new[] { new Assembly("Another", "path/to/Assembly.dll", new[] { "file.cs" }, new string[0], new Assembly[0], new string[0], AssemblyFlags.None) });
 
 				synchronizer.Sync();
-				Assert.AreEqual(4, m_Builder.WriteTimes, "Should re-sync the solution file and the ");
+				Assert.AreEqual(3 + 2, m_Builder.WriteTimes, "Should only re-sync the solution file and the 'Another' csproj");
 			}
 
 			[Test]

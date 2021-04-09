@@ -233,10 +233,10 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 				var synchronizer = m_Builder.Build();
 
 				synchronizer.Sync();
-				Assert.AreEqual(2, m_Builder.WriteTimes, "One write for solution and one write for csproj");
+				Assert.AreEqual(3, m_Builder.WriteTimes, "3 writes for solution + csproj + .vsconfig");
 
 				synchronizer.Sync();
-				Assert.AreEqual(2, m_Builder.WriteTimes, "No more files should be written");
+				Assert.AreEqual(3, m_Builder.WriteTimes, "No more files should be written");
 			}
 
 			[Test]
@@ -594,7 +594,7 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 				}
 			}
 
-#if UNITY_2020_2_OR_NEWER
+#if UNITY_2020_2
 			[Test]
 			public void Unity2020_2_Supports80()
 			{
@@ -614,7 +614,7 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 					m_Builder.CleanUp();
 				}
 			}
-#else
+#elif UNITY_2020_1
 			[Test]
 			public void Unity2020_1_Supports73()
 			{

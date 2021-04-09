@@ -37,7 +37,4 @@ struct BStrHolder
 
 private:
 	BSTR m_Str;
-
-	BStrHolder(const BStrHolder&);
-	BStrHolder& operator=(const BStrHolder&);
 };
