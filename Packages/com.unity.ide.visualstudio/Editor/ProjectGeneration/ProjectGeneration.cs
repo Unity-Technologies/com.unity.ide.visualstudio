@@ -148,7 +148,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		private void RefreshCurrentInstallation()
 		{
 			var editor = CodeEditor.CurrentEditor as VisualStudioEditor;
-			editor?.TryGetVisualStudioInstallationForPath(CodeEditor.CurrentEditorInstallation, out m_CurrentInstallation);
+			editor?.TryGetVisualStudioInstallationForPath(CodeEditor.CurrentEditorInstallation, searchInstallations: true, out m_CurrentInstallation);
 		}
 
 		public void Sync()
