@@ -59,6 +59,35 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			});
 
 			EditorApplication.update += OnUpdate;
+
+			CheckLegacyAssemblies();
+		}
+
+		private static void CheckLegacyAssemblies()
+		{
+			var checkList = new HashSet<string>(new[] { KnownAssemblies.UnityVS, KnownAssemblies.Messaging, KnownAssemblies.Bridge });
+
+			try
+			{
+				var assemblies = AppDomain
+					.CurrentDomain
+					.GetAssemblies()
+					.Where(a => checkList.Contains(a.GetName().Name));
+
+				foreach (var assembly in assemblies)
+				{
+					// for now we only want to warn against local assemblies, do not check externals.
+					var relativePath = FileUtility.MakeRelativeToProjectPath(assembly.Location);
+					if (relativePath == null)
+						continue;
+
+					Debug.LogWarning($"Project contains legacy assembly that could interfere with the Visual Studio Package. You should delete {relativePath}");
+				}
+			}
+			catch (Exception)
+			{
+				// abandon legacy check
+			}
 		}
 
 		private static void RunOnceOnUpdate(Action action)
