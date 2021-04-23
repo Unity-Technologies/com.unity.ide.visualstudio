@@ -68,6 +68,8 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 		public void Initialize(string editorInstallationPath)
 		{
+			// Refresh generated files, when VS is selected as an external editor, or when VS target installation is changed.
+			_generator.Sync();
 		}
 
 		internal virtual bool TryGetVisualStudioInstallationForPath(string editorPath, bool searchInstallations, out IVisualStudioInstallation installation)
