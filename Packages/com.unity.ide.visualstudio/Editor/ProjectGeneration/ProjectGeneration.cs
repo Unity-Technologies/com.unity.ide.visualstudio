@@ -896,7 +896,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 				projectGuid);
 		}
 
-		internal string EscapedRelativePathFor(string file)
+		private string EscapedRelativePathFor(string file)
 		{
 			var projectDir = FileUtility.Normalize(ProjectDirectory);
 			file = FileUtility.Normalize(file);
