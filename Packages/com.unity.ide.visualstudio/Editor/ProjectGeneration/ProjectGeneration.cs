@@ -15,7 +15,6 @@ using System.Text.RegularExpressions;
 using Unity.CodeEditor;
 using UnityEditor;
 using UnityEditor.Compilation;
-using UnityEditorInternal;
 using UnityEngine;
 
 namespace Microsoft.Unity.VisualStudio.Editor
@@ -39,15 +38,14 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 	public class ProjectGeneration : IGenerator
 	{
-		public static readonly string MSBuildNamespaceUri = "http://schemas.microsoft.com/developer/msbuild/2003";
 		public IAssemblyNameProvider AssemblyNameProvider => m_AssemblyNameProvider;
 		public string ProjectDirectory { get; }
 
 		const string k_WindowsNewline = "\r\n";
 
-		string m_SolutionProjectEntryTemplate = @"Project(""{{{0}}}"") = ""{1}"", ""{2}"", ""{{{3}}}""{4}EndProject";
+		const string m_SolutionProjectEntryTemplate = @"Project(""{{{0}}}"") = ""{1}"", ""{2}"", ""{{{3}}}""{4}EndProject";
 
-		string m_SolutionProjectConfigurationTemplate = string.Join("\r\n",
+		readonly string m_SolutionProjectConfigurationTemplate = string.Join(k_WindowsNewline,
 			@"        {{{0}}}.Debug|Any CPU.ActiveCfg = Debug|Any CPU",
 			@"        {{{0}}}.Debug|Any CPU.Build.0 = Debug|Any CPU",
 			@"        {{{0}}}.Release|Any CPU.ActiveCfg = Release|Any CPU",
@@ -256,14 +254,14 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 			var allProjectAssemblies = RelevantAssembliesForMode(assemblyList).ToList();
 
-			foreach (Assembly assembly in allProjectAssemblies)
+			foreach (var assembly in allProjectAssemblies)
 			{
 				SyncProject(assembly,
 					allAssetProjectParts,
 					responseFilesData: ParseResponseFileData(assembly),
 					allProjectAssemblies,
 #if UNITY_2020_2_OR_NEWER
-		            assembly.compilerOptions.RoslynAnalyzerDllPaths);
+					assembly.compilerOptions.RoslynAnalyzerDllPaths);
 #else
 					Array.Empty<string>());
 #endif
@@ -503,7 +501,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			if (0 < assembly.assemblyReferences.Length)
 			{
 				projectBuilder.Append("  <ItemGroup>").Append(k_WindowsNewline);
-				foreach (Assembly reference in assembly.assemblyReferences.Where(i => i.sourceFiles.Any(ShouldFileBePartOfSolution)))
+				foreach (var reference in assembly.assemblyReferences.Where(i => i.sourceFiles.Any(ShouldFileBePartOfSolution)))
 				{
 					projectBuilder.Append("    <ProjectReference Include=\"").Append(reference.name).Append(GetProjectExtension()).Append("\">").Append(k_WindowsNewline);
 					projectBuilder.Append("      <Project>{").Append(ProjectGuid(reference)).Append("}</Project>").Append(k_WindowsNewline);
@@ -733,12 +731,12 @@ namespace Microsoft.Unity.VisualStudio.Editor
 				lines.Add(@"  </ItemGroup>");
 			}
 
-			return string.Join("\r\n", lines.Concat(footer));
+			return string.Join(k_WindowsNewline, lines.Concat(footer));
 		}
 
 		private static string GetProjectFooter()
 		{
-			return string.Join("\r\n",
+			return string.Join(k_WindowsNewline,
 			@"  <Import Project=""$(MSBuildToolsPath)\Microsoft.CSharp.targets"" />",
 			@"  <Target Name=""GenerateTargetFrameworkMonikerAttribute"" />",
 			@"  <!-- To modify your build process, add your task inside one of the targets below and uncomment it.",
@@ -754,7 +752,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 		private static string GetSolutionText()
 		{
-			return string.Join("\r\n",
+			return string.Join(k_WindowsNewline,
 			@"",
 			@"Microsoft Visual Studio Solution File, Format Version {0}",
 			@"# Visual Studio {1}",
