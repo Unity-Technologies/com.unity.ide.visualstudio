@@ -102,58 +102,58 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		/// </param>
 		public bool SyncIfNeeded(List<string> affectedFiles, string[] reimportedFiles)
 		{
-            using (solutionSyncMarker.Auto())
-            {
-                SetupProjectSupportedExtensions();
+			using (solutionSyncMarker.Auto())
+			{
+				SetupProjectSupportedExtensions();
 
-                // See https://devblogs.microsoft.com/setup/configure-visual-studio-across-your-organization-with-vsconfig/
-                // We create a .vsconfig file to make sure our ManagedGame workload is installed
-                CreateVsConfigIfNotFound();
+				// See https://devblogs.microsoft.com/setup/configure-visual-studio-across-your-organization-with-vsconfig/
+				// We create a .vsconfig file to make sure our ManagedGame workload is installed
+				CreateVsConfigIfNotFound();
 
-                // Don't sync if we haven't synced before
-                if (HasSolutionBeenGenerated() && HasFilesBeenModified(affectedFiles, reimportedFiles))
-                {
-                    var assemblies = m_AssemblyNameProvider.GetAssemblies(ShouldFileBePartOfSolution);
-                    var allProjectAssemblies = RelevantAssembliesForMode(assemblies).ToList();
-                    SyncSolution(allProjectAssemblies);
+				// Don't sync if we haven't synced before
+				if (HasSolutionBeenGenerated() && HasFilesBeenModified(affectedFiles, reimportedFiles))
+				{
+					var assemblies = m_AssemblyNameProvider.GetAssemblies(ShouldFileBePartOfSolution);
+					var allProjectAssemblies = RelevantAssembliesForMode(assemblies).ToList();
+					SyncSolution(allProjectAssemblies);
 
-                    var allAssetProjectParts = GenerateAllAssetProjectParts();
+					var allAssetProjectParts = GenerateAllAssetProjectParts();
 
-                    var affectedNames = affectedFiles
-                        .Select(asset => m_AssemblyNameProvider.GetAssemblyNameFromScriptPath(asset))
-                        .Where(name => !string.IsNullOrWhiteSpace(name)).Select(name =>
-                            name.Split(new[] {".dll"}, StringSplitOptions.RemoveEmptyEntries)[0]);
-                    var reimportedNames = reimportedFiles
-                        .Select(asset => m_AssemblyNameProvider.GetAssemblyNameFromScriptPath(asset))
-                        .Where(name => !string.IsNullOrWhiteSpace(name)).Select(name =>
-                            name.Split(new[] {".dll"}, StringSplitOptions.RemoveEmptyEntries)[0]);
-                    var affectedAndReimported = new HashSet<string>(affectedNames.Concat(reimportedNames));
-                    var assemblyNames =
-                        new HashSet<string>(allProjectAssemblies.Select(assembly =>
-                            Path.GetFileName(assembly.outputPath)));
+					var affectedNames = affectedFiles
+						.Select(asset => m_AssemblyNameProvider.GetAssemblyNameFromScriptPath(asset))
+						.Where(name => !string.IsNullOrWhiteSpace(name)).Select(name =>
+							name.Split(new[] {".dll"}, StringSplitOptions.RemoveEmptyEntries)[0]);
+					var reimportedNames = reimportedFiles
+						.Select(asset => m_AssemblyNameProvider.GetAssemblyNameFromScriptPath(asset))
+						.Where(name => !string.IsNullOrWhiteSpace(name)).Select(name =>
+							name.Split(new[] {".dll"}, StringSplitOptions.RemoveEmptyEntries)[0]);
+					var affectedAndReimported = new HashSet<string>(affectedNames.Concat(reimportedNames));
+					var assemblyNames =
+						new HashSet<string>(allProjectAssemblies.Select(assembly =>
+							Path.GetFileName(assembly.outputPath)));
 
-                    foreach (var assembly in allProjectAssemblies)
-                    {
-                        if (!affectedAndReimported.Contains(assembly.name))
-                            continue;
+					foreach (var assembly in allProjectAssemblies)
+					{
+						if (!affectedAndReimported.Contains(assembly.name))
+							continue;
 
-                        SyncProject(assembly,
-                            allAssetProjectParts,
-                            responseFilesData: ParseResponseFileData(assembly),
-                            allProjectAssemblies,
+						SyncProject(assembly,
+							allAssetProjectParts,
+							responseFilesData: ParseResponseFileData(assembly),
+							allProjectAssemblies,
 #if UNITY_2020_2_OR_NEWER
-                            assembly.compilerOptions.RoslynAnalyzerDllPaths);
+							assembly.compilerOptions.RoslynAnalyzerDllPaths);
 #else
-					    Array.Empty<string>());
+							Array.Empty<string>());
 #endif
-                    }
+					}
 
-                    return true;
-                }
+					return true;
+				}
 
-                return false;
-            }
-        }
+				return false;
+			}
+		}
 
 		private void CreateVsConfigIfNotFound()
 		{
@@ -193,12 +193,12 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			editor?.TryGetVisualStudioInstallationForPath(CodeEditor.CurrentEditorInstallation, searchInstallations: true, out m_CurrentInstallation);
 		}
 
-        static ProfilerMarker solutionSyncMarker = new ProfilerMarker("SolutionSynchronizerSync");
+		static ProfilerMarker solutionSyncMarker = new ProfilerMarker("SolutionSynchronizerSync");
 
 		public void Sync()
-        {
-            // We need the exact VS version/capabilities to tweak project generation (analyzers/langversion)
-            RefreshCurrentInstallation();
+		{
+			// We need the exact VS version/capabilities to tweak project generation (analyzers/langversion)
+			RefreshCurrentInstallation();
 
 			SetupProjectSupportedExtensions();
 
@@ -210,13 +210,13 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 			var externalCodeAlreadyGeneratedProjects = OnPreGeneratingCSProjectFiles();
 
-            if (!externalCodeAlreadyGeneratedProjects)
-            {
-                GenerateAndWriteSolutionAndProjects();
-            }
+			if (!externalCodeAlreadyGeneratedProjects)
+			{
+				GenerateAndWriteSolutionAndProjects();
+			}
 
-            OnGeneratedCSProjectFiles();
-        }
+			OnGeneratedCSProjectFiles();
+		}
 
 		public bool HasSolutionBeenGenerated()
 		{
@@ -530,12 +530,12 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 			var responseRefs = responseFilesData.SelectMany(x => x.FullPathReferences.Select(r => r));
 			var internalAssemblyReferences = assembly.assemblyReferences
-			  .Where(i => !i.sourceFiles.Any(ShouldFileBePartOfSolution)).Select(i => i.outputPath);
+				.Where(i => !i.sourceFiles.Any(ShouldFileBePartOfSolution)).Select(i => i.outputPath);
 			var allReferences =
-			  assembly.compiledAssemblyReferences
-				.Union(responseRefs)
-				.Union(references)
-				.Union(internalAssemblyReferences);
+				assembly.compiledAssemblyReferences
+					.Union(responseRefs)
+					.Union(references)
+					.Union(internalAssemblyReferences);
 
 			foreach (var reference in allReferences)
 			{
@@ -593,6 +593,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		}
 
 		private static readonly Regex InvalidCharactersRegexPattern = new Regex(@"\?|&|\*|""|<|>|\||#|%|\^|;" + (VisualStudioEditor.IsWindows ? "" : "|:"));
+
 		public string SolutionFile()
 		{
 			return Path.Combine(FileUtility.Normalize(ProjectDirectory), $"{InvalidCharactersRegexPattern.Replace(m_ProjectName, "_")}.sln");
@@ -986,7 +987,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		private static string GetRootNamespace(Assembly assembly)
 		{
 #if UNITY_2020_2_OR_NEWER
-            return assembly.rootNamespace;
+			return assembly.rootNamespace;
 #else
 			return EditorSettings.projectGenerationRootNamespace;
 #endif
