@@ -4,14 +4,13 @@
 
 Project generation:
 
-Added support for CLI.
+- Added support for CLI.
 
 Integration:
 
-Improved performance when discovering Visual Studio installations.
-Warn when legacy assemblies are present in the project.
-Warn when the package version is not up-to-date.
-
+- Improved performance when discovering Visual Studio installations.
+- Warn when legacy assemblies are present in the project.
+- Warn when the package version is not up-to-date.
 
 ## [2.0.8] - 2021-04-09
 
