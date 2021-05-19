@@ -21,7 +21,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 		public static void FindVSWhere()
 		{
-			_vsWherePath = Path.GetFullPath("Packages/com.unity.ide.visualstudio/Editor/VSWhere/vswhere.exe");
+			_vsWherePath = FileUtility.GetPackageAssetFullPath("Editor", "VSWhere", "vswhere.exe");
 		}
 
 		public static IEnumerable<IVisualStudioInstallation> GetVisualStudioInstallations()
