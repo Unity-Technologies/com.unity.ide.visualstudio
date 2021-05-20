@@ -12,7 +12,6 @@ using System.Security;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
-using NUnit.Framework;
 using Unity.CodeEditor;
 using Unity.Profiling;
 using UnityEditor;
@@ -54,10 +53,6 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			@"        {{{0}}}.Release|Any CPU.Build.0 = Release|Any CPU").Replace("    ", "\t");
 
 		static readonly string[] k_ReimportSyncExtensions = { ".dll", ".asmdef" };
-
-		static readonly Regex k_ScriptReferenceExpression = new Regex(
-			@"^Library.ScriptAssemblies.(?<dllname>(?<project>.*)\.dll$)",
-			RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
 		string[] m_ProjectSupportedExtensions = Array.Empty<string>();
 		string[] m_BuiltinSupportedExtensions = Array.Empty<string>();
@@ -128,9 +123,6 @@ namespace Microsoft.Unity.VisualStudio.Editor
 						.Where(name => !string.IsNullOrWhiteSpace(name)).Select(name =>
 							name.Split(new[] {".dll"}, StringSplitOptions.RemoveEmptyEntries)[0]);
 					var affectedAndReimported = new HashSet<string>(affectedNames.Concat(reimportedNames));
-					var assemblyNames =
-						new HashSet<string>(allProjectAssemblies.Select(assembly =>
-							Path.GetFileName(assembly.outputPath)));
 
 					foreach (var assembly in allProjectAssemblies)
 					{
@@ -139,13 +131,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 						SyncProject(assembly,
 							allAssetProjectParts,
-							responseFilesData: ParseResponseFileData(assembly),
-							allProjectAssemblies,
-#if UNITY_2020_2_OR_NEWER
-							assembly.compilerOptions.RoslynAnalyzerDllPaths);
-#else
-							Array.Empty<string>());
-#endif
+							responseFilesData: ParseResponseFileData(assembly).ToArray());
 					}
 
 					return true;
@@ -291,27 +277,19 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		{
 			// Only synchronize assemblies that have associated source files and ones that we actually want in the project.
 			// This also filters out DLLs coming from .asmdef files in packages.
-			var assemblies = m_AssemblyNameProvider.GetAssemblies(ShouldFileBePartOfSolution);
+			var assemblies = m_AssemblyNameProvider.GetAssemblies(ShouldFileBePartOfSolution).ToList();
 
 			var allAssetProjectParts = GenerateAllAssetProjectParts();
 
-			var assemblyList = assemblies.ToList();
+			SyncSolution(assemblies);
 
-			SyncSolution(assemblyList);
-
-			var allProjectAssemblies = RelevantAssembliesForMode(assemblyList).ToList();
+			var allProjectAssemblies = RelevantAssembliesForMode(assemblies);
 
 			foreach (var assembly in allProjectAssemblies)
 			{
 				SyncProject(assembly,
 					allAssetProjectParts,
-					responseFilesData: ParseResponseFileData(assembly),
-					allProjectAssemblies,
-#if UNITY_2020_2_OR_NEWER
-					assembly.compilerOptions.RoslynAnalyzerDllPaths);
-#else
-					Array.Empty<string>());
-#endif
+					responseFilesData: ParseResponseFileData(assembly).ToArray());
 			}
 		}
 
@@ -385,13 +363,11 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		private void SyncProject(
 			Assembly assembly,
 			Dictionary<string, string> allAssetsProjectParts,
-			IEnumerable<ResponseFileData> responseFilesData,
-			List<Assembly> allProjectAssemblies,
-			string[] roslynAnalyzerDllPaths)
+			ResponseFileData[] responseFilesData)
 		{
 			SyncProjectFileIfNotChanged(
 				ProjectFile(assembly),
-				ProjectText(assembly, allAssetsProjectParts, responseFilesData, allProjectAssemblies, roslynAnalyzerDllPaths));
+				ProjectText(assembly, allAssetsProjectParts, responseFilesData));
 		}
 
 		private void SyncProjectFileIfNotChanged(string path, string newContents)
@@ -489,11 +465,9 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 		private string ProjectText(Assembly assembly,
 			Dictionary<string, string> allAssetsProjectParts,
-			IEnumerable<ResponseFileData> responseFilesData,
-			List<Assembly> allProjectAssemblies,
-			string[] roslynAnalyzerDllPaths)
+			ResponseFileData[] responseFilesData)
 		{
-			var projectBuilder = new StringBuilder(ProjectHeader(assembly, responseFilesData, roslynAnalyzerDllPaths));
+			var projectBuilder = new StringBuilder(ProjectHeader(assembly, responseFilesData));
 			var references = new List<string>();
 
 			projectBuilder.Append(@"  <ItemGroup>").Append(k_WindowsNewline);
@@ -621,8 +595,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 		private string ProjectHeader(
 			Assembly assembly,
-			IEnumerable<ResponseFileData> responseFilesData,
-			string[] roslynAnalyzerDllPaths
+			ResponseFileData[] responseFilesData
 		)
 		{
 			var projectType = ProjectTypeOf(assembly.name);
@@ -631,11 +604,11 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 			if (m_CurrentInstallation != null && m_CurrentInstallation.SupportsAnalyzers)
 			{
+				analyzers = m_CurrentInstallation.GetAnalyzers();
 #if UNITY_2020_2_OR_NEWER
+				analyzers = analyzers != null ? analyzers.Concat(assembly.compilerOptions.RoslynAnalyzerDllPaths).ToArray() : assembly.compilerOptions.RoslynAnalyzerDllPaths;
 				rulesetPath = assembly.compilerOptions.RoslynAnalyzerRulesetPath;
 #endif
-				analyzers = m_CurrentInstallation.GetAnalyzers();
-				analyzers = analyzers != null ? analyzers.Concat(roslynAnalyzerDllPaths).ToArray() : roslynAnalyzerDllPaths;
 			}
 
 			var projectProperties = new ProjectProperties()
