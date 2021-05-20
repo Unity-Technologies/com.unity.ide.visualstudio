@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -275,7 +274,7 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 				var packageAsset = "packageAsset.cs";
 				m_Builder.WithPackageAsset(packageAsset, false);
 
-				Assert.IsTrue(synchronizer.SyncIfNeeded(new List<string>() { packageAsset }, new string[0])); ;
+				Assert.IsTrue(synchronizer.SyncIfNeeded(new[] { packageAsset }, new string[0]));
 			}
 		}
 
@@ -457,7 +456,7 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 				var synchronizer = m_Builder.Build();
 				synchronizer.Sync();
 				const string newFile = "Newfile.cs";
-				var newFileArray = new List<string> { newFile };
+				var newFileArray = new[] { newFile };
 				m_Builder.WithAssemblyData(files: m_Builder.Assembly.sourceFiles.Concat(newFileArray).ToArray());
 
 				Assert.True(synchronizer.SyncIfNeeded(newFileArray, new string[0]), "Should sync when file in assembly changes");
@@ -473,8 +472,8 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 				synchronizer.Sync();
 				var filesBefore = m_Builder.Assembly.sourceFiles;
 				const string newFile = "Newfile.cs";
-				var newFileArray = new List<string> { newFile };
-				m_Builder.WithAssemblyData(files: newFileArray.ToArray());
+				var newFileArray = new[] { newFile };
+				m_Builder.WithAssemblyData(files: newFileArray);
 
 				Assert.True(synchronizer.SyncIfNeeded(newFileArray, new string[0]), "Should sync when file in assembly changes");
 
@@ -502,8 +501,8 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 				StringAssert.Contains(filesBefore[0], csprojContentBefore);
 				StringAssert.Contains(filesBefore[1], csprojContentBefore);
 
-				var filesAfter = filesBefore.Skip(1).ToList();
-				m_Builder.WithAssemblyData(files: filesAfter.ToArray());
+				var filesAfter = filesBefore.Skip(1).ToArray();
+				m_Builder.WithAssemblyData(files: filesAfter);
 
 				Assert.True(synchronizer.SyncIfNeeded(filesAfter, new string[0]), "Should sync when file in assembly changes");
 

@@ -28,7 +28,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 	public interface IGenerator
 	{
-		bool SyncIfNeeded(List<string> affectedFiles, string[] reimportedFiles);
+		bool SyncIfNeeded(IEnumerable<string> affectedFiles, IEnumerable<string> reimportedFiles);
 		void Sync();
 		bool HasSolutionBeenGenerated();
 		bool IsSupportedFile(string path);
@@ -95,7 +95,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		/// <param name="reimportedFiles">
 		/// A set of files that got reimported
 		/// </param>
-		public bool SyncIfNeeded(List<string> affectedFiles, string[] reimportedFiles)
+		public bool SyncIfNeeded(IEnumerable<string> affectedFiles, IEnumerable<string> reimportedFiles)
 		{
 			using (solutionSyncMarker.Auto())
 			{
@@ -106,38 +106,40 @@ namespace Microsoft.Unity.VisualStudio.Editor
 				CreateVsConfigIfNotFound();
 
 				// Don't sync if we haven't synced before
-				if (HasSolutionBeenGenerated() && HasFilesBeenModified(affectedFiles, reimportedFiles))
+				var affected = affectedFiles as ICollection<string> ?? affectedFiles.ToArray();
+				var reimported = reimportedFiles as ICollection<string> ?? reimportedFiles.ToArray();
+				if (!HasSolutionBeenGenerated() || !HasFilesBeenModified(affected, reimported))
 				{
-					var assemblies = m_AssemblyNameProvider.GetAssemblies(ShouldFileBePartOfSolution);
-					var allProjectAssemblies = RelevantAssembliesForMode(assemblies).ToList();
-					SyncSolution(allProjectAssemblies);
-
-					var allAssetProjectParts = GenerateAllAssetProjectParts();
-
-					var affectedNames = affectedFiles
-						.Select(asset => m_AssemblyNameProvider.GetAssemblyNameFromScriptPath(asset))
-						.Where(name => !string.IsNullOrWhiteSpace(name)).Select(name =>
-							name.Split(new[] {".dll"}, StringSplitOptions.RemoveEmptyEntries)[0]);
-					var reimportedNames = reimportedFiles
-						.Select(asset => m_AssemblyNameProvider.GetAssemblyNameFromScriptPath(asset))
-						.Where(name => !string.IsNullOrWhiteSpace(name)).Select(name =>
-							name.Split(new[] {".dll"}, StringSplitOptions.RemoveEmptyEntries)[0]);
-					var affectedAndReimported = new HashSet<string>(affectedNames.Concat(reimportedNames));
-
-					foreach (var assembly in allProjectAssemblies)
-					{
-						if (!affectedAndReimported.Contains(assembly.name))
-							continue;
-
-						SyncProject(assembly,
-							allAssetProjectParts,
-							responseFilesData: ParseResponseFileData(assembly).ToArray());
-					}
-
-					return true;
+					return false;
 				}
 
-				return false;
+				var assemblies = m_AssemblyNameProvider.GetAssemblies(ShouldFileBePartOfSolution);
+				var allProjectAssemblies = RelevantAssembliesForMode(assemblies).ToList();
+				SyncSolution(allProjectAssemblies);
+
+				var allAssetProjectParts = GenerateAllAssetProjectParts();
+
+				var affectedNames = affected
+					.Select(asset => m_AssemblyNameProvider.GetAssemblyNameFromScriptPath(asset))
+					.Where(name => !string.IsNullOrWhiteSpace(name)).Select(name =>
+						name.Split(new[] {".dll"}, StringSplitOptions.RemoveEmptyEntries)[0]);
+				var reimportedNames = reimported
+					.Select(asset => m_AssemblyNameProvider.GetAssemblyNameFromScriptPath(asset))
+					.Where(name => !string.IsNullOrWhiteSpace(name)).Select(name =>
+						name.Split(new[] {".dll"}, StringSplitOptions.RemoveEmptyEntries)[0]);
+				var affectedAndReimported = new HashSet<string>(affectedNames.Concat(reimportedNames));
+
+				foreach (var assembly in allProjectAssemblies)
+				{
+					if (!affectedAndReimported.Contains(assembly.name))
+						continue;
+
+					SyncProject(assembly,
+						allAssetProjectParts,
+						responseFilesData: ParseResponseFileData(assembly).ToArray());
+				}
+
+				return true;
 			}
 		}
 
