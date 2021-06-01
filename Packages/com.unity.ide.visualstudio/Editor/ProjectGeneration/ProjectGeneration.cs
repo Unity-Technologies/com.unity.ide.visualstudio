@@ -108,7 +108,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 				// Don't sync if we haven't synced before
 				var affected = affectedFiles as ICollection<string> ?? affectedFiles.ToArray();
 				var reimported = reimportedFiles as ICollection<string> ?? reimportedFiles.ToArray();
-				if (!HasSolutionBeenGenerated() || !HasFilesBeenModified(affected, reimported))
+				if (!HasFilesBeenModified(affected, reimported))
 				{
 					return false;
 				}
