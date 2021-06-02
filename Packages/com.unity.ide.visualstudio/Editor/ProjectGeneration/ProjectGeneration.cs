@@ -39,6 +39,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 	public class ProjectGeneration : IGenerator
 	{
+		public static readonly string MSBuildNamespaceUri = "http://schemas.microsoft.com/developer/msbuild/2003";
 		public IAssemblyNameProvider AssemblyNameProvider => m_AssemblyNameProvider;
 		public string ProjectDirectory { get; }
 
