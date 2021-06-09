@@ -39,6 +39,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 	public class ProjectGeneration : IGenerator
 	{
+		public static readonly string MSBuildNamespaceUri = "http://schemas.microsoft.com/developer/msbuild/2003";
 		public IAssemblyNameProvider AssemblyNameProvider => m_AssemblyNameProvider;
 		public string ProjectDirectory { get; }
 
@@ -108,7 +109,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 				// Don't sync if we haven't synced before
 				var affected = affectedFiles as ICollection<string> ?? affectedFiles.ToArray();
 				var reimported = reimportedFiles as ICollection<string> ?? reimportedFiles.ToArray();
-				if (!HasSolutionBeenGenerated() || !HasFilesBeenModified(affected, reimported))
+				if (!HasFilesBeenModified(affected, reimported))
 				{
 					return false;
 				}
