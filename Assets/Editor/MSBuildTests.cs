@@ -22,9 +22,7 @@ namespace Microsoft.Unity.VisualStudio.Standalone.EditorTests
 
 		internal string FindMSBuild()
 		{
-			var vswhere = FileUtility
-				.FindPackageAssetFullPath("VSWhere a:packages", "vswhere.exe")
-				.FirstOrDefault();
+			var vswhere = FileUtility.GetPackageAssetFullPath("Editor", "VSWhere", "vswhere.exe");
 
 			Assert.IsTrue(!string.IsNullOrWhiteSpace(vswhere));
 

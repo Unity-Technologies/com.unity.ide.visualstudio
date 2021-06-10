@@ -5,8 +5,6 @@
  *--------------------------------------------------------------------------------------------*/
 using System;
 using System.IO;
-using System.Linq;
-using UnityEditor;
 using UnityEngine;
 
 namespace Microsoft.Unity.VisualStudio.Editor
@@ -16,18 +14,10 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		public const char WinSeparator = '\\';
 		public const char UnixSeparator = '/';
 
-		// Safe for packages as we use packageInfo.resolvedPath, so this should work in library package cache as well
-		public static string[] FindPackageAssetFullPath(string assetfilter, string filefilter)
+		public static string GetPackageAssetFullPath(params string[] components)
 		{
-			return AssetDatabase.FindAssets(assetfilter)
-				.Select(AssetDatabase.GUIDToAssetPath)
-				.Where(assetPath => assetPath.Contains(filefilter))
-				.Select(asset =>
-				 {
-					 var packageInfo = UnityEditor.PackageManager.PackageInfo.FindForAssetPath(asset);
-					 return Normalize(packageInfo.resolvedPath + asset.Substring(packageInfo.assetPath.Length));
-				 })
-				.ToArray();
+			// Unity has special IO handling of Packages and will resolve those path to the right package location
+			return Path.GetFullPath(Path.Combine("Packages", "com.unity.ide.visualstudio", Path.Combine(components)));
 		}
 
 		public static string GetAssetFullPath(string asset)
