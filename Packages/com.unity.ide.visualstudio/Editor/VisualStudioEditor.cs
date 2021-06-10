@@ -286,9 +286,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 		private bool OpenWindowsApp(string path, int line)
 		{
-			var progpath = FileUtility
-				.FindPackageAssetFullPath("COMIntegration a:packages", "COMIntegration.exe")
-				.FirstOrDefault();
+			var progpath = FileUtility.GetPackageAssetFullPath("Editor", "COMIntegration", "Release", "COMIntegration.exe");
 
 			if (string.IsNullOrWhiteSpace(progpath))
 				return false;

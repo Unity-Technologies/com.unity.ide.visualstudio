@@ -1,4 +1,3 @@
-using System;
 using NUnit.Framework;
 using UnityEditor.Compilation;
 
@@ -87,10 +86,6 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 			{
 				var synchronizer = m_Builder.Build();
 
-				Assert.IsFalse(synchronizer.SyncIfNeeded(new string[0], new[] { $"reimport.{reimportedFile}" }), "Before sync has been called, we should not allow SyncIfNeeded");
-
-				synchronizer.Sync();
-
 				Assert.IsTrue(synchronizer.SyncIfNeeded(new string[0], new[] { $"reimport.{reimportedFile}" }));
 			}
 
@@ -130,10 +125,6 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 			public void AfterSync_WillResync_WhenAffectedFileTypes(string fileExtension)
 			{
 				var synchronizer = m_Builder.Build();
-
-				Assert.IsFalse(synchronizer.SyncIfNeeded(new[] { $"reimport.{fileExtension}" }, new string[0]), "Before sync has been called, we should not allow SyncIfNeeded");
-
-				synchronizer.Sync();
 
 				Assert.IsTrue(synchronizer.SyncIfNeeded(new[] { $"reimport.{fileExtension}" }, new string[0]));
 			}
