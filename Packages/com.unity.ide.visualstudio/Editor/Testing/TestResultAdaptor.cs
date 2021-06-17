@@ -21,7 +21,7 @@ namespace Microsoft.Unity.VisualStudio.Editor.Testing
 		public int InconclusiveCount;
 		public int SkipCount;
 
-		public string ResultState;	
+		public string ResultState;
 		public string StackTrace;
 
 		public TestStatusAdaptor TestStatus;
