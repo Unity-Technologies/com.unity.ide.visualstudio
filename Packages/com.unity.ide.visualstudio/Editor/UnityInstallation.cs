@@ -29,7 +29,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 				if (UnityEditor.MPE.ProcessService.level == UnityEditor.MPE.ProcessLevel.Slave)
 					return false;
 #elif UNITY_2020_1_OR_NEWER
-				if (Unity.MPE.ProcessService.level == Unity.MPE.ProcessLevel.UMP_SLAVE)
+				if (global::Unity.MPE.ProcessService.level == global::Unity.MPE.ProcessLevel.UMP_SLAVE)
 					return false;
 #endif
 
