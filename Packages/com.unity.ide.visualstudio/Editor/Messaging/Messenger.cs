@@ -92,9 +92,7 @@ namespace Microsoft.Unity.VisualStudio.Editor.Messaging
 				{
 					message.Origin = (IPEndPoint)endPoint;
 
-					int port;
-					int bufferSize;
-					if (IsValidTcpMessage(message, out port, out bufferSize))
+					if (IsValidTcpMessage(message, out var port, out var bufferSize))
 					{
 						// switch to TCP mode to handle big messages
 						TcpClient.Queue(message.Origin.Address, port, bufferSize, buffer =>
