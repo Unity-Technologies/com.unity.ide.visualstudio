@@ -23,10 +23,10 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		public static string GetAssetFullPath(string asset)
 		{
 			var basePath = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
-			return Path.GetFullPath(Path.Combine(basePath, Normalize(asset)));
+			return Path.GetFullPath(Path.Combine(basePath, NormalizePathSeparators(asset)));
 		}
 
-		public static string Normalize(string path)
+		public static string NormalizePathSeparators(this string path)
 		{
 			if (string.IsNullOrEmpty(path))
 				return path;
@@ -55,12 +55,18 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 			return relative == Path.GetFileName(relative);
 		}
+
+		public static string MakeAbsolutePath(this string path, string projectDirectory)
+		{
+			if (string.IsNullOrEmpty(path)) { return string.Empty; }
+			return Path.IsPathRooted(path) ? path : Path.Combine(projectDirectory, path);
+		}
 		
 		// returns null if outside of the project scope
 		internal static string MakeRelativeToProjectPath(string fileName)
 		{
 			var basePath = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
-			fileName = Normalize(fileName);
+			fileName = NormalizePathSeparators(fileName);
 
 			if (!Path.IsPathRooted(fileName))
 				fileName = Path.Combine(basePath, fileName);
@@ -72,6 +78,5 @@ namespace Microsoft.Unity.VisualStudio.Editor
 				.Substring(basePath.Length)
 				.Trim(Path.DirectorySeparatorChar);
 		}
-
 	}
 }

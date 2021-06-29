@@ -21,7 +21,7 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 
 		public static void AssertAnalyzerDllsAreIncluded(XmlDocument projectXml, IEnumerable<string> expectedAnalyzerDllPaths)
 		{
-			foreach (string path in expectedAnalyzerDllPaths.Select(FileUtility.Normalize))
+			foreach (string path in expectedAnalyzerDllPaths.Select(FileUtility.NormalizePathSeparators))
 			{
 				CollectionAssert.Contains(
 					projectXml.SelectAttributeValues("/msb:Project/msb:ItemGroup/msb:Analyzer/@Include"), path);
