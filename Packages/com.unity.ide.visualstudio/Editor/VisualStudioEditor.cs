@@ -35,6 +35,9 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 		static VisualStudioEditor()
 		{
+			if (!UnityInstallation.IsMainUnityEditorProcess)
+				return;
+
 			if (IsWindows)
 				Discovery.FindVSWhere();
 
@@ -54,11 +57,11 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			catch (Exception ex)
 			{
 				UnityEngine.Debug.LogError($"Error detecting Visual Studio installations: {ex}");
-				return Array.Empty<VisualStudioInstallation>();
+				return Array.Empty<IVisualStudioInstallation>();
 			}
 		}
 
-		internal static bool IsEnabled => CodeEditor.CurrentEditor is VisualStudioEditor;
+		internal static bool IsEnabled => CodeEditor.CurrentEditor is VisualStudioEditor && UnityInstallation.IsMainUnityEditorProcess;
 
 		public void CreateIfDoesntExist()
 		{
@@ -243,7 +246,6 @@ namespace Microsoft.Unity.VisualStudio.Editor
 					return "Registry packages";
 				case ProjectGenerationFlag.Unknown:
 					return "Packages from unknown sources";
-				case ProjectGenerationFlag.None:
 				default:
 					return string.Empty;
 			}

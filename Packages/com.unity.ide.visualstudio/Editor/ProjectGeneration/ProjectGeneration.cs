@@ -849,7 +849,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			if (array == null || array.Length == 0)
 			{
 				// HideSolution by default
-				array = new SolutionProperties[] {
+				array = new [] {
 					new SolutionProperties() {
 						Name = "SolutionProperties",
 						Type = "preSolution",
