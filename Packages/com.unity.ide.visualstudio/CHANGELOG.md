@@ -11,7 +11,6 @@ Integration:
 - Improved Inner-loop performance by avoiding to call the package manager when looking up `vswhere` utility.
 - Fixed a network issue preventing the communication between Visual Studio and Unity on Windows.
 
-
 ## [2.0.9] - 2021-05-04
 
 Project generation:

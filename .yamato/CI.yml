@@ -6,6 +6,7 @@ editors:
   - version: 2020.2
   - version: 2020.3
   - version: 2021.1
+  - version: 2021.2
   - version: trunk
 platforms:
   - name: win
@@ -45,12 +46,12 @@ commit_ci_release:
   name: CI For Release PRs
   triggers:
     pull_requests:
-    - sources:
-        only:
-          - "/.*/"
-      targets:
-        only:
-          - next/master
+      - sources:
+          only:
+            - "/.*/"
+        targets:
+          only:
+            - next/master
   dependencies:
   {% for editor in editors %}
   {% for platform in platforms %}
@@ -74,9 +75,9 @@ commit_ci:
   {% endfor %}
 
 
-  {% for editor in editors %}
+{% for editor in editors %}
 run_vetting_test_project_{{ editor.version }}:
-  name: Run vetting tests {{ editor.version }}
+  name: Run vetting tests on {{ editor.version }}
   agent:
     type: Unity::VM
     image: package-ci/ubuntu:stable
@@ -85,7 +86,11 @@ run_vetting_test_project_{{ editor.version }}:
     PATH: /home/bokken/bin:/home/bokken/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/sbin:/home/bokken/.npm-global/bin::/home/bokken/npm-global/bin
     DISPLAY: ":0"
   commands:
+{% if platform.name == "linux" -%}
     - pip install unity-downloader-cli --index-url https://artifactory.prd.it.unity3d.com/artifactory/api/pypi/pypi/simple --upgrade --user
+{% else -%}
+    - pip install unity-downloader-cli --index-url https://artifactory.prd.it.unity3d.com/artifactory/api/pypi/pypi/simple --upgrade
+{% endif -%}
     - npm config set prefix '~/npm-global'
     - npm install upm-ci-utils@latest -g --registry https://artifactory.prd.cds.internal.unity3d.com/artifactory/api/npm/upm-npm
     - unity-downloader-cli -u {{editor.version}} -c editor --fast --wait --published-only
@@ -97,7 +102,7 @@ run_vetting_test_project_{{ editor.version }}:
         - "upm-ci~/utr/**/*"
   dependencies:
     - .yamato/CI.yml#pack
-  {% endfor %}
+{% endfor %}
 
 
   {% for editor in editors %}
@@ -112,13 +117,13 @@ run_feature_test_project_{{ platform.name }}_{{ editor.version }}:
   variables:
     PATH: /home/bokken/bin:/home/bokken/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/sbin:/home/bokken/.npm-global/bin::/home/bokken/npm-global/bin
     DISPLAY: ":0"
-  {% endif -%} 
+  {% endif %}
   commands:
 {% if platform.name == "linux" -%}
     - pip install unity-downloader-cli --index-url https://artifactory.prd.it.unity3d.com/artifactory/api/pypi/pypi/simple --upgrade --user
 {% else -%}
     - pip install unity-downloader-cli --index-url https://artifactory.prd.it.unity3d.com/artifactory/api/pypi/pypi/simple --upgrade
-{% endif -%}    
+{% endif -%}
     - {{ platform.envsetup }}
     - unity-downloader-cli -u {{editor.version}} -c editor -c linux -c macos -c windows --fast --wait --published-only
     - npm install upm-ci-utils@latest -g --registry https://artifactory.prd.cds.internal.unity3d.com/artifactory/api/npm/upm-npm
@@ -171,7 +176,6 @@ publish_release:
     - npm install upm-ci-utils@latest -g --registry https://artifactory.prd.cds.internal.unity3d.com/artifactory/api/npm/upm-npm
     - upm-ci project publish
     - git push origin HEAD:refs/heads/master -f
-    - git push origin HEAD:refs/heads/next/master -f
 
 
 prepare_promotion:
@@ -183,6 +187,8 @@ prepare_promotion:
     image: scripting/scripting-package-katana:latest
     flavor: b1.large
   commands:
+    - if NOT "%GIT_BRANCH%" == "master" echo %GIT_BRANCH% && exit 1
+    - choco install --no-progress -y python3 -source https://artifactory.bf.unity3d.com/artifactory/api/nuget/unity-choco-local
     - git clone git@github.cds.internal.unity3d.com:nicklas/Nicklas-CI.git C:\buildslave\Nicklas-CI
     - py -3 C:\buildslave\Nicklas-CI\prepare_promotion.py C:\buildslave\unity\build upm-ci~/packages/packages.json
 

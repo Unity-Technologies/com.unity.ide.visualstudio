@@ -96,7 +96,7 @@ namespace Microsoft.Unity.VisualStudio.Standalone.EditorTests
 					// VS allows two projects to have the same name in the solution, and will compute itself the project dependency list, then will build each project in order
 					// So workaround this case by trying to call msbuild on all projects
 					var projects = Directory.GetFiles(m_ProjectGeneration.ProjectDirectory, "*.csproj");
-					foreach (var project in projects.Select(FileUtility.Normalize))
+					foreach (var project in projects.Select(FileUtility.NormalizePathSeparators))
 					{
 						// try to build a project
 						output = RunProcess(m_msbuild, $"{msbuildArguments} {project}");
@@ -120,7 +120,7 @@ namespace Microsoft.Unity.VisualStudio.Standalone.EditorTests
 			var projects = Directory.GetFiles(m_ProjectGeneration.ProjectDirectory, "*.csproj");
 			var solutions = Directory.GetFiles(m_ProjectGeneration.ProjectDirectory, "*.sln");
 
-			foreach (var file in projects.Concat(solutions).Select(FileUtility.Normalize))
+			foreach (var file in projects.Concat(solutions).Select(FileUtility.NormalizePathSeparators))
 			{
 				try
 				{
