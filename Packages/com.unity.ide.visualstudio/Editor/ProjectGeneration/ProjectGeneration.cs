@@ -573,12 +573,12 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 		public string SolutionFile()
 		{
-			return Path.Combine(FileUtility.Normalize(ProjectDirectory), $"{InvalidCharactersRegexPattern.Replace(m_ProjectName, "_")}.sln");
+			return Path.Combine(ProjectDirectory.NormalizePathSeparators(), $"{InvalidCharactersRegexPattern.Replace(m_ProjectName, "_")}.sln");
 		}
 
 		internal string VsConfigFile()
 		{
-			return Path.Combine(FileUtility.Normalize(ProjectDirectory), ".vsconfig");
+			return Path.Combine(ProjectDirectory.NormalizePathSeparators(), ".vsconfig");
 		}
 
 		internal string GetLangVersion(Assembly assembly)
@@ -741,7 +741,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			if (!string.IsNullOrEmpty(properties.RulesetPath))
 			{
 				lines.Add(@"  <PropertyGroup>");
-				lines.Add($"    <CodeAnalysisRuleSet>{properties.RulesetPath}</CodeAnalysisRuleSet>");
+				lines.Add($"    <CodeAnalysisRuleSet>{properties.RulesetPath.MakeAbsolutePath(ProjectDirectory).NormalizePathSeparators()}</CodeAnalysisRuleSet>");
 				lines.Add(@"  </PropertyGroup>");
 			}
 
@@ -750,7 +750,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 				lines.Add(@"  <ItemGroup>");
 				foreach (var analyzer in properties.Analyzers)
 				{
-					lines.Add($@"    <Analyzer Include=""{EscapedRelativePathFor(analyzer)}"" />");
+					lines.Add($@"    <Analyzer Include=""{analyzer.MakeAbsolutePath(ProjectDirectory).NormalizePathSeparators()}"" />");
 				}
 				lines.Add(@"  </ItemGroup>");
 			}
@@ -849,7 +849,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			if (array == null || array.Length == 0)
 			{
 				// HideSolution by default
-				array = new SolutionProperties[] {
+				array = new [] {
 					new SolutionProperties() {
 						Name = "SolutionProperties",
 						Type = "preSolution",
@@ -920,8 +920,8 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 		private string EscapedRelativePathFor(string file)
 		{
-			var projectDir = FileUtility.Normalize(ProjectDirectory);
-			file = FileUtility.Normalize(file);
+			var projectDir = ProjectDirectory.NormalizePathSeparators();
+			file = file.NormalizePathSeparators();
 			var path = SkipPathPrefix(file, projectDir);
 
 			var packageInfo = m_AssemblyNameProvider.FindForAssetPath(path.Replace('\\', '/'));
@@ -929,7 +929,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			{
 				// We have to normalize the path, because the PackageManagerRemapper assumes
 				// dir seperators will be os specific.
-				var absolutePath = Path.GetFullPath(FileUtility.Normalize(path));
+				var absolutePath = Path.GetFullPath(path.NormalizePathSeparators());
 				path = SkipPathPrefix(absolutePath, projectDir);
 			}
 
