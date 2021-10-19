@@ -1,5 +1,17 @@
 # Code Editor Package for Visual Studio
 
+## [2.0.11] - 2021-07-01
+
+Integration:
+
+- Added support for Visual Studio and Visual Studio For Mac 2022.
+- Fixed an issue when the package was enabled for background processes.
+
+Project generation:
+
+- Use absolute paths for Analyzers and rulesets.
+
+
 ## [2.0.10] - 2021-06-10
 
 Project generation:
