@@ -14,3 +14,6 @@ obj/
 *.bak
 *.bak.meta
 .DS_Store
+
+Packages/com.unity.ide.visualstudio/Editor/COMIntegration/Release/build/
+Packages/com.unity.ide.visualstudio/Editor/COMIntegration/Release/COMIntegration.exe
