@@ -34,10 +34,7 @@ build_cpp_win:
     image: platform-foundation/windows-vs2019-il2cpp-bokken:stable
     flavor: b1.large
   commands:
-    - |
-      cd Packages/com.unity.ide.visualstudio/Editor/COMIntegration/Release
-      cmake ../COMIntegration~ -B ./build
-      cmake --build ./build --config=release -- /p:OutDir=..
+    - .scripts/build-comintegration.bat
   artifacts:
     comintegration:
       paths:
