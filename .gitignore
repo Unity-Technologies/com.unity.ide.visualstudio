@@ -17,3 +17,5 @@ obj/
 
 Packages/com.unity.ide.visualstudio/Editor/COMIntegration/Release/build/
 Packages/com.unity.ide.visualstudio/Editor/COMIntegration/Release/COMIntegration.exe
+Packages/com.unity.ide.visualstudio/Editor/Plugins/AppleEventIntegration.bundle/
+!Packages/com.unity.ide.visualstudio/Editor/Plugins/AppleEventIntegration.bundle/**/*.meta
