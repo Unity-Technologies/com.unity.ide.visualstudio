@@ -741,16 +741,16 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			if (!string.IsNullOrEmpty(properties.RulesetPath))
 			{
 				lines.Add(@"  <PropertyGroup>");
-				lines.Add($"    <CodeAnalysisRuleSet>{properties.RulesetPath.MakeAbsolutePath(ProjectDirectory).NormalizePathSeparators()}</CodeAnalysisRuleSet>");
+				lines.Add($"    <CodeAnalysisRuleSet>{properties.RulesetPath.MakeAbsolutePath().NormalizePathSeparators()}</CodeAnalysisRuleSet>");
 				lines.Add(@"  </PropertyGroup>");
 			}
 
 			if (properties.Analyzers.Any())
 			{
 				lines.Add(@"  <ItemGroup>");
-				foreach (var analyzer in properties.Analyzers)
+				foreach (var analyzer in properties.Analyzers.Distinct())
 				{
-					lines.Add($@"    <Analyzer Include=""{analyzer.MakeAbsolutePath(ProjectDirectory).NormalizePathSeparators()}"" />");
+					lines.Add($@"    <Analyzer Include=""{analyzer.MakeAbsolutePath().NormalizePathSeparators()}"" />");
 				}
 				lines.Add(@"  </ItemGroup>");
 			}
