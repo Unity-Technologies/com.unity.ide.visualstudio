@@ -683,7 +683,7 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 
 			        XMLUtilities.AssertAnalyzerDllsAreIncluded(
 				        XMLUtilities.FromText(m_Builder.ReadProjectFile(m_Builder.Assembly)),
-				        new[] { roslynAnalyzerDllPath.MakeAbsolutePath(SynchronizerBuilder.projectDirectory).NormalizePathSeparators() });
+				        new[] { roslynAnalyzerDllPath.MakeAbsolutePath().NormalizePathSeparators() });
 		        }
 		        finally
 		        {
@@ -703,7 +703,7 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 
 			        XMLUtilities.AssertAnalyzerRuleSetsAreIncluded(
 				        XMLUtilities.FromText(m_Builder.ReadProjectFile(m_Builder.Assembly)),
-				        roslynAnalyzerRuleSetPath.MakeAbsolutePath(SynchronizerBuilder.projectDirectory).NormalizePathSeparators());
+				        roslynAnalyzerRuleSetPath.MakeAbsolutePath().NormalizePathSeparators());
 		        }
 		        finally
 		        {
