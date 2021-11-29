@@ -100,6 +100,9 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		{
 			using (solutionSyncMarker.Auto())
 			{
+				// We need the exact VS version/capabilities to tweak project generation (analyzers/langversion)
+				RefreshCurrentInstallation();
+
 				SetupProjectSupportedExtensions();
 
 				// See https://devblogs.microsoft.com/setup/configure-visual-studio-across-your-organization-with-vsconfig/
