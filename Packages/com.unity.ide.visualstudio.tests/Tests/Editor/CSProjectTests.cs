@@ -436,6 +436,28 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 				XMLUtilities.AssertNonCompileItemsMatchExactly(xmlDocument, unsupported);
 			}
 
+#if UNITY_2020_2_OR_NEWER
+			[Test]
+			public void FullSync_And_SelectiveSync_Provide_Same_Output()
+			{
+				var files = new[] { "fileA.cs", "fileB.cs", "fileC.cs" };
+				const string roslynAnalyzerDllPath = "Assets/RoslynAnalyzer.dll";
+
+				var synchronizer = m_Builder
+					.WithAssemblyData(files: files)
+					.WithRoslynAnalyzers(new[] { roslynAnalyzerDllPath })
+					.Build();
+
+				synchronizer.SyncIfNeeded(files, files);
+				var selectiveSyncContent = m_Builder.ReadProjectFile(m_Builder.Assembly);
+
+				synchronizer.Sync();
+				var fullSyncContent = m_Builder.ReadProjectFile(m_Builder.Assembly);
+
+				Assert.AreEqual(selectiveSyncContent, fullSyncContent);
+			}
+#endif
+
 			[TestCase(@"path\com.unity.cs")]
 			[TestCase(@"..\path\file.cs")]
 			public void IsValidFileName(string filePath)
