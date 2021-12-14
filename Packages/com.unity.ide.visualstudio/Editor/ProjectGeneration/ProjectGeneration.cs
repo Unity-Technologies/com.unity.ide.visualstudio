@@ -530,9 +530,12 @@ namespace Microsoft.Unity.VisualStudio.Editor
 				projectBuilder.Append("  <ItemGroup>").Append(k_WindowsNewline);
 				foreach (var reference in assembly.assemblyReferences.Where(i => i.sourceFiles.Any(ShouldFileBePartOfSolution)))
 				{
-					projectBuilder.Append("    <ProjectReference Include=\"").Append(reference.name).Append(GetProjectExtension()).Append("\">").Append(k_WindowsNewline);
-					projectBuilder.Append("      <Project>{").Append(ProjectGuid(reference)).Append("}</Project>").Append(k_WindowsNewline);
-					projectBuilder.Append("      <Name>").Append(reference.name).Append("</Name>").Append(k_WindowsNewline);
+					// If the current assembly is a Player project, we want to project-reference the corresponding Player project
+					var referenceName = m_AssemblyNameProvider.GetAssemblyName(assembly.outputPath, reference.name);
+
+					projectBuilder.Append("    <ProjectReference Include=\"").Append(referenceName).Append(GetProjectExtension()).Append("\">").Append(k_WindowsNewline);
+					projectBuilder.Append("      <Project>{").Append(ProjectGuid(referenceName)).Append("}</Project>").Append(k_WindowsNewline);
+					projectBuilder.Append("      <Name>").Append(referenceName).Append("</Name>").Append(k_WindowsNewline);
 					projectBuilder.Append("    </ProjectReference>").Append(k_WindowsNewline);
 				}
 
@@ -951,11 +954,14 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			return ".csproj";
 		}
 
+		private string ProjectGuid(string assemblyName)
+		{
+			return m_GUIDGenerator.ProjectGuid(m_ProjectName, assemblyName);
+		}
+
 		private string ProjectGuid(Assembly assembly)
 		{
-			return m_GUIDGenerator.ProjectGuid(
-				m_ProjectName,
-				m_AssemblyNameProvider.GetAssemblyName(assembly.outputPath, assembly.name));
+			return ProjectGuid(m_AssemblyNameProvider.GetAssemblyName(assembly.outputPath, assembly.name));
 		}
 
 		private string SolutionGuid(Assembly assembly)

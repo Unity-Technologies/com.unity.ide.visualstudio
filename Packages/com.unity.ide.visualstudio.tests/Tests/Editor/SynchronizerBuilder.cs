@@ -82,10 +82,17 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 		{
 			m_Assemblies = assemblies;
 			m_AssemblyProvider.Setup(x => x.GetAssemblies(It.IsAny<Func<string, bool>>())).Returns(m_Assemblies);
+
 			foreach (var assembly in assemblies)
 			{
 				m_AssemblyProvider.Setup(x => x.GetAssemblyName(assembly.outputPath, assembly.name)).Returns(assembly.name);
+
+				foreach (var reference in assembly.assemblyReferences)
+				{
+					m_AssemblyProvider.Setup(x => x.GetAssemblyName(It.IsAny<string>(), reference.name)).Returns(reference.name);
+				}
 			}
+
 			return this;
 		}
 
