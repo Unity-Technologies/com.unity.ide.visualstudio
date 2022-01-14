@@ -11,8 +11,6 @@ using System.Net.Sockets;
 using Microsoft.Unity.VisualStudio.Editor.Messaging;
 using Microsoft.Unity.VisualStudio.Editor.Testing;
 using UnityEditor;
-using UnityEditor.PackageManager;
-using UnityEditor.PackageManager.Requests;
 using UnityEngine;
 using MessageType = Microsoft.Unity.VisualStudio.Editor.Messaging.MessageType;
 
