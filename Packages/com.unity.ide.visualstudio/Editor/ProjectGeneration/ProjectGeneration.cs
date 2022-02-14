@@ -354,7 +354,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 						stringBuilders[assemblyName] = projectBuilder;
 					}
 
-					projectBuilder.Append("    <None Include=\"").Append(EscapedRelativePathFor(asset)).Append("\" />").Append(k_WindowsNewline);
+					IncludeAsset(projectBuilder, "None", asset);
 				}
 			}
 
@@ -364,6 +364,26 @@ namespace Microsoft.Unity.VisualStudio.Editor
 				result[entry.Key] = entry.Value.ToString();
 
 			return result;
+		}
+
+		private void IncludeAsset(StringBuilder builder, string tag, string asset)
+		{
+			var filename = EscapedRelativePathFor(asset, out var packageInfo);
+
+			builder.Append($"    <{tag} Include=\"").Append(filename);
+			if (Path.IsPathRooted(filename) && packageInfo != null)
+			{
+				// We are outside the Unity project and using a package context
+				var linkPath = asset.NormalizePathSeparators();
+
+				builder.Append("\">").Append(k_WindowsNewline);
+				builder.Append("      <Link>").Append(linkPath).Append("</Link>").Append(k_WindowsNewline);
+				builder.Append($"    </{tag}>").Append(k_WindowsNewline);
+			}
+			else
+			{
+				builder.Append("\" />").Append(k_WindowsNewline);
+			}
 		}
 
 		private void SyncProject(
@@ -483,13 +503,13 @@ namespace Microsoft.Unity.VisualStudio.Editor
 					continue;
 
 				var extension = Path.GetExtension(file).ToLower();
-				var fullFile = EscapedRelativePathFor(file);
 				if (".dll" != extension)
 				{
-					projectBuilder.Append("    <Compile Include=\"").Append(fullFile).Append("\" />").Append(k_WindowsNewline);
+					IncludeAsset(projectBuilder, "Compile", file);
 				}
 				else
 				{
+					var fullFile = EscapedRelativePathFor(file, out _);
 					references.Add(fullFile);
 				}
 			}
@@ -564,7 +584,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 		private void AppendReference(string fullReference, StringBuilder projectBuilder)
 		{
-			var escapedFullPath = EscapedRelativePathFor(fullReference);
+			var escapedFullPath = EscapedRelativePathFor(fullReference, out _);
 			projectBuilder.Append("    <Reference Include=\"").Append(Path.GetFileNameWithoutExtension(escapedFullPath)).Append("\">").Append(k_WindowsNewline);
 			projectBuilder.Append("      <HintPath>").Append(escapedFullPath).Append("</HintPath>").Append(k_WindowsNewline);
 			projectBuilder.Append("    </Reference>").Append(k_WindowsNewline);
@@ -924,13 +944,13 @@ namespace Microsoft.Unity.VisualStudio.Editor
 				projectGuid);
 		}
 
-		private string EscapedRelativePathFor(string file)
+		private string EscapedRelativePathFor(string file, out UnityEditor.PackageManager.PackageInfo packageInfo)
 		{
 			var projectDir = ProjectDirectory.NormalizePathSeparators();
 			file = file.NormalizePathSeparators();
 			var path = SkipPathPrefix(file, projectDir);
 
-			var packageInfo = m_AssemblyNameProvider.FindForAssetPath(path.Replace('\\', '/'));
+			packageInfo = m_AssemblyNameProvider.FindForAssetPath(path.NormalizeWindowsToUnix());
 			if (packageInfo != null)
 			{
 				// We have to normalize the path, because the PackageManagerRemapper assumes
