@@ -374,7 +374,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			if (Path.IsPathRooted(filename) && packageInfo != null)
 			{
 				// We are outside the Unity project and using a package context
-				var linkPath = asset.NormalizePathSeparators();
+				var linkPath = SkipPathPrefix(asset.NormalizePathSeparators(), packageInfo.assetPath.NormalizePathSeparators());
 
 				builder.Append("\">").Append(k_WindowsNewline);
 				builder.Append("      <Link>").Append(linkPath).Append("</Link>").Append(k_WindowsNewline);
