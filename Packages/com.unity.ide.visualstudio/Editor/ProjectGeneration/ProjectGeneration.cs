@@ -229,7 +229,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 				return false;
 			}
 
-			return IsSupportedFile(file);
+			return IsSupportedFile(file, out _);
 		}
 
 		private static string GetExtensionWithoutDot(string path)
@@ -244,25 +244,31 @@ namespace Microsoft.Unity.VisualStudio.Editor
 				.ToLower();
 		}
 
-		public bool IsSupportedFile(string path)
+		bool IGenerator.IsSupportedFile(string path)
 		{
-			var extension = GetExtensionWithoutDot(path);
+			return IsSupportedFile(path, out _);
+		}
+
+		private bool IsSupportedFile(string path, out string extensionWithoutDot)
+		{
+			extensionWithoutDot = GetExtensionWithoutDot(path);
 
 			// Dll's are not scripts but still need to be included
-			if (extension == "dll")
+			if (extensionWithoutDot == "dll")
 				return true;
 
-			if (extension == "asmdef")
+			if (extensionWithoutDot == "asmdef")
 				return true;
 
-			if (m_BuiltinSupportedExtensions.Contains(extension))
+			if (m_BuiltinSupportedExtensions.Contains(extensionWithoutDot))
 				return true;
 
-			if (m_ProjectSupportedExtensions.Contains(extension))
+			if (m_ProjectSupportedExtensions.Contains(extensionWithoutDot))
 				return true;
 
 			return false;
 		}
+
 
 		private static ScriptingLanguage ScriptingLanguageFor(Assembly assembly)
 		{
@@ -271,12 +277,17 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			if (files.Length == 0)
 				return ScriptingLanguage.None;
 
-			return ScriptingLanguageFor(files[0]);
+			return ScriptingLanguageForFile(files[0]);
 		}
 
-		internal static ScriptingLanguage ScriptingLanguageFor(string path)
+		internal static ScriptingLanguage ScriptingLanguageForExtension(string extensionWithoutDot)
 		{
-			return GetExtensionWithoutDot(path) == "cs" ? ScriptingLanguage.CSharp : ScriptingLanguage.None;
+			return extensionWithoutDot == "cs" ? ScriptingLanguage.CSharp : ScriptingLanguage.None;
+		}
+
+		internal static ScriptingLanguage ScriptingLanguageForFile(string path)
+		{
+			return ScriptingLanguageForExtension(GetExtensionWithoutDot(path));
 		}
 
 		public void GenerateAndWriteSolutionAndProjects()
@@ -336,7 +347,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 					continue;
 				}
 
-				if (IsSupportedFile(asset) && ScriptingLanguage.None == ScriptingLanguageFor(asset))
+				if (IsSupportedFile(asset, out var extensionWithoutDot) && ScriptingLanguage.None == ScriptingLanguageForExtension(extensionWithoutDot))
 				{
 					// Find assembly the asset belongs to by adding script extension and using compilation pipeline.
 					var assemblyName = m_AssemblyNameProvider.GetAssemblyNameFromScriptPath(asset);
@@ -499,11 +510,10 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			projectBuilder.Append(@"  <ItemGroup>").Append(k_WindowsNewline);
 			foreach (string file in assembly.sourceFiles)
 			{
-				if (!IsSupportedFile(file))
+				if (!IsSupportedFile(file, out var extensionWithoutDot))
 					continue;
 
-				var extension = Path.GetExtension(file).ToLower();
-				if (".dll" != extension)
+				if ("dll" != extensionWithoutDot)
 				{
 					IncludeAsset(projectBuilder, "Compile", file);
 				}
