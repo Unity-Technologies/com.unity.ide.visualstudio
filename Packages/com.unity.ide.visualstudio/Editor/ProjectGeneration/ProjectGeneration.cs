@@ -229,7 +229,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 				return false;
 			}
 
-			return IsSupportedFile(file, out _);
+			return IsSupportedFile(file);
 		}
 
 		private static string GetExtensionWithoutDot(string path)
