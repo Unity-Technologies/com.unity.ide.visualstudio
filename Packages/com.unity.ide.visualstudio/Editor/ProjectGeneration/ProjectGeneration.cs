@@ -244,7 +244,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 				.ToLower();
 		}
 
-		bool IGenerator.IsSupportedFile(string path)
+		public bool IsSupportedFile(string path)
 		{
 			return IsSupportedFile(path, out _);
 		}
