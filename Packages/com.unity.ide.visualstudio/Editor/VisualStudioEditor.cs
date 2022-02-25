@@ -262,7 +262,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 				return true;
 
 			// We only want to check for cs scripts
-			if (ProjectGeneration.ScriptingLanguageFor(path) != ScriptingLanguage.CSharp)
+			if (ProjectGeneration.ScriptingLanguageForFile(path) != ScriptingLanguage.CSharp)
 				return true;
 
 			// Even on windows, the package manager requires relative path + unix style separators for queries
