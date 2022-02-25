@@ -55,8 +55,8 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 		static readonly string[] k_ReimportSyncExtensions = { ".dll", ".asmdef" };
 
-		string[] m_ProjectSupportedExtensions = Array.Empty<string>();
-		string[] m_BuiltinSupportedExtensions = Array.Empty<string>();
+		HashSet<string> m_ProjectSupportedExtensions = new HashSet<string>();
+		HashSet<string> m_BuiltinSupportedExtensions = new HashSet<string>();
 
 		readonly string m_ProjectName;
 		readonly IAssemblyNameProvider m_AssemblyNameProvider;
@@ -217,8 +217,8 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 		private void SetupProjectSupportedExtensions()
 		{
-			m_ProjectSupportedExtensions = m_AssemblyNameProvider.ProjectSupportedExtensions;
-			m_BuiltinSupportedExtensions = EditorSettings.projectGenerationBuiltinExtensions;
+			m_ProjectSupportedExtensions = new HashSet<string>(m_AssemblyNameProvider.ProjectSupportedExtensions);
+			m_BuiltinSupportedExtensions = new HashSet<string>(EditorSettings.projectGenerationBuiltinExtensions);
 		}
 
 		private bool ShouldFileBePartOfSolution(string file)
