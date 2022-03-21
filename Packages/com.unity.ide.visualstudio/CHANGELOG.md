@@ -1,5 +1,12 @@
 # Code Editor Package for Visual Studio
 
+## [2.0.14] - 2022-01-14
+
+Integration:
+
+- Remove package version checking.
+
+
 ## [2.0.13] - 2022-01-12
 
 Integration:
