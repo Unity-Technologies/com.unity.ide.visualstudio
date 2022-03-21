@@ -68,6 +68,7 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
         }
 #endif
 
+		/* This is legacy, and we have now MSBuild tests validating that the solution is compiling properly
 		[Test]
 		public void AllEditorAssemblies_HaveAReferenceToUnityEditorAndUnityEngine()
 		{
@@ -79,6 +80,7 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 				Assert.IsTrue(editorAssembly.allReferences.Any(reference => reference.EndsWith("UnityEditor.dll")));
 			}
 		}
+		*/
 
 		[Test]
 		public void PlayerAssemblies_AreNotCollected_BeforeToggling()
