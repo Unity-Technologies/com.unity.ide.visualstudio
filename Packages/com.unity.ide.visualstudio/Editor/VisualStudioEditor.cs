@@ -175,7 +175,9 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 		public void SyncAll()
 		{
-			AssetDatabase.Refresh();
+			if (!UnityInstallation.IsInSafeMode)
+				AssetDatabase.Refresh();
+
 			_generator.Sync();
 		}
 
