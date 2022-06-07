@@ -175,7 +175,6 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 		public void SyncAll()
 		{
-			AssetDatabase.Refresh();
 			_generator.Sync();
 		}
 
