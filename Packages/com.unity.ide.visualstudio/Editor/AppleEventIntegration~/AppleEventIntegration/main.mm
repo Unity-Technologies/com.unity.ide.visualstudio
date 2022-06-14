@@ -4,8 +4,6 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-// clang++ -o open-vsmac -ObjC -fcxx-modules -fmodules -Werror -Wall -Wpedantic -D BUILD_APP main.mm
- 
 #import <Cocoa/Cocoa.h>
 #import <Foundation/Foundation.h>
 
