@@ -375,7 +375,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 			foreach (var cmd in new[] {COMIntegrationState.DisplayProgressBar, COMIntegrationState.ClearProgressBar})
 			{
-				if (data.Contains(cmd.ToString(), StringComparison.OrdinalIgnoreCase))
+				if (data.IndexOf(cmd.ToString(), StringComparison.OrdinalIgnoreCase) >= 0)
 					queue.Enqueue(cmd);
 			}
 		}
