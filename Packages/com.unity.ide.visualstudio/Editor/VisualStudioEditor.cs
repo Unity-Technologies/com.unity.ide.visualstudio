@@ -345,27 +345,31 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		private static void MonitorCOMIntegration(ConcurrentQueue<COMIntegrationState> queue)
 		{
 			var state = COMIntegrationState.Running;
+			var displayingProgress = false;
 			
 			do
 			{
 				Thread.Sleep(100);
-				
+
 				if (queue.TryDequeue(out state))
 				{
 					switch (state)
 					{
 						case COMIntegrationState.ClearProgressBar:
 							EditorUtility.ClearProgressBar();
+							displayingProgress = false;
 							break;
 						case COMIntegrationState.DisplayProgressBar:
 							EditorUtility.DisplayProgressBar("Opening Visual Studio", "Starting up Visual Studio, this might take some time.", .5f);
+							displayingProgress = true;
 							break;
 					}
 				}
 			} while (state != COMIntegrationState.Exited);
 
 			// Make sure the progress bar is properly cleared in case of COMIntegration failure
-			EditorUtility.ClearProgressBar();
+			if (displayingProgress)
+				EditorUtility.ClearProgressBar();
 		}
 
 		private static void OnOutputReceived(string data, ConcurrentQueue<COMIntegrationState> queue)
