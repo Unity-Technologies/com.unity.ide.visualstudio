@@ -371,13 +371,14 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			if (displayingProgress)
 				EditorUtility.ClearProgressBar();
 		}
-
+		
+		private static readonly COMIntegrationState[] ProgressBarCommands = {COMIntegrationState.DisplayProgressBar, COMIntegrationState.ClearProgressBar};
 		private static void OnOutputReceived(string data, ConcurrentQueue<COMIntegrationState> queue)
 		{
 			if (data == null)
 				return;
 
-			foreach (var cmd in new[] {COMIntegrationState.DisplayProgressBar, COMIntegrationState.ClearProgressBar})
+			foreach (var cmd in ProgressBarCommands)
 			{
 				if (data.IndexOf(cmd.ToString(), StringComparison.OrdinalIgnoreCase) >= 0)
 					queue.Enqueue(cmd);
