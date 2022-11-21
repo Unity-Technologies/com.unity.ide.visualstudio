@@ -19,7 +19,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 	internal static class ProcessRunner
 	{
-		private const int DefaultTimeoutInMilliseconds = 300000;
+		public const int DefaultTimeoutInMilliseconds = 300000;
 
 		public static ProcessStartInfo ProcessStartInfoFor(string filename, string arguments)
 		{

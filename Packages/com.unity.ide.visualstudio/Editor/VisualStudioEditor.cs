@@ -324,15 +324,15 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			psi.StandardErrorEncoding = System.Text.Encoding.Unicode;
 
 			// inter thread communication
-			var queue = new ConcurrentQueue<COMIntegrationState>();
+			var messages = new BlockingCollection<COMIntegrationState>();
 
 			var asyncStart = AsyncOperation<ProcessRunnerResult>.Run(
-				() => ProcessRunner.StartAndWaitForExit(psi, onOutputReceived: data => OnOutputReceived(data, queue)),
+				() => ProcessRunner.StartAndWaitForExit(psi, onOutputReceived: data => OnOutputReceived(data, messages)),
 				e => new ProcessRunnerResult {Success = false, Error = e.Message, Output = string.Empty},
-				() => queue.Enqueue(COMIntegrationState.Exited)
+				() => messages.Add(COMIntegrationState.Exited)
 			);
 
-			MonitorCOMIntegration(queue);
+			MonitorCOMIntegration(messages);
 
 			var result = asyncStart.Result;
 
@@ -342,16 +342,14 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			return result.Success;
 		}
 
-		private static void MonitorCOMIntegration(ConcurrentQueue<COMIntegrationState> queue)
+		private static void MonitorCOMIntegration(BlockingCollection<COMIntegrationState> messages)
 		{
-			var state = COMIntegrationState.Running;
 			var displayingProgress = false;
+			COMIntegrationState state;
 			
 			do
 			{
-				Thread.Sleep(100);
-
-				if (queue.TryDequeue(out state))
+				if (messages.TryTake(out state, ProcessRunner.DefaultTimeoutInMilliseconds))
 				{
 					switch (state)
 					{
@@ -365,6 +363,10 @@ namespace Microsoft.Unity.VisualStudio.Editor
 							break;
 					}
 				}
+				else
+				{
+					state = COMIntegrationState.Running;
+				}
 			} while (state != COMIntegrationState.Exited);
 
 			// Make sure the progress bar is properly cleared in case of COMIntegration failure
@@ -373,7 +375,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		}
 		
 		private static readonly COMIntegrationState[] ProgressBarCommands = {COMIntegrationState.DisplayProgressBar, COMIntegrationState.ClearProgressBar};
-		private static void OnOutputReceived(string data, ConcurrentQueue<COMIntegrationState> queue)
+		private static void OnOutputReceived(string data, BlockingCollection<COMIntegrationState> messages)
 		{
 			if (data == null)
 				return;
@@ -381,7 +383,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			foreach (var cmd in ProgressBarCommands)
 			{
 				if (data.IndexOf(cmd.ToString(), StringComparison.OrdinalIgnoreCase) >= 0)
-					queue.Enqueue(cmd);
+					messages.Add(cmd);
 			}
 		}
 
