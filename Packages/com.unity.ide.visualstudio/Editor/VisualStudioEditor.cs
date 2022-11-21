@@ -349,23 +349,17 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			
 			do
 			{
-				if (messages.TryTake(out state, ProcessRunner.DefaultTimeoutInMilliseconds))
+				state = messages.Take();
+				switch (state)
 				{
-					switch (state)
-					{
-						case COMIntegrationState.ClearProgressBar:
-							EditorUtility.ClearProgressBar();
-							displayingProgress = false;
-							break;
-						case COMIntegrationState.DisplayProgressBar:
-							EditorUtility.DisplayProgressBar("Opening Visual Studio", "Starting up Visual Studio, this might take some time.", .5f);
-							displayingProgress = true;
-							break;
-					}
-				}
-				else
-				{
-					state = COMIntegrationState.Running;
+					case COMIntegrationState.ClearProgressBar:
+						EditorUtility.ClearProgressBar();
+						displayingProgress = false;
+						break;
+					case COMIntegrationState.DisplayProgressBar:
+						EditorUtility.DisplayProgressBar("Opening Visual Studio", "Starting up Visual Studio, this might take some time.", .5f);
+						displayingProgress = true;
+						break;
 				}
 			} while (state != COMIntegrationState.Exited);
 
