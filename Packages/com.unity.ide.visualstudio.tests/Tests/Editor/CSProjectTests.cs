@@ -678,22 +678,30 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 			[Test]
 			public void AnalyzerInResponseFile_AddBlockToCsproj()
 			{
-				const string responseFile = "csc.rsp";
-				var synchronizer = m_Builder
-					.WithResponseFileData(m_Builder.Assembly, responseFile, otherArguments: new[] { "  /analyzer:foo.dll", "/a:bar.dll  ", "  -analyzer:/foobar.dll  ", "-a  :/barfoo.dll", "/a:  foo.dll" })
-					.Build();
+				try
+				{
+					const string responseFile = "csc.rsp";
+					var synchronizer = m_Builder
+						.WithResponseFileData(m_Builder.Assembly, responseFile, otherArguments: new[] { "  /analyzer:foo.dll", "/a:bar.dll  ", "  -analyzer:/foobar.dll  ", "-a  :/barfoo.dll", "/a:  foo.dll" })
+						.WithAnalyzerSupport()
+						.Build();
 
-				synchronizer.Sync();
+					synchronizer.Sync();
 
-				XMLUtilities.AssertAnalyzerDllsAreIncluded(
-					XMLUtilities.FromText(m_Builder.ReadProjectFile(m_Builder.Assembly)),
-					new[]
-					{
-						"foo.dll".MakeAbsolutePath().NormalizePathSeparators(),
-						"bar.dll".MakeAbsolutePath().NormalizePathSeparators(),
-						"/foobar.dll".NormalizePathSeparators(),
-						"/barfoo.dll".NormalizePathSeparators()
-					});
+					XMLUtilities.AssertAnalyzerDllsAreIncluded(
+						XMLUtilities.FromText(m_Builder.ReadProjectFile(m_Builder.Assembly)),
+						new[]
+						{
+							"foo.dll".MakeAbsolutePath().NormalizePathSeparators(),
+							"bar.dll".MakeAbsolutePath().NormalizePathSeparators(),
+							"/foobar.dll".NormalizePathSeparators(),
+							"/barfoo.dll".NormalizePathSeparators()
+						});
+				}
+				finally
+				{
+					m_Builder.CleanUp();
+				}
 			}
 
 			[Test]
