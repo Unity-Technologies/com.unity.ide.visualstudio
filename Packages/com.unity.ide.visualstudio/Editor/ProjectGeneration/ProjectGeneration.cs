@@ -648,14 +648,19 @@ namespace Microsoft.Unity.VisualStudio.Editor
 				if (index == -1)
 					continue;
 
-				var key = argument.Substring(1, index - 1);
+				var key = argument
+					.Substring(1, index - 1)
+					.Trim();
+				
 				if (!names.Contains(key))
 					continue;
 
 				if (argument.Length <= index)
 					continue;
 
-				yield return argument.Substring(index + 1);
+				yield return argument
+					.Substring(index + 1)
+					.Trim();
 			}
 		}
 
@@ -685,7 +690,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 			return analyzers
 				.Where(a => !string.IsNullOrEmpty(a))
-				.Select(a => a.Trim().MakeAbsolutePath().NormalizePathSeparators())
+				.Select(a => a.MakeAbsolutePath().NormalizePathSeparators())
 				.Distinct()
 				.ToArray();
 		}

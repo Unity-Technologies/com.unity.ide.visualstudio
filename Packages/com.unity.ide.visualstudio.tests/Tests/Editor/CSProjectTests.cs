@@ -680,7 +680,7 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 			{
 				const string responseFile = "csc.rsp";
 				var synchronizer = m_Builder
-					.WithResponseFileData(m_Builder.Assembly, responseFile, otherArguments: new[] { "  /analyzer:foo.dll", "/a:bar.dll  ", "  -analyzer:/foobar.dll  ", "-a:/barfoo.dll", "/a:foo.dll" })
+					.WithResponseFileData(m_Builder.Assembly, responseFile, otherArguments: new[] { "  /analyzer:foo.dll", "/a:bar.dll  ", "  -analyzer:/foobar.dll  ", "-a  :/barfoo.dll", "/a:  foo.dll" })
 					.Build();
 
 				synchronizer.Sync();
