@@ -154,7 +154,7 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 				OtherArguments = otherArguments ?? new string[0],
 				Unsafe = _unsafe,
 			});
-			return this;
+			return WithLatestLanguageVersionSupported(null); // we need a mocked VS instance to process analyzers in 'OtherArguments' from the response file 
 		}
 
 		public SynchronizerBuilder WithPackageInfo(string assetPath)

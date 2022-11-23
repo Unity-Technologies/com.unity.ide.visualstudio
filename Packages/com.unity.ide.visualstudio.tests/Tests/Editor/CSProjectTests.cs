@@ -676,6 +676,27 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 			}
 
 			[Test]
+			public void AnalyzerInResponseFile_AddBlockToCsproj()
+			{
+				const string responseFile = "csc.rsp";
+				var synchronizer = m_Builder
+					.WithResponseFileData(m_Builder.Assembly, responseFile, otherArguments: new[] { "  /analyzer:foo.dll", "/a:bar.dll  ", "  -analyzer:/foobar.dll  ", "-a:/barfoo.dll", "/a:foo.dll" })
+					.Build();
+
+				synchronizer.Sync();
+
+				XMLUtilities.AssertAnalyzerDllsAreIncluded(
+					XMLUtilities.FromText(m_Builder.ReadProjectFile(m_Builder.Assembly)),
+					new[]
+					{
+						"foo.dll".MakeAbsolutePath().NormalizePathSeparators(),
+						"bar.dll".MakeAbsolutePath().NormalizePathSeparators(),
+						"/foobar.dll".NormalizePathSeparators(),
+						"/barfoo.dll".NormalizePathSeparators()
+					});
+			}
+
+			[Test]
 			public void AllowUnsafeFromAssemblySettings_AddBlockToCsproj()
 			{
 				var synchronizer = m_Builder
@@ -712,6 +733,61 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 			        m_Builder.CleanUp();
 		        }
 	        }
+
+			[Test]
+			public void RoslynAndRSPAnalyzerDlls_WillBeIncluded()
+			{
+				try
+				{
+					const string responseFile = "csc.rsp";
+					m_Builder
+						.WithRoslynAnalyzers(new[] { "foounity.dll", "/barunity.dll" })
+						.WithResponseFileData(m_Builder.Assembly, responseFile, otherArguments: new[] { "/analyzer:foorsp.dll", "/a:/barrsp.dll" })
+						.Build()
+						.Sync();
+
+					XMLUtilities.AssertAnalyzerDllsAreIncluded(
+						XMLUtilities.FromText(m_Builder.ReadProjectFile(m_Builder.Assembly)),
+						new[]
+						{
+							"foounity.dll".MakeAbsolutePath().NormalizePathSeparators(),
+							"/barunity.dll".NormalizePathSeparators(),
+							"foorsp.dll".MakeAbsolutePath().NormalizePathSeparators(),
+							"/barrsp.dll".NormalizePathSeparators()
+						});
+				}
+				finally
+				{
+					m_Builder.CleanUp();
+				}
+			}
+
+			[Test]
+			public void RoslynAndRSPAnalyzerDlls_NoDuplicate()
+			{
+				try
+				{
+					const string responseFile = "csc.rsp";
+					var analyzerAssembly = "foo.dll";
+					
+					m_Builder
+						.WithRoslynAnalyzers(new[] { analyzerAssembly, analyzerAssembly })
+						.WithResponseFileData(m_Builder.Assembly, responseFile, otherArguments: new[] { $"/a:{analyzerAssembly}", $"-a:{analyzerAssembly}" })
+						.Build()
+						.Sync();
+
+					var content = m_Builder.ReadProjectFile(m_Builder.Assembly);
+					XMLUtilities.AssertAnalyzerDllsAreIncluded(
+						XMLUtilities.FromText(content),
+						new[] { analyzerAssembly.MakeAbsolutePath().NormalizePathSeparators() });
+
+					Assert.IsTrue(content.IndexOf(analyzerAssembly, StringComparison.Ordinal) == content.LastIndexOf(analyzerAssembly, StringComparison.Ordinal));
+				}
+				finally
+				{
+					m_Builder.CleanUp();
+				}
+			}
 
 	        [Test]
 	        public void RoslynAnalyzerRulesetPaths_WillBeIncluded()
