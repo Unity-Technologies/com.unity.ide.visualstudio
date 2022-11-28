@@ -634,6 +634,67 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			return targetLanguageVersion;
 		}
 
+		private static IEnumerable<string> GetOtherArguments(ResponseFileData[] responseFilesData, HashSet<string> names)
+		{
+			var lines = responseFilesData
+				.SelectMany(x => x.OtherArguments)
+				.Where(l => !string.IsNullOrEmpty(l))
+				.Select(l => l.Trim())
+				.Where(l => l.StartsWith("/") || l.StartsWith("-"));
+
+			foreach (var argument in lines)
+			{
+				var index = argument.IndexOf(":", StringComparison.Ordinal);
+				if (index == -1)
+					continue;
+
+				var key = argument
+					.Substring(1, index - 1)
+					.Trim();
+				
+				if (!names.Contains(key))
+					continue;
+
+				if (argument.Length <= index)
+					continue;
+
+				yield return argument
+					.Substring(index + 1)
+					.Trim();
+			}
+		}
+
+		private string[] GetAnalyzers(Assembly assembly, ResponseFileData[] responseFilesData, out string rulesetPath)
+		{
+			rulesetPath = null;
+			
+			if (m_CurrentInstallation == null || !m_CurrentInstallation.SupportsAnalyzers)
+				return Array.Empty<string>();
+			
+			// Analyzers provided by VisualStudio
+			List<string> analyzers = new List<string>(m_CurrentInstallation.GetAnalyzers());
+
+#if UNITY_2020_2_OR_NEWER
+			// Analyzers + ruleset provided by Unity
+			analyzers.AddRange(assembly.compilerOptions.RoslynAnalyzerDllPaths);
+
+			rulesetPath = assembly
+				.compilerOptions
+				.RoslynAnalyzerRulesetPath
+				.MakeAbsolutePath()
+				.NormalizePathSeparators();
+#endif
+
+			// Analyzers provided by csc.rsp
+			analyzers.AddRange(GetOtherArguments(responseFilesData, new HashSet<string>(new[] { "analyzer", "a" })));
+
+			return analyzers
+				.Where(a => !string.IsNullOrEmpty(a))
+				.Select(a => a.MakeAbsolutePath().NormalizePathSeparators())
+				.Distinct()
+				.ToArray();
+		}
+
 		private void ProjectHeader(
 			Assembly assembly,
 			ResponseFileData[] responseFilesData,
@@ -641,19 +702,9 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		)
 		{
 			var projectType = ProjectTypeOf(assembly.name);
-			string rulesetPath = null;
-			var analyzers = Array.Empty<string>();
+			var analyzers = GetAnalyzers(assembly, responseFilesData, out var rulesetPath);
 
-			if (m_CurrentInstallation != null && m_CurrentInstallation.SupportsAnalyzers)
-			{
-				analyzers = m_CurrentInstallation.GetAnalyzers();
-#if UNITY_2020_2_OR_NEWER
-				analyzers = analyzers != null ? analyzers.Concat(assembly.compilerOptions.RoslynAnalyzerDllPaths).ToArray() : assembly.compilerOptions.RoslynAnalyzerDllPaths;
-				rulesetPath = assembly.compilerOptions.RoslynAnalyzerRulesetPath;
-#endif
-			}
-
-			var projectProperties = new ProjectProperties()
+			var projectProperties = new ProjectProperties
 			{
 				ProjectGuid = ProjectGuid(assembly),
 				LangVersion = GetLangVersion(assembly),
@@ -661,9 +712,9 @@ namespace Microsoft.Unity.VisualStudio.Editor
 				RootNamespace = GetRootNamespace(assembly),
 				OutputPath = assembly.outputPath,
 				// Analyzers
-				Analyzers = analyzers,
 				RulesetPath = rulesetPath,
 				// RSP alterable
+				Analyzers = analyzers,
 				Defines = assembly.defines.Concat(responseFilesData.SelectMany(x => x.Defines)).Distinct().ToArray(),
 				Unsafe = assembly.compilerOptions.AllowUnsafeCode | responseFilesData.Any(x => x.Unsafe),
 				// VSTU Flavoring
@@ -766,16 +817,16 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			if (!string.IsNullOrEmpty(properties.RulesetPath))
 			{
 				headerBuilder.Append(@"  <PropertyGroup>").Append(k_WindowsNewline);
-				headerBuilder.Append(@"    <CodeAnalysisRuleSet>").Append(properties.RulesetPath.MakeAbsolutePath().NormalizePathSeparators()).Append(@"</CodeAnalysisRuleSet>").Append(k_WindowsNewline);
+				headerBuilder.Append(@"    <CodeAnalysisRuleSet>").Append(properties.RulesetPath).Append(@"</CodeAnalysisRuleSet>").Append(k_WindowsNewline);
 				headerBuilder.Append(@"  </PropertyGroup>").Append(k_WindowsNewline);
 			}
 
 			if (properties.Analyzers.Any())
 			{
 				headerBuilder.Append(@"  <ItemGroup>").Append(k_WindowsNewline);
-				foreach (var analyzer in properties.Analyzers.Distinct())
+				foreach (var analyzer in properties.Analyzers)
 				{
-					headerBuilder.Append(@"    <Analyzer Include=""").Append(analyzer.MakeAbsolutePath().NormalizePathSeparators()).Append(@""" />").Append(k_WindowsNewline);
+					headerBuilder.Append(@"    <Analyzer Include=""").Append(analyzer).Append(@""" />").Append(k_WindowsNewline);
 				}
 				headerBuilder.Append(@"  </ItemGroup>").Append(k_WindowsNewline);
 			}
