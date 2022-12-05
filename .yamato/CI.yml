@@ -3,6 +3,7 @@ codeeditor: visualstudio
 editors:
   - version: 2020.3
   - version: 2021.3
+  - version: 2022.1
   - version: 2022.2
   - version: trunk
 platforms:
