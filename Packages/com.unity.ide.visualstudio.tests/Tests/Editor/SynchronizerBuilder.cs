@@ -125,6 +125,14 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 			return this;
 		}
 
+		public SynchronizerBuilder WithAnalyzerSupport()
+		{
+			m_MockExternalCodeEditor = new MyMockIExternalCodeEditor();
+			CodeEditor.Register(m_MockExternalCodeEditor);
+
+			return this;
+		}		
+
 		public SynchronizerBuilder WithAssembly(Assembly assembly)
 		{
 			AssignFilesToAssembly(assembly.sourceFiles, assembly);
@@ -184,26 +192,20 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 #if UNITY_2020_2_OR_NEWER
 		public SynchronizerBuilder WithRoslynAnalyzers(string[] roslynAnalyzerDllPaths)
 		{
-			m_MockExternalCodeEditor = new MyMockIExternalCodeEditor();
-			CodeEditor.Register(m_MockExternalCodeEditor);
-
 			foreach (Assembly assembly in m_Assemblies)
 			{
 				assembly.compilerOptions.RoslynAnalyzerDllPaths = roslynAnalyzerDllPaths;
 			}
-			return this;
+			return WithAnalyzerSupport();
 		}
 
 		public SynchronizerBuilder WithRulesetPath(string rulesetFilePath)
 		{
-			m_MockExternalCodeEditor = new MyMockIExternalCodeEditor();
-			CodeEditor.Register(m_MockExternalCodeEditor);
-
 			foreach (Assembly assembly in m_Assemblies)
 			{
 				assembly.compilerOptions.RoslynAnalyzerRulesetPath = rulesetFilePath;
 			}
-			return this;
+			return WithAnalyzerSupport();
 		}
 #endif
 

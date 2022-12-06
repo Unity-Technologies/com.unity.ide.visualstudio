@@ -1,5 +1,12 @@
 # Code Editor Package for Visual Studio
 
+## [2.0.16] - 2022-06-08
+
+Integration:
+
+- Prevent ADB Refresh while being in safe-mode with a URP project
+- Fixed an issue keeping the progress bar visible even after opening a script with Visual Studio. 
+
 ## [2.0.15] - 2022-03-21
 
 Integration:
