@@ -1,5 +1,4 @@
-﻿using System.Diagnostics;
-using System.IO;
+﻿using System.IO;
 using System.Linq;
 using Microsoft.Unity.VisualStudio.Editor;
 using NUnit.Framework;
@@ -26,35 +25,10 @@ namespace Microsoft.Unity.VisualStudio.Standalone.EditorTests
 
 			Assert.IsTrue(!string.IsNullOrWhiteSpace(vswhere));
 
-			return RunProcess(vswhere, @"-latest -requires Microsoft.Component.MSBuild -find MSBuild\**\Bin\MSBuild.exe");
-		}
+			var result = ProcessRunner.StartAndWaitForExit(vswhere, @"-latest -requires Microsoft.Component.MSBuild -find MSBuild\**\Bin\MSBuild.exe");
 
-		internal string RunProcess(string executable, string arguments)
-		{
-			var process = new Process
-			{
-				StartInfo = new ProcessStartInfo
-				{
-					FileName = executable,
-					Arguments = arguments,
-					UseShellExecute = false,
-					CreateNoWindow = true,
-					RedirectStandardOutput = true,
-					RedirectStandardError = true,
-				}
-			};
-
-			using (process)
-			{
-				var output = string.Empty;
-
-				process.OutputDataReceived += (o, e) => output += e.Data;
-				process.Start();
-				process.BeginOutputReadLine();
-				process.WaitForExit();
-
-				return output;
-			}
+			Assert.IsTrue(result.Success);
+			return result.Output;
 		}
 
 		[Test]
@@ -88,7 +62,12 @@ namespace Microsoft.Unity.VisualStudio.Standalone.EditorTests
 
 				// try to build the solution
 				const string msbuildArguments = "/t:clean,build /p:Configuration=Debug /nologo /verbosity:quiet /clp:ErrorsOnly";
-				var output = RunProcess(m_msbuild, $"{msbuildArguments} {m_ProjectGeneration.SolutionFile()}");
+
+				var result = ProcessRunner.StartAndWaitForExit(m_msbuild, $"{msbuildArguments} {m_ProjectGeneration.SolutionFile()}");
+
+				Assert.IsTrue(result.Success);
+				var output = result.Output;
+				
 				if (output.Contains("MSB5004"))
 				{
 					// see https://github.com/dotnet/msbuild/issues/530
@@ -99,8 +78,10 @@ namespace Microsoft.Unity.VisualStudio.Standalone.EditorTests
 					foreach (var project in projects.Select(FileUtility.NormalizePathSeparators))
 					{
 						// try to build a project
-						output = RunProcess(m_msbuild, $"{msbuildArguments} {project}");
-						Assert.IsEmpty(output);
+						result = ProcessRunner.StartAndWaitForExit(m_msbuild, $"{msbuildArguments} {project}");
+
+						Assert.IsTrue(result.Success);
+						Assert.IsEmpty(result.Output);
 					}
 				}
 				else
