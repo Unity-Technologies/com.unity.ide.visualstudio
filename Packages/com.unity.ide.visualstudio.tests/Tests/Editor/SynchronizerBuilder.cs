@@ -209,6 +209,26 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 		}
 #endif
 
+#if UNITY_2021_3_OR_NEWER
+		public SynchronizerBuilder WithAdditionalFilePaths(string[] additionalFilePaths)
+		{
+			foreach (Assembly assembly in m_Assemblies)
+			{
+				assembly.compilerOptions.RoslynAdditionalFilePaths = additionalFilePaths;
+			}
+			return WithAnalyzerSupport();
+		}
+
+		public SynchronizerBuilder WithAnalyzerConfigPath(string analyzerConfigPath)
+		{
+			foreach (Assembly assembly in m_Assemblies)
+			{
+				assembly.compilerOptions.AnalyzerConfigPath = analyzerConfigPath;
+			}
+			return WithAnalyzerSupport();
+		}
+#endif
+
 		public class MyMockIExternalCodeEditor : VisualStudioEditor
 		{
 			private Version LatestLanguageVersionSupported = new Version(7, 3);

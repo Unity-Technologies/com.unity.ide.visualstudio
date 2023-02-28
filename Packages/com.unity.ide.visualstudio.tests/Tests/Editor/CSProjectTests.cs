@@ -818,6 +818,75 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 	        }
 #endif
 
+#if UNITY_2021_3_OR_NEWER
+			[Test]
+			public void AnalyzerConfigPath_WillBeIncluded()
+			{
+				try
+				{
+					const string analyzerConfigPath = "Assets/Default.globalconfig";
+					m_Builder.WithAnalyzerConfigPath(analyzerConfigPath)
+						.Build()
+						.Sync();
+
+					XMLUtilities.AssertAnalyzerConfigPathIsIncluded(
+						XMLUtilities.FromText(m_Builder.ReadProjectFile(m_Builder.Assembly)),
+						analyzerConfigPath.MakeAbsolutePath().NormalizePathSeparators());
+				}
+				finally
+				{
+					m_Builder.CleanUp();
+				}
+			}
+
+			[Test]
+			public void AdditionalFilePaths_WillBeIncluded()
+			{
+				try
+				{
+					m_Builder
+						.WithAdditionalFilePaths(new[] { "FileA.Analyzer.additionalfile", "/FileB.Analyzer.additionalfile" })
+						.Build()
+						.Sync();
+
+					XMLUtilities.AssertAdditionalFilePathsAreIncluded(
+						XMLUtilities.FromText(m_Builder.ReadProjectFile(m_Builder.Assembly)),
+						new[]
+						{
+							"FileA.Analyzer.additionalfile".MakeAbsolutePath().NormalizePathSeparators(),
+							"/FileB.Analyzer.additionalfile".NormalizePathSeparators(),
+						});
+				}
+				finally
+				{
+					m_Builder.CleanUp();
+				}
+			}
+
+			[Test]
+			public void AdditionalFilePaths_NoDuplicate()
+			{
+				try
+				{
+					m_Builder
+						.WithAdditionalFilePaths(new[] { "FileA.Analyzer.additionalfile", "FileA.Analyzer.additionalfile" })
+						.Build()
+						.Sync();
+
+					XMLUtilities.AssertAdditionalFilePathsAreIncluded(
+						XMLUtilities.FromText(m_Builder.ReadProjectFile(m_Builder.Assembly)),
+						new[]
+						{
+							"FileA.Analyzer.additionalfile".MakeAbsolutePath().NormalizePathSeparators(),
+						});
+				}
+				finally
+				{
+					m_Builder.CleanUp();
+				}
+			}
+#endif
+
 			[Test]
 			public void DllInSourceFiles_WillBeAddedAsReference()
 			{
