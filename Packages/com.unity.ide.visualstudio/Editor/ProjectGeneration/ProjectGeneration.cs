@@ -686,8 +686,9 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			analyzerConfigPath = assembly.compilerOptions.AnalyzerConfigPath;
 #endif
 
-			// Analyzers provided by csc.rsp
+			// Analyzers and additional files provided by csc.rsp
 			analyzers.AddRange(GetOtherArguments(responseFilesData, new HashSet<string>(new[] { "analyzer", "a" })));
+			additionalFilePaths.AddRange(GetOtherArguments(responseFilesData, new HashSet<string>(new[] { "additionalfile" })));
 
 			properties.RulesetPath = ToNormalizedPath(rulesetPath);
 			properties.Analyzers = ToNormalizedPaths(analyzers);

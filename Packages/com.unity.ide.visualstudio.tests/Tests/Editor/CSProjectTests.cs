@@ -844,8 +844,10 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 			{
 				try
 				{
+					const string responseFile = "csc.rsp";
 					m_Builder
 						.WithAdditionalFilePaths(new[] { "FileA.Analyzer.additionalfile", "/FileB.Analyzer.additionalfile" })
+						.WithResponseFileData(m_Builder.Assembly, responseFile, otherArguments: new[] { "/additionalfile:FileArsp.Analyzer.additionalfile", "/additionalfile:/FileBrsp.Analyzer.additionalfile" })
 						.Build()
 						.Sync();
 
@@ -855,6 +857,8 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 						{
 							"FileA.Analyzer.additionalfile".MakeAbsolutePath().NormalizePathSeparators(),
 							"/FileB.Analyzer.additionalfile".NormalizePathSeparators(),
+							"FileArsp.Analyzer.additionalfile".MakeAbsolutePath().NormalizePathSeparators(),
+							"/FileBrsp.Analyzer.additionalfile".NormalizePathSeparators(),
 						});
 				}
 				finally
