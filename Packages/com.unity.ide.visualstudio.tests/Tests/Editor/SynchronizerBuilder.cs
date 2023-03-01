@@ -209,7 +209,7 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 		}
 #endif
 
-#if UNITY_2021_3_OR_NEWER
+#if UNITY_2021_3_OR_NEWER && !UNITY_2022_1 // we have support in 2021.3, 2022.2 but without a backport in 2022.1
 		public SynchronizerBuilder WithAdditionalFilePaths(string[] additionalFilePaths)
 		{
 			foreach (Assembly assembly in m_Assemblies)
