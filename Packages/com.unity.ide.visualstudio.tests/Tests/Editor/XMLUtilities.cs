@@ -33,6 +33,20 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 			CollectionAssert.Contains(projectXml.SelectElementValues("/msb:Project/msb:PropertyGroup/msb:CodeAnalysisRuleSet"), expectedRuleSetPath);
 		}
 
+		public static void AssertAdditionalFilePathsAreIncluded(XmlDocument projectXml, IEnumerable<string> expectedPaths)
+		{
+			foreach (string path in expectedPaths.Select(FileUtility.NormalizePathSeparators))
+			{
+				CollectionAssert.Contains(
+					projectXml.SelectAttributeValues("/msb:Project/msb:ItemGroup/msb:AdditionalFiles/@Include"), path);
+			}
+		}
+
+		internal static void AssertAnalyzerConfigPathIsIncluded(XmlDocument projectXml, string path)
+		{
+			CollectionAssert.Contains(projectXml.SelectAttributeValues("/msb:Project/msb:ItemGroup/msb:EditorConfigFiles/@Include"), path);
+		}
+
 		static XmlNamespaceManager GetModifiedXmlNamespaceManager(XmlDocument projectXml)
 		{
 			var xmlNamespaces = new XmlNamespaceManager(projectXml.NameTable);
