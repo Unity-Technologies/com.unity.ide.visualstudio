@@ -1,5 +1,30 @@
 # Code Editor Package for Visual Studio
 
+## [2.0.18] - 2023-03-17
+
+Integration:
+
+- Performance improvements with `EditorApplication.update` callbacks.
+ 
+Project generation:
+
+- Add extra compiler options for analyzers and source generators.
+
+
+## [2.0.17] - 2022-12-06
+
+Integration:
+
+- Fix rare deadlocks while discovering or launching Visual Studio on Windows.
+- Improve launching Visual Studio on macOs.
+
+Project generation:
+
+- Include analyzers from response files.
+- Update supported C# versions.
+- Performance improvements.
+
+
 ## [2.0.16] - 2022-06-08
 
 Integration:
