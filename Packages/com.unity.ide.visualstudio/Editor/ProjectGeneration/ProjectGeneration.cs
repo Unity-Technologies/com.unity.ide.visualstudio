@@ -37,14 +37,14 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		IAssemblyNameProvider AssemblyNameProvider { get; }
 	}
 
-	public class ProjectGeneration : IGenerator
+	public abstract class ProjectGeneration : IGenerator
 	{
 		public static readonly string MSBuildNamespaceUri = "http://schemas.microsoft.com/developer/msbuild/2003";
 		public IAssemblyNameProvider AssemblyNameProvider => m_AssemblyNameProvider;
 		public string ProjectDirectory { get; }
 
 		// Use this to have the same newline ending on all platforms for consistency.
-		const string k_WindowsNewline = "\r\n";
+		protected const string k_WindowsNewline = "\r\n";
 
 		const string m_SolutionProjectEntryTemplate = @"Project(""{{{0}}}"") = ""{1}"", ""{2}"", ""{{{3}}}""{4}EndProject";
 
@@ -60,7 +60,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		HashSet<string> m_BuiltinSupportedExtensions = new HashSet<string>();
 
 		readonly string m_ProjectName;
-		readonly IAssemblyNameProvider m_AssemblyNameProvider;
+		protected readonly IAssemblyNameProvider m_AssemblyNameProvider;
 		readonly IFileIO m_FileIOProvider;
 		readonly IGUIDGenerator m_GUIDGenerator;
 		bool m_ShouldGenerateAll;
@@ -366,7 +366,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 						stringBuilders[assemblyName] = projectBuilder;
 					}
 
-					IncludeAsset(projectBuilder, "None", asset);
+					IncludeAsset(projectBuilder, IncludeAssetTag.None, asset);
 				}
 			}
 
@@ -378,7 +378,13 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			return result;
 		}
 
-		private void IncludeAsset(StringBuilder builder, string tag, string asset)
+		protected enum IncludeAssetTag
+		{
+			Compile,
+			None
+		}
+
+		protected virtual void IncludeAsset(StringBuilder builder, IncludeAssetTag tag, string asset)
 		{
 			var filename = EscapedRelativePathFor(asset, out var packageInfo);
 
@@ -517,7 +523,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 				if ("dll" != extensionWithoutDot)
 				{
-					IncludeAsset(projectBuilder, "Compile", file);
+					IncludeAsset(projectBuilder, IncludeAssetTag.Compile, file);
 				}
 				else
 				{
@@ -562,19 +568,13 @@ namespace Microsoft.Unity.VisualStudio.Editor
 				projectBuilder.Append("  <ItemGroup>").Append(k_WindowsNewline);
 				foreach (var reference in assembly.assemblyReferences.Where(i => i.sourceFiles.Any(ShouldFileBePartOfSolution)))
 				{
-					// If the current assembly is a Player project, we want to project-reference the corresponding Player project
-					var referenceName = m_AssemblyNameProvider.GetAssemblyName(assembly.outputPath, reference.name);
-
-					projectBuilder.Append(@"    <ProjectReference Include=""").Append(referenceName).Append(GetProjectExtension()).Append(@""">").Append(k_WindowsNewline);
-					projectBuilder.Append("      <Project>{").Append(ProjectGuid(referenceName)).Append("}</Project>").Append(k_WindowsNewline);
-					projectBuilder.Append("      <Name>").Append(referenceName).Append("</Name>").Append(k_WindowsNewline);
-					projectBuilder.Append("    </ProjectReference>").Append(k_WindowsNewline);
+					AppendProjectReference(assembly, reference, projectBuilder);
 				}
 
 				projectBuilder.Append(@"  </ItemGroup>").Append(k_WindowsNewline);
 			}
 
-			projectBuilder.Append(GetProjectFooter());
+			GetProjectFooter(projectBuilder);
 			return projectBuilder.ToString();
 		}
 
@@ -593,6 +593,8 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		{
 			return SecurityElement.Escape(s);
 		}
+
+		protected abstract void AppendProjectReference(Assembly assembly, Assembly reference, StringBuilder projectBuilder);
 
 		private void AppendReference(string fullReference, StringBuilder projectBuilder)
 		{
@@ -765,30 +767,10 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			return ProjectType.Game;
 		}
 
-		private void GetProjectHeader(ProjectProperties properties, out StringBuilder headerBuilder)
-		{
-			headerBuilder = new StringBuilder();
+		internal abstract void GetProjectHeader(ProjectProperties properties, out StringBuilder headerBuilder);
 
-			//Header
-			headerBuilder.Append(@"<?xml version=""1.0"" encoding=""utf-8""?>").Append(k_WindowsNewline);
-			headerBuilder.Append(@"<Project ToolsVersion=""4.0"" DefaultTargets=""Build"" xmlns=""http://schemas.microsoft.com/developer/msbuild/2003"">").Append(k_WindowsNewline);
-			headerBuilder.Append(@"  <PropertyGroup>").Append(k_WindowsNewline);
-			headerBuilder.Append(@"    <LangVersion>").Append(properties.LangVersion).Append(@"</LangVersion>").Append(k_WindowsNewline);
-			headerBuilder.Append(@"  </PropertyGroup>").Append(k_WindowsNewline);
-			headerBuilder.Append(@"  <PropertyGroup>").Append(k_WindowsNewline);
-			headerBuilder.Append(@"    <Configuration Condition="" '$(Configuration)' == '' "">Debug</Configuration>").Append(k_WindowsNewline);
-			headerBuilder.Append(@"    <Platform Condition="" '$(Platform)' == '' "">AnyCPU</Platform>").Append(k_WindowsNewline);
-			headerBuilder.Append(@"    <ProductVersion>10.0.20506</ProductVersion>").Append(k_WindowsNewline);
-			headerBuilder.Append(@"    <SchemaVersion>2.0</SchemaVersion>").Append(k_WindowsNewline);
-			headerBuilder.Append(@"    <RootNamespace>").Append(properties.RootNamespace).Append(@"</RootNamespace>").Append(k_WindowsNewline);
-			headerBuilder.Append(@"    <ProjectGuid>{").Append(properties.ProjectGuid).Append(@"}</ProjectGuid>").Append(k_WindowsNewline);
-			headerBuilder.Append(@"    <OutputType>Library</OutputType>").Append(k_WindowsNewline);
-			headerBuilder.Append(@"    <AppDesignerFolder>Properties</AppDesignerFolder>").Append(k_WindowsNewline);
-			headerBuilder.Append(@"    <AssemblyName>").Append(properties.AssemblyName).Append(@"</AssemblyName>").Append(k_WindowsNewline);
-			headerBuilder.Append(@"    <TargetFrameworkVersion>v4.7.1</TargetFrameworkVersion>").Append(k_WindowsNewline);
-			headerBuilder.Append(@"    <FileAlignment>512</FileAlignment>").Append(k_WindowsNewline);
-			headerBuilder.Append(@"    <BaseDirectory>.</BaseDirectory>").Append(k_WindowsNewline);
-			headerBuilder.Append(@"  </PropertyGroup>").Append(k_WindowsNewline);
+		internal static void GetProjectHeaderConfigurations(ProjectProperties properties, StringBuilder headerBuilder)
+		{
 			headerBuilder.Append(@"  <PropertyGroup Condition="" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' "">").Append(k_WindowsNewline);
 			headerBuilder.Append(@"    <DebugSymbols>true</DebugSymbols>").Append(k_WindowsNewline);
 			headerBuilder.Append(@"    <DebugType>full</DebugType>").Append(k_WindowsNewline);
@@ -809,26 +791,10 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			headerBuilder.Append(@"    <NoWarn>0169</NoWarn>").Append(k_WindowsNewline);
 			headerBuilder.Append(@"    <AllowUnsafeBlocks>").Append(properties.Unsafe).Append(@"</AllowUnsafeBlocks>").Append(k_WindowsNewline);
 			headerBuilder.Append(@"  </PropertyGroup>").Append(k_WindowsNewline);
+		}
 
-			// Explicit references
-			headerBuilder.Append(@"  <PropertyGroup>").Append(k_WindowsNewline);
-			headerBuilder.Append(@"    <NoConfig>true</NoConfig>").Append(k_WindowsNewline);
-			headerBuilder.Append(@"    <NoStdLib>true</NoStdLib>").Append(k_WindowsNewline);
-			headerBuilder.Append(@"    <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>").Append(k_WindowsNewline);
-			headerBuilder.Append(@"    <ImplicitlyExpandNETStandardFacades>false</ImplicitlyExpandNETStandardFacades>").Append(k_WindowsNewline);
-			headerBuilder.Append(@"    <ImplicitlyExpandDesignTimeFacades>false</ImplicitlyExpandDesignTimeFacades>").Append(k_WindowsNewline);
-			headerBuilder.Append(@"  </PropertyGroup>").Append(k_WindowsNewline);
-
-			// Flavoring
-			headerBuilder.Append(@"  <PropertyGroup>").Append(k_WindowsNewline);
-			headerBuilder.Append(@"    <ProjectTypeGuids>{E097FAD1-6243-4DAD-9C02-E9B9EFC3FFC1};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>").Append(k_WindowsNewline);
-			headerBuilder.Append(@"    <UnityProjectGenerator>Package</UnityProjectGenerator>").Append(k_WindowsNewline);
-			headerBuilder.Append(@"    <UnityProjectGeneratorVersion>").Append(properties.FlavoringPackageVersion).Append(@"</UnityProjectGeneratorVersion>").Append(k_WindowsNewline);
-			headerBuilder.Append(@"    <UnityProjectType>").Append(properties.FlavoringProjectType).Append(@"</UnityProjectType>").Append(k_WindowsNewline);
-			headerBuilder.Append(@"    <UnityBuildTarget>").Append(properties.FlavoringBuildTarget).Append(@"</UnityBuildTarget>").Append(k_WindowsNewline);
-			headerBuilder.Append(@"    <UnityVersion>").Append(properties.FlavoringUnityVersion).Append(@"</UnityVersion>").Append(k_WindowsNewline);
-			headerBuilder.Append(@"  </PropertyGroup>").Append(k_WindowsNewline);
-
+		internal static void GetProjectHeaderAnalyzers(ProjectProperties properties, StringBuilder headerBuilder)
+		{
 			if (!string.IsNullOrEmpty(properties.RulesetPath))
 			{
 				headerBuilder.Append(@"  <PropertyGroup>").Append(k_WindowsNewline);
@@ -864,21 +830,25 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			}
 		}
 
-		private static string GetProjectFooter()
+		internal static void GetProjectHeaderVstuFlavoring(ProjectProperties properties, StringBuilder headerBuilder, bool includeProjectTypeGuids = true)
 		{
-			return string.Join(k_WindowsNewline,
-			@"  <Import Project=""$(MSBuildToolsPath)\Microsoft.CSharp.targets"" />",
-			@"  <Target Name=""GenerateTargetFrameworkMonikerAttribute"" />",
-			@"  <!-- To modify your build process, add your task inside one of the targets below and uncomment it.",
-			@"       Other similar extension points exist, see Microsoft.Common.targets.",
-			@"  <Target Name=""BeforeBuild"">",
-			@"  </Target>",
-			@"  <Target Name=""AfterBuild"">",
-			@"  </Target>",
-			@"  -->",
-			@"</Project>",
-			@"");
+			// Flavoring
+			headerBuilder.Append(@"  <PropertyGroup>").Append(k_WindowsNewline);
+
+			if (includeProjectTypeGuids)
+			{
+				headerBuilder.Append(@"    <ProjectTypeGuids>{E097FAD1-6243-4DAD-9C02-E9B9EFC3FFC1};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>").Append(k_WindowsNewline);
+			}
+
+			headerBuilder.Append(@"    <UnityProjectGenerator>Package</UnityProjectGenerator>").Append(k_WindowsNewline);
+			headerBuilder.Append(@"    <UnityProjectGeneratorVersion>").Append(properties.FlavoringPackageVersion).Append(@"</UnityProjectGeneratorVersion>").Append(k_WindowsNewline);
+			headerBuilder.Append(@"    <UnityProjectType>").Append(properties.FlavoringProjectType).Append(@"</UnityProjectType>").Append(k_WindowsNewline);
+			headerBuilder.Append(@"    <UnityBuildTarget>").Append(properties.FlavoringBuildTarget).Append(@"</UnityBuildTarget>").Append(k_WindowsNewline);
+			headerBuilder.Append(@"    <UnityVersion>").Append(properties.FlavoringUnityVersion).Append(@"</UnityVersion>").Append(k_WindowsNewline);
+			headerBuilder.Append(@"  </PropertyGroup>").Append(k_WindowsNewline);
 		}
+
+		protected abstract void GetProjectFooter(StringBuilder footerBuilder);
 
 		private static string GetSolutionText()
 		{
@@ -1024,7 +994,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 				projectGuid);
 		}
 
-		private string EscapedRelativePathFor(string file, out UnityEditor.PackageManager.PackageInfo packageInfo)
+		protected string EscapedRelativePathFor(string file, out UnityEditor.PackageManager.PackageInfo packageInfo)
 		{
 			var projectDir = ProjectDirectory.NormalizePathSeparators();
 			file = file.NormalizePathSeparators();
@@ -1042,24 +1012,24 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			return XmlFilename(path);
 		}
 
-		private static string SkipPathPrefix(string path, string prefix)
+		protected static string SkipPathPrefix(string path, string prefix)
 		{
 			if (path.StartsWith($"{prefix}{Path.DirectorySeparatorChar}") && (path.Length > prefix.Length))
 				return path.Substring(prefix.Length + 1);
 			return path;
 		}
 
-		static string GetProjectExtension()
+		protected static string GetProjectExtension()
 		{
 			return ".csproj";
 		}
 
-		private string ProjectGuid(string assemblyName)
+		protected string ProjectGuid(string assemblyName)
 		{
 			return m_GUIDGenerator.ProjectGuid(m_ProjectName, assemblyName);
 		}
 
-		private string ProjectGuid(Assembly assembly)
+		protected string ProjectGuid(Assembly assembly)
 		{
 			return ProjectGuid(m_AssemblyNameProvider.GetAssemblyName(assembly.outputPath, assembly.name));
 		}

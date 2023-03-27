@@ -11,7 +11,6 @@ using System.Runtime.CompilerServices;
 using UnityEditor;
 using UnityEngine;
 using Unity.CodeEditor;
-using System.Threading;
 using System.Collections.Concurrent;
 
 [assembly: InternalsVisibleTo("Unity.VisualStudio.EditorTests")]
@@ -32,7 +31,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 		private static readonly AsyncOperation<IVisualStudioInstallation[]> _discoverInstallations;
 
-		private readonly IGenerator _generator = new ProjectGeneration();
+		private readonly IGenerator _generator = new LegacyStyleProjectGeneration();
 
 		static VisualStudioEditor()
 		{
@@ -170,7 +169,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 				if (Symbols.IsPortableSymbolFile(pdbFile))
 					continue;
 
-				UnityEngine.Debug.LogWarning($"Unity is only able to load mdb or portable-pdb symbols. {file} is using a legacy pdb format.");
+				Debug.LogWarning($"Unity is only able to load mdb or portable-pdb symbols. {file} is using a legacy pdb format.");
 			}
 		}
 
@@ -206,7 +205,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			{
 			}
 
-			UnityEngine.Debug.LogWarning($"Visual Studio executable {editorPath} is not found. Please change your settings in Edit > Preferences > External Tools.");
+			Debug.LogWarning($"Visual Studio executable {editorPath} is not found. Please change your settings in Edit > Preferences > External Tools.");
 		}
 
 		public bool OpenProject(string path, int line, int column)
@@ -217,7 +216,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 				return false;
 
 			if (!IsProjectGeneratedFor(path, out var missingFlag))
-				UnityEngine.Debug.LogWarning($"You are trying to open {path} outside a generated project. This might cause problems with IntelliSense and debugging. To avoid this, you can change your .csproj preferences in Edit > Preferences > External Tools and enable {GetProjectGenerationFlagDescription(missingFlag)} generation.");
+				Debug.LogWarning($"You are trying to open {path} outside a generated project. This might cause problems with IntelliSense and debugging. To avoid this, you can change your .csproj preferences in Edit > Preferences > External Tools and enable {GetProjectGenerationFlagDescription(missingFlag)} generation.");
 
 			if (IsOSX)
 				return OpenOSXApp(path, line, column);

@@ -52,7 +52,7 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 
 		public ProjectGeneration Build()
 		{
-			return m_ProjectGeneration = new ProjectGeneration(projectDirectory, m_AssemblyProvider.Object, m_FileIoMock, m_GUIDGenerator.Object);
+			return m_ProjectGeneration = new LegacyStyleProjectGeneration(projectDirectory, m_AssemblyProvider.Object, m_FileIoMock, m_GUIDGenerator.Object);
 		}
 
 		public SynchronizerBuilder WithSolutionText(string solutionText)
