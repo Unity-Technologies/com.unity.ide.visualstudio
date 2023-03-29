@@ -38,9 +38,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			if (!UnityInstallation.IsMainUnityEditorProcess)
 				return;
 
-			if (IsWindows)
-				Discovery.FindVSWhere();
-
+			Discovery.Initialize();
 			CodeEditor.Register(new VisualStudioEditor());
 
 			_discoverInstallations = AsyncOperation<IVisualStudioInstallation[]>.Run(DiscoverInstallations);
@@ -193,24 +191,14 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			return false;
 		}
 
-		private static void CheckCurrentEditorInstallation()
-		{
-			var editorPath = CodeEditor.CurrentEditorInstallation;
-			try
-			{
-				if (Discovery.TryDiscoverInstallation(editorPath, out _))
-					return;
-			}
-			catch (IOException)
-			{
-			}
-
-			Debug.LogWarning($"Visual Studio executable {editorPath} is not found. Please change your settings in Edit > Preferences > External Tools.");
-		}
-
 		public bool OpenProject(string path, int line, int column)
 		{
-			CheckCurrentEditorInstallation();
+			var editorPath = CodeEditor.CurrentEditorInstallation;
+
+			if (!Discovery.TryDiscoverInstallation(editorPath, out var installation)) {
+				Debug.LogWarning($"Visual Studio executable {editorPath} is not found. Please change your settings in Edit > Preferences > External Tools.");
+				return false;
+			}
 
 			if (!IsSupportedPath(path))
 				return false;
@@ -218,13 +206,8 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			if (!IsProjectGeneratedFor(path, out var missingFlag))
 				Debug.LogWarning($"You are trying to open {path} outside a generated project. This might cause problems with IntelliSense and debugging. To avoid this, you can change your .csproj preferences in Edit > Preferences > External Tools and enable {GetProjectGenerationFlagDescription(missingFlag)} generation.");
 
-			if (IsOSX)
-				return OpenOSXApp(path, line, column);
-
-			if (IsWindows)
-				return OpenWindowsApp(path, line);
-
-			return false;
+			var solution = GetOrGenerateSolutionFile(path);
+			return installation.Open(path, line, column, solution);
 		}
 
 		private static string GetProjectGenerationFlagDescription(ProjectGenerationFlag flag)
@@ -285,114 +268,6 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			// Return false if we found a source not flagged for generation
 			missingFlag = flag;
 			return false;
-		}
-
-		private enum COMIntegrationState
-		{
-			Running,
-			DisplayProgressBar,
-			ClearProgressBar,
-			Exited
-		}
-
-		private bool OpenWindowsApp(string path, int line)
-		{
-			var progpath = FileUtility.GetPackageAssetFullPath("Editor", "COMIntegration", "Release", "COMIntegration.exe");
-
-			if (string.IsNullOrWhiteSpace(progpath))
-				return false;
-
-			string absolutePath = "";
-			if (!string.IsNullOrWhiteSpace(path))
-			{
-				absolutePath = Path.GetFullPath(path);
-			}
-
-			// We remove all invalid chars from the solution filename, but we cannot prevent the user from using a specific path for the Unity project
-			// So process the fullpath to make it compatible with VS
-			var solution = GetOrGenerateSolutionFile(path);
-			if (!string.IsNullOrWhiteSpace(solution))
-			{
-				solution = $"\"{solution}\"";
-				solution = solution.Replace("^", "^^");
-			}
-
-			
-			var psi = ProcessRunner.ProcessStartInfoFor(progpath, $"\"{CodeEditor.CurrentEditorInstallation}\" {solution} \"{absolutePath}\" {line}");
-			psi.StandardOutputEncoding = System.Text.Encoding.Unicode;
-			psi.StandardErrorEncoding = System.Text.Encoding.Unicode;
-
-			// inter thread communication
-			var messages = new BlockingCollection<COMIntegrationState>();
-
-			var asyncStart = AsyncOperation<ProcessRunnerResult>.Run(
-				() => ProcessRunner.StartAndWaitForExit(psi, onOutputReceived: data => OnOutputReceived(data, messages)),
-				e => new ProcessRunnerResult {Success = false, Error = e.Message, Output = string.Empty},
-				() => messages.Add(COMIntegrationState.Exited)
-			);
-
-			MonitorCOMIntegration(messages);
-
-			var result = asyncStart.Result;
-
-			if (!result.Success && !string.IsNullOrWhiteSpace(result.Error))
-				Debug.LogError($"Error while starting Visual Studio: {result.Error}");
-
-			return result.Success;
-		}
-
-		private static void MonitorCOMIntegration(BlockingCollection<COMIntegrationState> messages)
-		{
-			var displayingProgress = false;
-			COMIntegrationState state;
-			
-			do
-			{
-				state = messages.Take();
-				switch (state)
-				{
-					case COMIntegrationState.ClearProgressBar:
-						EditorUtility.ClearProgressBar();
-						displayingProgress = false;
-						break;
-					case COMIntegrationState.DisplayProgressBar:
-						EditorUtility.DisplayProgressBar("Opening Visual Studio", "Starting up Visual Studio, this might take some time.", .5f);
-						displayingProgress = true;
-						break;
-				}
-			} while (state != COMIntegrationState.Exited);
-
-			// Make sure the progress bar is properly cleared in case of COMIntegration failure
-			if (displayingProgress)
-				EditorUtility.ClearProgressBar();
-		}
-		
-		private static readonly COMIntegrationState[] ProgressBarCommands = {COMIntegrationState.DisplayProgressBar, COMIntegrationState.ClearProgressBar};
-		private static void OnOutputReceived(string data, BlockingCollection<COMIntegrationState> messages)
-		{
-			if (data == null)
-				return;
-
-			foreach (var cmd in ProgressBarCommands)
-			{
-				if (data.IndexOf(cmd.ToString(), StringComparison.OrdinalIgnoreCase) >= 0)
-					messages.Add(cmd);
-			}
-		}
-
-		[DllImport("AppleEventIntegration")]
-		static extern bool OpenVisualStudio(string appPath, string solutionPath, string filePath, int line);
-
-		bool OpenOSXApp(string path, int line, int column)
-		{
-			string absolutePath = "";
-			if (!string.IsNullOrWhiteSpace(path))
-			{
-				absolutePath = Path.GetFullPath(path);
-			}
-
-			var solution = GetOrGenerateSolutionFile(path);
-			return OpenVisualStudio(CodeEditor.CurrentEditorInstallation, solution, absolutePath, line);
 		}
 
 		private string GetOrGenerateSolutionFile(string path)

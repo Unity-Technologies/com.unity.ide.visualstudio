@@ -150,6 +150,8 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 		private void CreateVsConfigIfNotFound()
 		{
+			const string ManagedWorkload = "Microsoft.VisualStudio.Workload.ManagedGame";
+
 			try
 			{
 				var vsConfigFile = VsConfigFile();
@@ -159,7 +161,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 				var content = $@"{{
   ""version"": ""1.0"",
   ""components"": [
-    ""{Discovery.ManagedWorkload}""
+    ""{ManagedWorkload}""
   ]
 }}
 ";
