@@ -40,6 +40,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		};
 
 		private static string _vsWherePath = null;
+		private static readonly IGenerator _generator = new LegacyStyleProjectGeneration();
 
 		public override bool SupportsAnalyzers
 		{
@@ -119,7 +120,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		{
 			get
 			{
-				return new LegacyStyleProjectGeneration();
+				return _generator;
 			}
 		}
 

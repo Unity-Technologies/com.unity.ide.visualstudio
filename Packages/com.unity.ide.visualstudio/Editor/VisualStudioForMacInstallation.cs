@@ -29,6 +29,8 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			new VersionPair(8,0, /* => */ 7,3),
 		};
 
+		private static readonly IGenerator _generator = new LegacyStyleProjectGeneration();
+
 		public override bool SupportsAnalyzers
 		{
 			get
@@ -93,7 +95,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		{
 			get
 			{
-				return new LegacyStyleProjectGeneration();
+				return _generator;
 			}
 		}
 

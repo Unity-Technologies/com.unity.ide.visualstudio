@@ -6,12 +6,10 @@
 using System;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using UnityEditor;
 using UnityEngine;
 using Unity.CodeEditor;
-using System.Collections.Concurrent;
 
 [assembly: InternalsVisibleTo("Unity.VisualStudio.EditorTests")]
 [assembly: InternalsVisibleTo("Unity.VisualStudio.Standalone.EditorTests")]
@@ -30,8 +28,6 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			.ToArray();
 
 		private static readonly AsyncOperation<IVisualStudioInstallation[]> _discoverInstallations;
-
-		private readonly IGenerator _generator = new LegacyStyleProjectGeneration();
 
 		static VisualStudioEditor()
 		{
@@ -54,7 +50,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			}
 			catch (Exception ex)
 			{
-				UnityEngine.Debug.LogError($"Error detecting Visual Studio installations: {ex}");
+				Debug.LogError($"Error detecting Visual Studio installations: {ex}");
 				return Array.Empty<IVisualStudioInstallation>();
 			}
 		}
@@ -65,8 +61,12 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		// keeping it for now given it is public, so we need a major bump to remove it 
 		public void CreateIfDoesntExist()
 		{
-			if (!_generator.HasSolutionBeenGenerated())
-				_generator.Sync();
+			if (!TryGetVisualStudioInstallationForPath(CodeEditor.CurrentEditorInstallation, true, out var installation)) 
+				return;
+
+			var generator = installation.ProjectGenerator;
+			if (!generator.HasSolutionBeenGenerated())
+				generator.Sync();
 		}
 
 		public void Initialize(string editorInstallationPath)
@@ -94,7 +94,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		public virtual bool TryGetInstallationForPath(string editorPath, out CodeEditor.Installation installation)
 		{
 			var result = TryGetVisualStudioInstallationForPath(editorPath, searchInstallations: false, out var vsi);
-			installation = vsi == null ? default : vsi.ToCodeEditorInstallation();
+			installation = vsi?.ToCodeEditorInstallation() ?? default;
 			return result;
 		}
 
@@ -128,29 +128,39 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			EditorGUI.indentLevel--;
 		}
 
-		void RegenerateProjectFiles()
+		private void RegenerateProjectFiles()
 		{
-			var rect = EditorGUI.IndentedRect(EditorGUILayout.GetControlRect(new GUILayoutOption[] { }));
+			var rect = EditorGUI.IndentedRect(EditorGUILayout.GetControlRect());
 			rect.width = 252;
 			if (GUI.Button(rect, "Regenerate project files"))
 			{
-				_generator.Sync();
+				if (TryGetVisualStudioInstallationForPath(CodeEditor.CurrentEditorInstallation, true, out var installation))
+				{
+					installation.ProjectGenerator.Sync();
+				}
 			}
 		}
 
-		void SettingsButton(ProjectGenerationFlag preference, string guiMessage, string toolTip)
+		private void SettingsButton(ProjectGenerationFlag preference, string guiMessage, string toolTip)
 		{
-			var prevValue = _generator.AssemblyNameProvider.ProjectGenerationFlag.HasFlag(preference);
-			var newValue = EditorGUILayout.Toggle(new GUIContent(guiMessage, toolTip), prevValue);
-			if (newValue != prevValue)
+			if (TryGetVisualStudioInstallationForPath(CodeEditor.CurrentEditorInstallation, true, out var installation))
 			{
-				_generator.AssemblyNameProvider.ToggleProjectGeneration(preference);
+				var generator = installation.ProjectGenerator;
+				var prevValue = generator.AssemblyNameProvider.ProjectGenerationFlag.HasFlag(preference);
+				var newValue = EditorGUILayout.Toggle(new GUIContent(guiMessage, toolTip), prevValue);
+				if (newValue != prevValue)
+				{
+					generator.AssemblyNameProvider.ToggleProjectGeneration(preference);
+				}
 			}
 		}
 
 		public void SyncIfNeeded(string[] addedFiles, string[] deletedFiles, string[] movedFiles, string[] movedFromFiles, string[] importedFiles)
 		{
-			_generator.SyncIfNeeded(addedFiles.Union(deletedFiles).Union(movedFiles).Union(movedFromFiles), importedFiles);
+			if (TryGetVisualStudioInstallationForPath(CodeEditor.CurrentEditorInstallation, true, out var installation))
+			{
+				installation.ProjectGenerator.SyncIfNeeded(addedFiles.Union(deletedFiles).Union(movedFiles).Union(movedFromFiles), importedFiles);
+			}
 
 			foreach (var file in importedFiles.Where(a => Path.GetExtension(a) == ".pdb"))
 			{
@@ -173,10 +183,13 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 		public void SyncAll()
 		{
-			_generator.Sync();
+			if (TryGetVisualStudioInstallationForPath(CodeEditor.CurrentEditorInstallation, true, out var installation))
+			{
+				installation.ProjectGenerator.Sync();
+			}
 		}
 
-		bool IsSupportedPath(string path)
+		private static bool IsSupportedPath(string path, IGenerator generator)
 		{
 			// Path is empty with "Open C# Project", as we only want to open the solution without specific files
 			if (string.IsNullOrEmpty(path))
@@ -185,10 +198,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			// cs, uxml, uss, shader, compute, cginc, hlsl, glslinc, template are part of Unity builtin extensions
 			// txt, xml, fnt, cd are -often- par of Unity user extensions
 			// asdmdef is mandatory included
-			if (_generator.IsSupportedFile(path))
-				return true;
-
-			return false;
+			return generator.IsSupportedFile(path);
 		}
 
 		public bool OpenProject(string path, int line, int column)
@@ -200,13 +210,14 @@ namespace Microsoft.Unity.VisualStudio.Editor
 				return false;
 			}
 
-			if (!IsSupportedPath(path))
+			var generator = installation.ProjectGenerator;
+			if (!IsSupportedPath(path, generator))
 				return false;
 
-			if (!IsProjectGeneratedFor(path, out var missingFlag))
+			if (!IsProjectGeneratedFor(path, generator, out var missingFlag))
 				Debug.LogWarning($"You are trying to open {path} outside a generated project. This might cause problems with IntelliSense and debugging. To avoid this, you can change your .csproj preferences in Edit > Preferences > External Tools and enable {GetProjectGenerationFlagDescription(missingFlag)} generation.");
 
-			var solution = GetOrGenerateSolutionFile(path);
+			var solution = GetOrGenerateSolutionFile(generator);
 			return installation.Open(path, line, column, solution);
 		}
 
@@ -235,7 +246,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			}
 		}
 
-		private bool IsProjectGeneratedFor(string path, out ProjectGenerationFlag missingFlag)
+		private static bool IsProjectGeneratedFor(string path, IGenerator generator, out ProjectGenerationFlag missingFlag)
 		{
 			missingFlag = ProjectGenerationFlag.None;
 
@@ -248,9 +259,9 @@ namespace Microsoft.Unity.VisualStudio.Editor
 				return true;
 
 			// Even on windows, the package manager requires relative path + unix style separators for queries
-			var basePath = _generator.ProjectDirectory;
-			var relativePath = FileUtility
-				.NormalizeWindowsToUnix(path)
+			var basePath = generator.ProjectDirectory;
+			var relativePath = path
+				.NormalizeWindowsToUnix()
 				.Replace(basePath, string.Empty)
 				.Trim(FileUtility.UnixSeparator);
 
@@ -262,7 +273,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			if (!Enum.TryParse<ProjectGenerationFlag>(source.ToString(), out var flag))
 				return true;
 
-			if (_generator.AssemblyNameProvider.ProjectGenerationFlag.HasFlag(flag))
+			if (generator.AssemblyNameProvider.ProjectGenerationFlag.HasFlag(flag))
 				return true;
 
 			// Return false if we found a source not flagged for generation
@@ -270,10 +281,10 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			return false;
 		}
 
-		private string GetOrGenerateSolutionFile(string path)
+		private static string GetOrGenerateSolutionFile(IGenerator generator)
 		{
-			_generator.Sync();
-			return _generator.SolutionFile();
+			generator.Sync();
+			return generator.SolutionFile();
 		}
 	}
 }
