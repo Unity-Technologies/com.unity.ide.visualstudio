@@ -4,6 +4,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -23,11 +24,13 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		internal static bool IsOSX => Application.platform == RuntimePlatform.OSXEditor;
 		internal static bool IsWindows => !IsOSX && Path.DirectorySeparatorChar == FileUtility.WinSeparator && Environment.NewLine == "\r\n";
 
-		CodeEditor.Installation[] IExternalCodeEditor.Installations => _discoverInstallations.Result
-			.Select(i => i.ToCodeEditorInstallation())
+		CodeEditor.Installation[] IExternalCodeEditor.Installations => _discoverInstallations
+			.Result
+			.Values
+			.Select(v => v.ToCodeEditorInstallation())
 			.ToArray();
 
-		private static readonly AsyncOperation<IVisualStudioInstallation[]> _discoverInstallations;
+		private static readonly AsyncOperation<Dictionary<string, IVisualStudioInstallation>> _discoverInstallations;
 
 		static VisualStudioEditor()
 		{
@@ -37,21 +40,21 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			Discovery.Initialize();
 			CodeEditor.Register(new VisualStudioEditor());
 
-			_discoverInstallations = AsyncOperation<IVisualStudioInstallation[]>.Run(DiscoverInstallations);
+			_discoverInstallations = AsyncOperation<Dictionary<string, IVisualStudioInstallation>>.Run(DiscoverInstallations);
 		}
 
-		private static IVisualStudioInstallation[] DiscoverInstallations()
+		private static Dictionary<string, IVisualStudioInstallation> DiscoverInstallations()
 		{
 			try
 			{
 				return Discovery
 					.GetVisualStudioInstallations()
-					.ToArray();
+					.ToDictionary(i => Path.GetFullPath(i.Path), i => i);
 			}
 			catch (Exception ex)
 			{
 				Debug.LogError($"Error detecting Visual Studio installations: {ex}");
-				return Array.Empty<IVisualStudioInstallation>();
+				return new Dictionary<string, IVisualStudioInstallation>();
 			}
 		}
 
@@ -73,27 +76,20 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		{
 		}
 
-		internal virtual bool TryGetVisualStudioInstallationForPath(string editorPath, bool searchInstallations, out IVisualStudioInstallation installation)
+		internal virtual bool TryGetVisualStudioInstallationForPath(string editorPath, bool lookupDiscoveredInstallations, out IVisualStudioInstallation installation)
 		{
-			if (searchInstallations)
-			{
-				// lookup for well known installations
-				foreach (var candidate in _discoverInstallations.Result)
-				{
-					if (!string.Equals(Path.GetFullPath(editorPath), Path.GetFullPath(candidate.Path), StringComparison.OrdinalIgnoreCase))
-						continue;
+			editorPath = Path.GetFullPath(editorPath);
 
-					installation = candidate;
-					return true;
-				}
-			}
+			// lookup for well known installations
+			if (lookupDiscoveredInstallations && _discoverInstallations.Result.TryGetValue(editorPath, out installation))
+				return true;
 
 			return Discovery.TryDiscoverInstallation(editorPath, out installation);
 		}
 
 		public virtual bool TryGetInstallationForPath(string editorPath, out CodeEditor.Installation installation)
 		{
-			var result = TryGetVisualStudioInstallationForPath(editorPath, searchInstallations: false, out var vsi);
+			var result = TryGetVisualStudioInstallationForPath(editorPath, lookupDiscoveredInstallations: false, out var vsi);
 			installation = vsi?.ToCodeEditorInstallation() ?? default;
 			return result;
 		}
