@@ -140,14 +140,12 @@ namespace Microsoft.Unity.VisualStudio.Editor
 				return false;
 
 			// On windows we use the executable directly, so we can query extra information
-			var fvi = editorPath;
-
-			if (!File.Exists(fvi))
+			if (!File.Exists(editorPath))
 				return false;
 
 			// VS preview are not using the isPrerelease flag so far
 			// On Windows FileDescription contains "Preview", but not on Mac
-			var vi = FileVersionInfo.GetVersionInfo(fvi);
+			var vi = FileVersionInfo.GetVersionInfo(editorPath);
 			var version = new Version(vi.ProductVersion);
 			var isPrerelease = vi.IsPreRelease || string.Concat(editorPath, "/" + vi.FileDescription).ToLower().Contains("preview");
 
