@@ -32,6 +32,14 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			headerBuilder.Append(@"  </PropertyGroup>").Append(k_WindowsNewline);
 
 			GetProjectHeaderConfigurations(properties, headerBuilder);
+
+			// Explicit references
+			headerBuilder.Append(@"  <PropertyGroup>").Append(k_WindowsNewline);
+			headerBuilder.Append(@"    <NoStandardLibraries>true</NoStandardLibraries>").Append(k_WindowsNewline);
+			headerBuilder.Append(@"    <NoStdLib>true</NoStdLib>").Append(k_WindowsNewline);
+			headerBuilder.Append(@"    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>").Append(k_WindowsNewline);
+			headerBuilder.Append(@"  </PropertyGroup>").Append(k_WindowsNewline);
+
 			GetProjectHeaderVstuFlavoring(properties, headerBuilder, false);
 			GetProjectHeaderAnalyzers(properties, headerBuilder);
 		}
