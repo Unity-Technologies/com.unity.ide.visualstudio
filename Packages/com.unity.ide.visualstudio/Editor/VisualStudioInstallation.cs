@@ -18,6 +18,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		CodeEditor.Installation ToCodeEditorInstallation();
 		bool Open(string path, int line, int column, string solutionPath);
 		IGenerator ProjectGenerator { get; }
+		void CreateExtraFiles(string projectDirectory);
 	}
 
 	internal abstract class VisualStudioInstallation : IVisualStudioInstallation
@@ -31,6 +32,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		public abstract Version LatestLanguageVersionSupported { get; }
 		public abstract string[] GetAnalyzers();
 		public abstract IGenerator ProjectGenerator { get; }
+		public abstract void CreateExtraFiles(string projectDirectory);
 		public abstract bool Open(string path, int line, int column, string solutionPath);
 
 		protected Version GetLatestLanguageVersionSupported(VersionPair[] versions)

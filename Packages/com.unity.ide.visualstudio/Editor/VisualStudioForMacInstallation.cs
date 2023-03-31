@@ -158,6 +158,10 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		[DllImport("AppleEventIntegration")]
 		private static extern bool OpenVisualStudio(string appPath, string solutionPath, string filePath, int line);
 
+		public override void CreateExtraFiles(string projectDirectory)
+		{
+		}
+
 		public override bool Open(string path, int line, int column, string solution)
 		{
 			string absolutePath = "";

@@ -108,7 +108,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 				// See https://devblogs.microsoft.com/setup/configure-visual-studio-across-your-organization-with-vsconfig/
 				// We create a .vsconfig file to make sure our ManagedGame workload is installed
-				CreateVsConfigIfNotFound();
+				CreateExtraFiles(m_CurrentInstallation);
 
 				// Don't sync if we haven't synced before
 				var affected = affectedFiles as ICollection<string> ?? affectedFiles.ToArray();
@@ -148,28 +148,9 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			}
 		}
 
-		private void CreateVsConfigIfNotFound()
+		private void CreateExtraFiles(IVisualStudioInstallation installation)
 		{
-			const string ManagedWorkload = "Microsoft.VisualStudio.Workload.ManagedGame";
-
-			try
-			{
-				var vsConfigFile = VsConfigFile();
-				if (m_FileIOProvider.Exists(vsConfigFile))
-					return;
-
-				var content = $@"{{
-  ""version"": ""1.0"",
-  ""components"": [
-    ""{ManagedWorkload}""
-  ]
-}}
-";
-				m_FileIOProvider.WriteAllText(vsConfigFile, content);
-			}
-			catch (IOException)
-			{
-			}
+			installation.CreateExtraFiles(ProjectDirectory);
 		}
 
 		private bool HasFilesBeenModified(IEnumerable<string> affectedFiles, IEnumerable<string> reimportedFiles)
@@ -201,7 +182,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 			// See https://devblogs.microsoft.com/setup/configure-visual-studio-across-your-organization-with-vsconfig/
 			// We create a .vsconfig file to make sure our ManagedGame workload is installed
-			CreateVsConfigIfNotFound();
+			CreateExtraFiles(m_CurrentInstallation);
 
 			var externalCodeAlreadyGeneratedProjects = OnPreGeneratingCSProjectFiles();
 
@@ -616,11 +597,6 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		public string SolutionFile()
 		{
 			return Path.Combine(ProjectDirectory.NormalizePathSeparators(), $"{InvalidCharactersRegexPattern.Replace(m_ProjectName, "_")}.sln");
-		}
-
-		internal string VsConfigFile()
-		{
-			return Path.Combine(ProjectDirectory.NormalizePathSeparators(), ".vsconfig");
 		}
 
 		internal string GetLangVersion(Assembly assembly)

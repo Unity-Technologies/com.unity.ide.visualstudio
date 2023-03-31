@@ -241,6 +241,28 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			Exited
 		}
 
+		public override void CreateExtraFiles(string projectDirectory)
+		{
+			try
+			{
+				var vsConfigFile = IOPath.Combine(projectDirectory.NormalizePathSeparators(), ".vsconfig");
+				if (File.Exists(vsConfigFile))
+					return;
+
+				const string content = @"{
+  ""version"": ""1.0"",
+  ""components"": [
+    ""Microsoft.VisualStudio.Workload.ManagedGame""
+  ]
+}
+";
+				File.WriteAllText(vsConfigFile, content);
+			}
+			catch (IOException)
+			{
+			}			
+		}
+
 		public override bool Open(string path, int line, int column, string solution)
 		{
 			var progpath = FileUtility.GetPackageAssetFullPath("Editor", "COMIntegration", "Release", "COMIntegration.exe");
