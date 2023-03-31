@@ -39,7 +39,6 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 	public abstract class ProjectGeneration : IGenerator
 	{
-		public static readonly string MSBuildNamespaceUri = "http://schemas.microsoft.com/developer/msbuild/2003";
 		public IAssemblyNameProvider AssemblyNameProvider => m_AssemblyNameProvider;
 		public string ProjectDirectory { get; }
 
@@ -150,7 +149,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 		private void CreateExtraFiles(IVisualStudioInstallation installation)
 		{
-			installation.CreateExtraFiles(ProjectDirectory);
+			installation?.CreateExtraFiles(ProjectDirectory);
 		}
 
 		private bool HasFilesBeenModified(IEnumerable<string> affectedFiles, IEnumerable<string> reimportedFiles)
