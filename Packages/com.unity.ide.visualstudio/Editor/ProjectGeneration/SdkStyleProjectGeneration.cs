@@ -27,7 +27,10 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			headerBuilder.Append(@"    <OutputType>Library</OutputType>").Append(k_WindowsNewline);
 			headerBuilder.Append(@"    <AppDesignerFolder>Properties</AppDesignerFolder>").Append(k_WindowsNewline);
 			headerBuilder.Append(@"    <AssemblyName>").Append(properties.AssemblyName).Append(@"</AssemblyName>").Append(k_WindowsNewline);
-			headerBuilder.Append(@"    <TargetFramework>net471</TargetFramework>").Append(k_WindowsNewline);
+			// In the end, given we use NoConfig/NoStdLib (see below), hardcoding the target framework version will have no impact, even when targeting netstandard/net48 from Unity.
+			// But with SDK style we use netstandard2.0 (net471 for legacy), so 3rd party tools will not fail to work when .NETFW reference assemblies are not installed.
+			// Unity already selected proper API surface through referenced DLLs for us.
+			headerBuilder.Append(@"    <TargetFramework>netstandard2.0</TargetFramework>").Append(k_WindowsNewline);
 			headerBuilder.Append(@"    <BaseDirectory>.</BaseDirectory>").Append(k_WindowsNewline);
 			headerBuilder.Append(@"  </PropertyGroup>").Append(k_WindowsNewline);
 
@@ -37,6 +40,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			headerBuilder.Append(@"  <PropertyGroup>").Append(k_WindowsNewline);
 			headerBuilder.Append(@"    <NoStandardLibraries>true</NoStandardLibraries>").Append(k_WindowsNewline);
 			headerBuilder.Append(@"    <NoStdLib>true</NoStdLib>").Append(k_WindowsNewline);
+			headerBuilder.Append(@"    <NoConfig>true</NoConfig>").Append(k_WindowsNewline);
 			headerBuilder.Append(@"    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>").Append(k_WindowsNewline);
 			headerBuilder.Append(@"  </PropertyGroup>").Append(k_WindowsNewline);
 

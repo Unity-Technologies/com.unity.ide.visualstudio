@@ -241,6 +241,8 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 		public override void CreateExtraFiles(string projectDirectory)
 		{
+			// See https://devblogs.microsoft.com/setup/configure-visual-studio-across-your-organization-with-vsconfig/
+			// We create a .vsconfig file to make sure our ManagedGame workload is installed
 			try
 			{
 				var vsConfigFile = IOPath.Combine(projectDirectory.NormalizePathSeparators(), ".vsconfig");

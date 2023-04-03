@@ -44,6 +44,9 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			headerBuilder.Append(@"    <OutputType>Library</OutputType>").Append(k_WindowsNewline);
 			headerBuilder.Append(@"    <AppDesignerFolder>Properties</AppDesignerFolder>").Append(k_WindowsNewline);
 			headerBuilder.Append(@"    <AssemblyName>").Append(properties.AssemblyName).Append(@"</AssemblyName>").Append(k_WindowsNewline);
+			// In the end, given we use NoConfig/NoStdLib (see below), hardcoding the target framework version with the legacy format will have no impact, even when targeting netstandard/net48 from Unity.
+			// And VSTU/Unity Game workload has a dependency towards net471 reference assemblies, so IDE will not complain that this specific SDK is not available.
+			// Unity already selected proper API surface through referenced DLLs for us.
 			headerBuilder.Append(@"    <TargetFrameworkVersion>v4.7.1</TargetFrameworkVersion>").Append(k_WindowsNewline);
 			headerBuilder.Append(@"    <FileAlignment>512</FileAlignment>").Append(k_WindowsNewline);
 			headerBuilder.Append(@"    <BaseDirectory>.</BaseDirectory>").Append(k_WindowsNewline);
