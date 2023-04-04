@@ -99,6 +99,9 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			GUILayout.BeginHorizontal();
 			GUILayout.FlexibleSpace();
 
+			if (!TryGetVisualStudioInstallationForPath(CodeEditor.CurrentEditorInstallation, true, out var installation))
+				return;
+
 			var package = UnityEditor.PackageManager.PackageInfo.FindForAssembly(GetType().Assembly);
 
 			var style = new GUIStyle
@@ -112,43 +115,36 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 			EditorGUILayout.LabelField("Generate .csproj files for:");
 			EditorGUI.indentLevel++;
-			SettingsButton(ProjectGenerationFlag.Embedded, "Embedded packages", "");
-			SettingsButton(ProjectGenerationFlag.Local, "Local packages", "");
-			SettingsButton(ProjectGenerationFlag.Registry, "Registry packages", "");
-			SettingsButton(ProjectGenerationFlag.Git, "Git packages", "");
-			SettingsButton(ProjectGenerationFlag.BuiltIn, "Built-in packages", "");
-			SettingsButton(ProjectGenerationFlag.LocalTarBall, "Local tarball", "");
-			SettingsButton(ProjectGenerationFlag.Unknown, "Packages from unknown sources", "");
-			SettingsButton(ProjectGenerationFlag.PlayerAssemblies, "Player projects", "For each player project generate an additional csproj with the name 'project-player.csproj'");
-			RegenerateProjectFiles();
+			SettingsButton(ProjectGenerationFlag.Embedded, "Embedded packages", "", installation);
+			SettingsButton(ProjectGenerationFlag.Local, "Local packages", "", installation);
+			SettingsButton(ProjectGenerationFlag.Registry, "Registry packages", "", installation);
+			SettingsButton(ProjectGenerationFlag.Git, "Git packages", "", installation);
+			SettingsButton(ProjectGenerationFlag.BuiltIn, "Built-in packages", "", installation);
+			SettingsButton(ProjectGenerationFlag.LocalTarBall, "Local tarball", "", installation);
+			SettingsButton(ProjectGenerationFlag.Unknown, "Packages from unknown sources", "", installation);
+			SettingsButton(ProjectGenerationFlag.PlayerAssemblies, "Player projects", "For each player project generate an additional csproj with the name 'project-player.csproj'", installation);
+			RegenerateProjectFiles(installation);
 			EditorGUI.indentLevel--;
 		}
 
-		private void RegenerateProjectFiles()
+		private static void RegenerateProjectFiles(IVisualStudioInstallation installation)
 		{
 			var rect = EditorGUI.IndentedRect(EditorGUILayout.GetControlRect());
 			rect.width = 252;
 			if (GUI.Button(rect, "Regenerate project files"))
 			{
-				if (TryGetVisualStudioInstallationForPath(CodeEditor.CurrentEditorInstallation, true, out var installation))
-				{
-					installation.ProjectGenerator.Sync();
-				}
+				installation.ProjectGenerator.Sync();
 			}
 		}
 
-		private void SettingsButton(ProjectGenerationFlag preference, string guiMessage, string toolTip)
+		private static void SettingsButton(ProjectGenerationFlag preference, string guiMessage, string toolTip, IVisualStudioInstallation installation)
 		{
-			if (TryGetVisualStudioInstallationForPath(CodeEditor.CurrentEditorInstallation, true, out var installation))
-			{
-				var generator = installation.ProjectGenerator;
-				var prevValue = generator.AssemblyNameProvider.ProjectGenerationFlag.HasFlag(preference);
-				var newValue = EditorGUILayout.Toggle(new GUIContent(guiMessage, toolTip), prevValue);
-				if (newValue != prevValue)
-				{
-					generator.AssemblyNameProvider.ToggleProjectGeneration(preference);
-				}
-			}
+			var generator = installation.ProjectGenerator;
+			var prevValue = generator.AssemblyNameProvider.ProjectGenerationFlag.HasFlag(preference);
+
+			var newValue = EditorGUILayout.Toggle(new GUIContent(guiMessage, toolTip), prevValue);
+			if (newValue != prevValue)
+				generator.AssemblyNameProvider.ToggleProjectGeneration(preference);
 		}
 
 		public void SyncIfNeeded(string[] addedFiles, string[] deletedFiles, string[] movedFiles, string[] movedFromFiles, string[] importedFiles)
