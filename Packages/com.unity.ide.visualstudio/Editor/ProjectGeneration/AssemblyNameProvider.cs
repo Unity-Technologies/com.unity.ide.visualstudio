@@ -40,7 +40,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 		public string ProjectGenerationRootNamespace => EditorSettings.projectGenerationRootNamespace;
 
-		public ProjectGenerationFlag ProjectGenerationFlag
+		public virtual ProjectGenerationFlag ProjectGenerationFlag
 		{
 			get => m_ProjectGenerationFlag;
 			private set
