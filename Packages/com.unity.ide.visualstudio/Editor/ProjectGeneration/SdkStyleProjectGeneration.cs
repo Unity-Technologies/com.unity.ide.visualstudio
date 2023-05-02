@@ -4,13 +4,29 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+using System.IO;
 using System.Text;
 using UnityEditor.Compilation;
+using UnityEngine;
 
 namespace Microsoft.Unity.VisualStudio.Editor
 {
 	internal class SdkStyleProjectGeneration : ProjectGeneration
 	{
+		internal class SdkStyleAssemblyNameProvider : AssemblyNameProvider
+		{
+			// disable PlayerGeneration with SdkStyle projects
+			public override ProjectGenerationFlag ProjectGenerationFlag => base.ProjectGenerationFlag & ~ProjectGenerationFlag.PlayerAssemblies;
+		}
+
+		public SdkStyleProjectGeneration() : base(
+			Directory.GetParent(Application.dataPath)?.FullName,
+			new SdkStyleAssemblyNameProvider(),
+			new FileIOProvider(),
+			new GUIDProvider())
+		{
+		}
+
 		internal override void GetProjectHeader(ProjectProperties properties, out StringBuilder headerBuilder)
 		{
 			headerBuilder = new StringBuilder();
@@ -42,6 +58,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			headerBuilder.Append(@"    <NoStdLib>true</NoStdLib>").Append(k_WindowsNewline);
 			headerBuilder.Append(@"    <NoConfig>true</NoConfig>").Append(k_WindowsNewline);
 			headerBuilder.Append(@"    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>").Append(k_WindowsNewline);
+			headerBuilder.Append(@"    <MSBuildWarningsAsMessages>MSB3277</MSBuildWarningsAsMessages>").Append(k_WindowsNewline);
 			headerBuilder.Append(@"  </PropertyGroup>").Append(k_WindowsNewline);
 
 			GetProjectHeaderVstuFlavoring(properties, headerBuilder, false);
