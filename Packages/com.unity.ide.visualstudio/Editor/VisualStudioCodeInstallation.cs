@@ -127,8 +127,13 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			if (VisualStudioEditor.IsWindows)
 			{
 				var localAppPath = IOPath.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Programs");
-				candidates.Add(IOPath.Combine(localAppPath, "Microsoft VS Code", "Code.exe"));
-				candidates.Add(IOPath.Combine(localAppPath, "Microsoft VS Code Insiders", "Code - Insiders.exe"));
+				var programFiles = IOPath.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles));
+
+				foreach (var basePath in new[] {localAppPath, programFiles})
+				{
+					candidates.Add(IOPath.Combine(basePath, "Microsoft VS Code", "Code.exe"));
+					candidates.Add(IOPath.Combine(basePath, "Microsoft VS Code Insiders", "Code - Insiders.exe"));
+				}
 			} else if (VisualStudioEditor.IsOSX)
 			{
 				var appPath = IOPath.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles));
@@ -170,6 +175,19 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			var launchFile = IOPath.Combine(vscodeDirectory, "launch.json");
 			if (File.Exists(launchFile))
 				return;
+
+			const string content = @"{
+    ""version"": ""0.2.0"",
+    ""configurations"": [
+        {
+            ""name"": ""Attach to Unity"",
+            ""type"": ""vstuc"",
+            ""request"": ""attach"",
+        }
+     ]
+}";
+
+			File.WriteAllText(launchFile, content);
 		}
 
 		private static void CreateSettingsFile(string vscodeDirectory)
@@ -244,9 +262,9 @@ namespace Microsoft.Unity.VisualStudio.Editor
 				return;
 
 			const string content = @"{
-  ""recommendations"": [
-    ""ms-dotnettools.csharp""
-  ]
+    ""recommendations"": [
+      ""visualstudiotoolsforunity.vstuc""
+    ]
 }
 ";
 			File.WriteAllText(extensionFile, content);
