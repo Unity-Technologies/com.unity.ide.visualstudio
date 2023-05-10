@@ -201,7 +201,9 @@ namespace Microsoft.Unity.VisualStudio.Editor
     {
         ""**/.DS_Store"":true,
         ""**/.git"":true,
+        ""**/.vs"":true,
         ""**/.gitmodules"":true,
+        ""**/.vsconfig"":true,
         ""**/*.booproj"":true,
         ""**/*.pidb"":true,
         ""**/*.suo"":true,
@@ -246,10 +248,14 @@ namespace Microsoft.Unity.VisualStudio.Editor
         ""library/"":true,
         ""obj/"":true,
         ""Obj/"":true,
+        ""Logs/"":true,
+        ""logs/"":true,
         ""ProjectSettings/"":true,
+        ""UserSettings/"":true,
         ""temp/"":true,
         ""Temp/"":true
-    }
+    },
+    ""omnisharp.enableRoslynAnalyzers"": true
 }";
 
 			File.WriteAllText(settingsFile, content);
