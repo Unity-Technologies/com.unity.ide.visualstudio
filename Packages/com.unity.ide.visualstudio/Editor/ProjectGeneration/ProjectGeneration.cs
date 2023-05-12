@@ -681,7 +681,15 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			rulesetPath = assembly.compilerOptions.RoslynAnalyzerRulesetPath;
 #endif
 
-#if UNITY_2021_3_OR_NEWER && !UNITY_2022_1 // we have support in 2021.3, 2022.2 but without a backport in 2022.1
+			// We have support in 2021.3, 2022.2 but without a backport in 2022.1
+#if UNITY_2021_3
+			// Unfortunately those properties were introduced in a patch release of 2021.3, so not found in 2021.3.2f1 for example
+			var scoType = typeof(ScriptCompilerOptions);
+			var afpProperty = scoType.GetProperty("RoslynAdditionalFilePaths");
+			var acpProperty = scoType.GetProperty("AnalyzerConfigPath");
+			additionalFilePaths.AddRange(afpProperty?.GetValue(assembly.compilerOptions) as string[] ?? Array.Empty<string>());
+			analyzerConfigPath = acpProperty?.GetValue(assembly.compilerOptions) as string ?? analyzerConfigPath;
+#elif UNITY_2022_2_OR_NEWER
 			additionalFilePaths.AddRange(assembly.compilerOptions.RoslynAdditionalFilePaths);
 			analyzerConfigPath = assembly.compilerOptions.AnalyzerConfigPath;
 #endif
