@@ -674,16 +674,25 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			var additionalFilePaths = new List<string>();
 			var rulesetPath = string.Empty;
 			var analyzerConfigPath = string.Empty;
+			var compilerOptions = assembly.compilerOptions;
 
 #if UNITY_2020_2_OR_NEWER
 			// Analyzers + ruleset provided by Unity
-			analyzers.AddRange(assembly.compilerOptions.RoslynAnalyzerDllPaths);
-			rulesetPath = assembly.compilerOptions.RoslynAnalyzerRulesetPath;
+			analyzers.AddRange(compilerOptions.RoslynAnalyzerDllPaths);
+			rulesetPath = compilerOptions.RoslynAnalyzerRulesetPath;
 #endif
 
-#if UNITY_2021_3_OR_NEWER && !UNITY_2022_1 // we have support in 2021.3, 2022.2 but without a backport in 2022.1
-			additionalFilePaths.AddRange(assembly.compilerOptions.RoslynAdditionalFilePaths);
-			analyzerConfigPath = assembly.compilerOptions.AnalyzerConfigPath;
+			// We have support in 2021.3, 2022.2 but without a backport in 2022.1
+#if UNITY_2021_3
+			// Unfortunately those properties were introduced in a patch release of 2021.3, so not found in 2021.3.2f1 for example
+			var scoType = compilerOptions.GetType();
+			var afpProperty = scoType.GetProperty("RoslynAdditionalFilePaths");
+			var acpProperty = scoType.GetProperty("AnalyzerConfigPath");
+			additionalFilePaths.AddRange(afpProperty?.GetValue(compilerOptions) as string[] ?? Array.Empty<string>());
+			analyzerConfigPath = acpProperty?.GetValue(compilerOptions) as string ?? analyzerConfigPath;
+#elif UNITY_2022_2_OR_NEWER
+			additionalFilePaths.AddRange(compilerOptions.RoslynAdditionalFilePaths);
+			analyzerConfigPath = compilerOptions.AnalyzerConfigPath;
 #endif
 
 			// Analyzers and additional files provided by csc.rsp
