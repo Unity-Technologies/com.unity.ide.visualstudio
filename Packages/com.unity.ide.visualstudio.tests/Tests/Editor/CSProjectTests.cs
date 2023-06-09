@@ -233,10 +233,10 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 				var synchronizer = m_Builder.Build();
 
 				synchronizer.Sync();
-				Assert.AreEqual(3, m_Builder.WriteTimes, "3 writes for solution + csproj + .vsconfig");
+				Assert.AreEqual(2, m_Builder.WriteTimes, "2 writes for solution + csproj");
 
 				synchronizer.Sync();
-				Assert.AreEqual(3, m_Builder.WriteTimes, "No more files should be written");
+				Assert.AreEqual(2, m_Builder.WriteTimes, "No more files should be written");
 			}
 
 			[Test]
