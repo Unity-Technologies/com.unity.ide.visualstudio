@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using UnityEngine;
 using IOPath = System.IO.Path;
 
 namespace Microsoft.Unity.VisualStudio.Editor
@@ -52,7 +53,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			if (string.IsNullOrEmpty(vstuPath))
 				return Array.Empty<string>();
 
-			return GetAnalyzers(vstuPath);		}
+			return GetAnalyzers(vstuPath); }
 
 		public override IGenerator ProjectGenerator
 		{
@@ -73,6 +74,13 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			return File.Exists(path) && path.EndsWith("code", StringComparison.OrdinalIgnoreCase);
 		}
 
+		[Serializable]
+		internal class VisualStudioCodeManifest
+		{
+			public string name;
+			public string version;
+		}
+
 		public static bool TryDiscoverInstallation(string editorPath, out IVisualStudioInstallation installation)
 		{
 			installation = null;
@@ -84,28 +92,29 @@ namespace Microsoft.Unity.VisualStudio.Editor
 				return false;
 
 			Version version = null;
-			bool isPrerelease = false;
+			var isPrerelease = false;
 
-			if (VisualStudioEditor.IsWindows) {
-				// On windows we use the executable directly, so we can query extra information
-				if (!File.Exists(editorPath))
-					return false;
+			try
+			{
+				var manifestBase = editorPath;
+				if (VisualStudioEditor.IsWindows)  // on Windows, editorPath is a file, resources as subdirectory
+					manifestBase = IOPath.GetDirectoryName(editorPath);
+				else if (VisualStudioEditor.IsOSX) // on Mac, editorPath is a directory
+					manifestBase = editorPath;
+				else                               // on Linux, editorPath is a file, in a bin sub-directory
+					manifestBase = Directory.GetParent(editorPath).Parent.FullName;
 
-				// VSCode preview are not using the isPrerelease flag so far
-				var vi = FileVersionInfo.GetVersionInfo(editorPath);
-				version = new Version(vi.ProductMajorPart, vi.ProductMinorPart, vi.ProductBuildPart);
-				isPrerelease = vi.IsPreRelease || vi.FileDescription.ToLower().Contains("insider");
-			} else if (VisualStudioEditor.IsOSX) {
-				var plist = IOPath.Combine(editorPath, "Contents", "Info.plist");
-				if (!File.Exists(plist))
-					return false;
-
-				const string pattern = @"<key>CFBundleShortVersionString</key>\s*<string>(?<version>\d+\.\d+\.\d+).*</string>";
-				var match = Regex.Match(File.ReadAllText(plist), pattern);
-				if (!match.Success)
-					return false;
-
-				version = new Version(match.Groups[nameof(version)].ToString());
+				var manifestFullPath = IOPath.Combine(manifestBase, @"resources", "app", "package.json");
+				if (File.Exists(manifestFullPath))
+				{
+					var manifest = JsonUtility.FromJson<VisualStudioCodeManifest>(File.ReadAllText(manifestFullPath));
+					Version.TryParse(manifest.version.Split('-').First(), out version);
+					isPrerelease = manifest.version.ToLower().Contains("insider");
+				}
+			}
+			catch (IOException)
+			{
+				// do not fail if we are not able to retrieve the exact version number
 			}
 
 			isPrerelease = isPrerelease || editorPath.ToLower().Contains("insider");
@@ -141,6 +150,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			}
 			else
 			{
+				candidates.Add("/usr/share/code/bin/code");
 				candidates.Add("/usr/bin/code");
 				candidates.Add("/bin/code");
 				candidates.Add("/usr/local/bin/code");
