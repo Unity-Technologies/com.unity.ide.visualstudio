@@ -100,7 +100,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 				if (VisualStudioEditor.IsWindows)  // on Windows, editorPath is a file, resources as subdirectory
 					manifestBase = IOPath.GetDirectoryName(editorPath);
 				else if (VisualStudioEditor.IsOSX) // on Mac, editorPath is a directory
-					manifestBase = editorPath;
+					manifestBase = IOPath.Combine(editorPath, "Contents");
 				else                               // on Linux, editorPath is a file, in a bin sub-directory
 					manifestBase = Directory.GetParent(editorPath).Parent.FullName;
 
