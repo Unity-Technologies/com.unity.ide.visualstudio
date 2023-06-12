@@ -118,7 +118,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 					isPrerelease = manifest.version.ToLower().Contains("insider");
 				}
 			}
-			catch (IOException)
+			catch (Exception)
 			{
 				// do not fail if we are not able to retrieve the exact version number
 			}
