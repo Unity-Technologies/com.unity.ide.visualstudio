@@ -147,7 +147,8 @@ namespace Microsoft.Unity.VisualStudio.Editor
 					candidates.Add(IOPath.Combine(basePath, "Microsoft VS Code", "Code.exe"));
 					candidates.Add(IOPath.Combine(basePath, "Microsoft VS Code Insiders", "Code - Insiders.exe"));
 				}
-			} else if (VisualStudioEditor.IsOSX)
+			}
+			else if (VisualStudioEditor.IsOSX)
 			{
 				var appPath = IOPath.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles));
 				candidates.AddRange(Directory.EnumerateDirectories(appPath, "Visual Studio Code*.app"));
