@@ -43,6 +43,20 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			_discoverInstallations = AsyncOperation<Dictionary<string, IVisualStudioInstallation>>.Run(DiscoverInstallations);
 		}
 
+		[InitializeOnLoadMethod]
+		static void LegacyVisualStudioCodePackageDisabler()
+		{
+			// disable legacy Visual Studio Code packages
+			var editor = CodeEditor.Editor.GetCodeEditorForPath("code.cmd");
+			if (editor == null)
+				return;
+
+			if (editor is VisualStudioEditor)
+				return;
+
+			CodeEditor.Unregister(editor);
+		}
+
 		private static Dictionary<string, IVisualStudioInstallation> DiscoverInstallations()
 		{
 			try

@@ -4,11 +4,8 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using UnityEngine;
 
 namespace Microsoft.Unity.VisualStudio.Editor
 {
@@ -24,19 +21,6 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 			foreach (var installation in VisualStudioCodeInstallation.GetVisualStudioInstallations())
 				yield return installation;
-
-			if (IsLegacyVSCodePackageLoaded())
-			{
-				Debug.LogWarning("[Visual Studio Editor] package has now built-in support for the whole Visual Studio family of products, including Visual Studio code. Please remove the legacy [Visual Studio Code Editor] package to avoid incompatibilities.");
-			}
-		}
-
-		private static bool IsLegacyVSCodePackageLoaded()
-		{
-			return AppDomain
-				.CurrentDomain
-				.GetAssemblies()
-				.Any(a => a.FullName.StartsWith("Unity.VSCode.Editor"));
 		}
 
 		public static bool TryDiscoverInstallation(string editorPath, out IVisualStudioInstallation installation)

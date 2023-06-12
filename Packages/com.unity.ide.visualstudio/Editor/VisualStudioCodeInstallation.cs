@@ -96,13 +96,17 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 			try
 			{
-				var manifestBase = editorPath;
+				string manifestBase;
+
 				if (VisualStudioEditor.IsWindows)  // on Windows, editorPath is a file, resources as subdirectory
 					manifestBase = IOPath.GetDirectoryName(editorPath);
 				else if (VisualStudioEditor.IsOSX) // on Mac, editorPath is a directory
 					manifestBase = IOPath.Combine(editorPath, "Contents");
 				else                               // on Linux, editorPath is a file, in a bin sub-directory
-					manifestBase = Directory.GetParent(editorPath).Parent.FullName;
+					manifestBase = Directory.GetParent(editorPath)?.Parent?.FullName;
+
+				if (manifestBase == null)
+					return false;
 
 				var manifestFullPath = IOPath.Combine(manifestBase, @"resources", "app", "package.json");
 				if (File.Exists(manifestFullPath))
