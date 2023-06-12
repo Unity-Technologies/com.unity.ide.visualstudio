@@ -152,11 +152,19 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			installation = new VisualStudioForWindowsInstallation()
 			{
 				IsPrerelease = isPrerelease,
-				Name = $"{vi.FileDescription} [{version.ToString(3)}]",
+				Name = $"{FormatProductName(vi.FileDescription)} [{version.ToString(3)}]",
 				Path = editorPath,
 				Version = version
 			};
 			return true;
+		}
+
+		public static string FormatProductName(string productName)
+		{
+			if (string.IsNullOrEmpty(productName))
+				return string.Empty;
+
+			return productName.Replace("Microsoft ", string.Empty);
 		}
 
 		public static IEnumerable<IVisualStudioInstallation> GetVisualStudioInstallations()
@@ -184,9 +192,9 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			{
 				foreach (var entry in entries)
 				{
-					yield return new VisualStudioForWindowsInstallation()
+					yield return new VisualStudioForWindowsInstallation
 					{
-						Name = $"{entry.displayName} [{entry.catalog.productDisplayVersion}]",
+						Name = $"{FormatProductName(entry.displayName)} [{entry.catalog.productDisplayVersion}]",
 						Path = entry.productPath,
 						IsPrerelease = entry.isPrerelease,
 						Version = Version.Parse(entry.catalog.buildVersion)

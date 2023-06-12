@@ -32,7 +32,9 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			headerBuilder = new StringBuilder();
 
 			headerBuilder.Append(@"<Project ToolsVersion=""Current"" Sdk=""Microsoft.NET.Sdk"">").Append(k_WindowsNewline);
+			headerBuilder.Append(@"  <!-- Generated file, do not modify, your changes will be overwritten (use AssetPostprocessor.OnGeneratedCSProject) -->").Append(k_WindowsNewline);
 			headerBuilder.Append(@"  <PropertyGroup>").Append(k_WindowsNewline);
+			headerBuilder.Append(@"    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>").Append(k_WindowsNewline);
 			headerBuilder.Append(@"    <EnableDefaultItems>false</EnableDefaultItems>").Append(k_WindowsNewline);
 			headerBuilder.Append(@"    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>").Append(k_WindowsNewline);
 			headerBuilder.Append(@"    <LangVersion>").Append(properties.LangVersion).Append(@"</LangVersion>").Append(k_WindowsNewline);

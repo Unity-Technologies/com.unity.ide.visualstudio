@@ -124,6 +124,7 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 				{
 					"<?xml version=\"1.0\" encoding=\"utf-8\"?>",
 					"<Project ToolsVersion=\"4.0\" DefaultTargets=\"Build\" xmlns=\"http://schemas.microsoft.com/developer/msbuild/2003\">",
+					"  <!-- Generated file, do not modify, your changes will be overwritten (use AssetPostprocessor.OnGeneratedCSProject) -->",
 					"  <PropertyGroup>",
 					"    <LangVersion>latest</LangVersion>",
 					"  </PropertyGroup>",

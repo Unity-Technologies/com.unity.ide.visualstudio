@@ -43,6 +43,22 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			_discoverInstallations = AsyncOperation<Dictionary<string, IVisualStudioInstallation>>.Run(DiscoverInstallations);
 		}
 
+#if UNITY_2019_4_OR_NEWER && !UNITY_2020
+		[InitializeOnLoadMethod]
+		static void LegacyVisualStudioCodePackageDisabler()
+		{
+			// disable legacy Visual Studio Code packages
+			var editor = CodeEditor.Editor.GetCodeEditorForPath("code.cmd");
+			if (editor == null)
+				return;
+
+			if (editor is VisualStudioEditor)
+				return;
+
+			CodeEditor.Unregister(editor);
+		}
+#endif
+
 		private static Dictionary<string, IVisualStudioInstallation> DiscoverInstallations()
 		{
 			try
