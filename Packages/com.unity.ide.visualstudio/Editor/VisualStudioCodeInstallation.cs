@@ -11,6 +11,8 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using UnityEngine;
 using IOPath = System.IO.Path;
+using System.Runtime.InteropServices;
+using System.Text;
 
 namespace Microsoft.Unity.VisualStudio.Editor
 {
@@ -96,14 +98,14 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 			try
 			{
-				string manifestBase;
+				var manifestBase = GetRealPath(editorPath);
 
 				if (VisualStudioEditor.IsWindows)  // on Windows, editorPath is a file, resources as subdirectory
-					manifestBase = IOPath.GetDirectoryName(editorPath);
+					manifestBase = IOPath.GetDirectoryName(manifestBase);
 				else if (VisualStudioEditor.IsOSX) // on Mac, editorPath is a directory
-					manifestBase = IOPath.Combine(editorPath, "Contents");
+					manifestBase = IOPath.Combine(manifestBase, "Contents");
 				else                               // on Linux, editorPath is a file, in a bin sub-directory
-					manifestBase = Directory.GetParent(editorPath)?.Parent?.FullName;
+					manifestBase = Directory.GetParent(manifestBase)?.Parent?.FullName;
 
 				if (manifestBase == null)
 					return false;
@@ -155,7 +157,6 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			}
 			else
 			{
-				candidates.Add("/usr/share/code/bin/code");
 				candidates.Add("/usr/bin/code");
 				candidates.Add("/bin/code");
 				candidates.Add("/usr/local/bin/code");
@@ -167,6 +168,26 @@ namespace Microsoft.Unity.VisualStudio.Editor
 					yield return installation;
 			}
 		}
+
+#if UNITY_EDITOR_LINUX
+		[DllImport ("libc")]
+		private static extern int readlink(string path, byte[] buffer, int buflen);
+
+		internal static string GetRealPath(string path)
+		{
+			byte[] buf = new byte[512];
+			int ret = readlink(path, buf, buf.Length);
+			if (ret == -1) return path;
+			char[] cbuf = new char[512];
+			int chars = System.Text.Encoding.Default.GetChars(buf, 0, ret, cbuf, 0);
+			return new String(cbuf, 0, chars);
+		}
+#else
+		internal static string GetRealPath(string path)
+		{
+			return path;
+		}
+#endif
 
 		public override void CreateExtraFiles(string projectDirectory)
 		{
