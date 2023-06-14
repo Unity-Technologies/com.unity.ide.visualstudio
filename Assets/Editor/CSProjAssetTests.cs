@@ -40,7 +40,7 @@ public class SimpleCSharpScript : MonoBehaviour
 		public virtual void SetUp()
 		{
 			var projectDirectory = Directory.GetParent(Application.dataPath).FullName;
-			m_ProjectGeneration = new ProjectGeneration(projectDirectory);
+			m_ProjectGeneration = new LegacyStyleProjectGeneration(projectDirectory);
 		}
 
 		[UnityTearDown]

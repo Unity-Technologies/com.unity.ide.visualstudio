@@ -124,6 +124,7 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 				{
 					"<?xml version=\"1.0\" encoding=\"utf-8\"?>",
 					"<Project ToolsVersion=\"4.0\" DefaultTargets=\"Build\" xmlns=\"http://schemas.microsoft.com/developer/msbuild/2003\">",
+					"  <!-- Generated file, do not modify, your changes will be overwritten (use AssetPostprocessor.OnGeneratedCSProject) -->",
 					"  <PropertyGroup>",
 					"    <LangVersion>latest</LangVersion>",
 					"  </PropertyGroup>",
@@ -233,10 +234,10 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 				var synchronizer = m_Builder.Build();
 
 				synchronizer.Sync();
-				Assert.AreEqual(3, m_Builder.WriteTimes, "3 writes for solution + csproj + .vsconfig");
+				Assert.AreEqual(2, m_Builder.WriteTimes, "2 writes for solution + csproj");
 
 				synchronizer.Sync();
-				Assert.AreEqual(3, m_Builder.WriteTimes, "No more files should be written");
+				Assert.AreEqual(2, m_Builder.WriteTimes, "No more files should be written");
 			}
 
 			[Test]
