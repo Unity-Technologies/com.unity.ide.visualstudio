@@ -40,7 +40,13 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 		public string ProjectGenerationRootNamespace => EditorSettings.projectGenerationRootNamespace;
 
-		public virtual ProjectGenerationFlag ProjectGenerationFlag
+		public ProjectGenerationFlag ProjectGenerationFlag
+		{
+			get { return ProjectGenerationFlagImpl; }
+			set { ProjectGenerationFlagImpl = value;}
+		}
+
+		internal virtual ProjectGenerationFlag ProjectGenerationFlagImpl
 		{
 			get => m_ProjectGenerationFlag;
 			private set
@@ -59,7 +65,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		{
 			IEnumerable<Assembly> assemblies = GetAssembliesByType(AssembliesType.Editor, shouldFileBePartOfSolution, @"Temp\Bin\Debug\");
 
-			if (!ProjectGenerationFlag.HasFlag(ProjectGenerationFlag.PlayerAssemblies))
+			if (!ProjectGenerationFlagImpl.HasFlag(ProjectGenerationFlag.PlayerAssemblies))
 			{
 				return assemblies;
 			}
@@ -150,19 +156,19 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			switch (packageSource)
 			{
 				case PackageSource.Embedded:
-					return !ProjectGenerationFlag.HasFlag(ProjectGenerationFlag.Embedded);
+					return !ProjectGenerationFlagImpl.HasFlag(ProjectGenerationFlag.Embedded);
 				case PackageSource.Registry:
-					return !ProjectGenerationFlag.HasFlag(ProjectGenerationFlag.Registry);
+					return !ProjectGenerationFlagImpl.HasFlag(ProjectGenerationFlag.Registry);
 				case PackageSource.BuiltIn:
-					return !ProjectGenerationFlag.HasFlag(ProjectGenerationFlag.BuiltIn);
+					return !ProjectGenerationFlagImpl.HasFlag(ProjectGenerationFlag.BuiltIn);
 				case PackageSource.Unknown:
-					return !ProjectGenerationFlag.HasFlag(ProjectGenerationFlag.Unknown);
+					return !ProjectGenerationFlagImpl.HasFlag(ProjectGenerationFlag.Unknown);
 				case PackageSource.Local:
-					return !ProjectGenerationFlag.HasFlag(ProjectGenerationFlag.Local);
+					return !ProjectGenerationFlagImpl.HasFlag(ProjectGenerationFlag.Local);
 				case PackageSource.Git:
-					return !ProjectGenerationFlag.HasFlag(ProjectGenerationFlag.Git);
+					return !ProjectGenerationFlagImpl.HasFlag(ProjectGenerationFlag.Git);
 				case PackageSource.LocalTarball:
-					return !ProjectGenerationFlag.HasFlag(ProjectGenerationFlag.LocalTarBall);
+					return !ProjectGenerationFlagImpl.HasFlag(ProjectGenerationFlag.LocalTarBall);
 			}
 
 			return false;
@@ -179,13 +185,13 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 		public void ToggleProjectGeneration(ProjectGenerationFlag preference)
 		{
-			if (ProjectGenerationFlag.HasFlag(preference))
+			if (ProjectGenerationFlagImpl.HasFlag(preference))
 			{
-				ProjectGenerationFlag ^= preference;
+				ProjectGenerationFlagImpl ^= preference;
 			}
 			else
 			{
-				ProjectGenerationFlag |= preference;
+				ProjectGenerationFlagImpl |= preference;
 			}
 		}
 
@@ -196,7 +202,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 		public void ResetProjectGenerationFlag()
 		{
-			ProjectGenerationFlag = ProjectGenerationFlag.None;
+			ProjectGenerationFlagImpl = ProjectGenerationFlag.None;
 		}
 
 		public string GetAssemblyName(string assemblyOutputPath, string assemblyName)

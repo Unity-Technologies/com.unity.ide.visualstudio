@@ -39,11 +39,14 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 	public abstract class ProjectGeneration : IGenerator
 	{
+		// do not remove because of the Validation API, used in LegacyStyleProjectGeneration
+		public static readonly string MSBuildNamespaceUri = "http://schemas.microsoft.com/developer/msbuild/2003";
+
 		public IAssemblyNameProvider AssemblyNameProvider => m_AssemblyNameProvider;
 		public string ProjectDirectory { get; }
 
 		// Use this to have the same newline ending on all platforms for consistency.
-		protected const string k_WindowsNewline = "\r\n";
+		internal const string k_WindowsNewline = "\r\n";
 
 		const string m_SolutionProjectEntryTemplate = @"Project(""{{{0}}}"") = ""{1}"", ""{2}"", ""{{{3}}}""{4}EndProject";
 
@@ -59,7 +62,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		HashSet<string> m_BuiltinSupportedExtensions = new HashSet<string>();
 
 		readonly string m_ProjectName;
-		protected readonly IAssemblyNameProvider m_AssemblyNameProvider;
+		internal readonly IAssemblyNameProvider m_AssemblyNameProvider;
 		readonly IFileIO m_FileIOProvider;
 		readonly IGUIDGenerator m_GUIDGenerator;
 		bool m_ShouldGenerateAll;
@@ -358,13 +361,13 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			return result;
 		}
 
-		protected enum IncludeAssetTag
+		internal enum IncludeAssetTag
 		{
 			Compile,
 			None
 		}
 
-		protected virtual void IncludeAsset(StringBuilder builder, IncludeAssetTag tag, string asset)
+		internal virtual void IncludeAsset(StringBuilder builder, IncludeAssetTag tag, string asset)
 		{
 			var filename = EscapedRelativePathFor(asset, out var packageInfo);
 
@@ -574,7 +577,9 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			return SecurityElement.Escape(s);
 		}
 
-		protected abstract void AppendProjectReference(Assembly assembly, Assembly reference, StringBuilder projectBuilder);
+		internal virtual void AppendProjectReference(Assembly assembly, Assembly reference, StringBuilder projectBuilder)
+		{
+		}
 
 		private void AppendReference(string fullReference, StringBuilder projectBuilder)
 		{
@@ -751,7 +756,10 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			return ProjectType.Game;
 		}
 
-		internal abstract void GetProjectHeader(ProjectProperties properties, out StringBuilder headerBuilder);
+		internal virtual void GetProjectHeader(ProjectProperties properties, out StringBuilder headerBuilder)
+		{
+			headerBuilder = default;
+		}
 
 		internal static void GetProjectHeaderConfigurations(ProjectProperties properties, StringBuilder headerBuilder)
 		{
@@ -832,7 +840,9 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			headerBuilder.Append(@"  </PropertyGroup>").Append(k_WindowsNewline);
 		}
 
-		protected abstract void GetProjectFooter(StringBuilder footerBuilder);
+		internal virtual void GetProjectFooter(StringBuilder footerBuilder)
+		{
+		}
 
 		private static string GetSolutionText()
 		{
@@ -978,7 +988,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 				projectGuid);
 		}
 
-		protected string EscapedRelativePathFor(string file, out UnityEditor.PackageManager.PackageInfo packageInfo)
+		internal string EscapedRelativePathFor(string file, out UnityEditor.PackageManager.PackageInfo packageInfo)
 		{
 			var projectDir = ProjectDirectory.NormalizePathSeparators();
 			file = file.NormalizePathSeparators();
@@ -996,24 +1006,24 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			return XmlFilename(path);
 		}
 
-		protected static string SkipPathPrefix(string path, string prefix)
+		internal static string SkipPathPrefix(string path, string prefix)
 		{
 			if (path.StartsWith($"{prefix}{Path.DirectorySeparatorChar}") && (path.Length > prefix.Length))
 				return path.Substring(prefix.Length + 1);
 			return path;
 		}
 
-		protected static string GetProjectExtension()
+		internal static string GetProjectExtension()
 		{
 			return ".csproj";
 		}
 
-		protected string ProjectGuid(string assemblyName)
+		internal string ProjectGuid(string assemblyName)
 		{
 			return m_GUIDGenerator.ProjectGuid(m_ProjectName, assemblyName);
 		}
 
-		protected string ProjectGuid(Assembly assembly)
+		internal string ProjectGuid(Assembly assembly)
 		{
 			return ProjectGuid(m_AssemblyNameProvider.GetAssemblyName(assembly.outputPath, assembly.name));
 		}
