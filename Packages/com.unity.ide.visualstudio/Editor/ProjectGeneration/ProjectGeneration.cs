@@ -37,7 +37,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		IAssemblyNameProvider AssemblyNameProvider { get; }
 	}
 
-	public abstract class ProjectGeneration : IGenerator
+	public class ProjectGeneration : IGenerator
 	{
 		// do not remove because of the Validation API, used in LegacyStyleProjectGeneration
 		public static readonly string MSBuildNamespaceUri = "http://schemas.microsoft.com/developer/msbuild/2003";
