@@ -16,7 +16,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		internal class SdkStyleAssemblyNameProvider : AssemblyNameProvider
 		{
 			// disable PlayerGeneration with SdkStyle projects
-			public override ProjectGenerationFlag ProjectGenerationFlag => base.ProjectGenerationFlag & ~ProjectGenerationFlag.PlayerAssemblies;
+			internal override ProjectGenerationFlag ProjectGenerationFlagImpl => base.ProjectGenerationFlagImpl & ~ProjectGenerationFlag.PlayerAssemblies;
 		}
 
 		public SdkStyleProjectGeneration() : base(
@@ -67,14 +67,14 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			GetProjectHeaderAnalyzers(properties, headerBuilder);
 		}
 
-		protected override void AppendProjectReference(Assembly assembly, Assembly reference, StringBuilder projectBuilder)
+		internal override void AppendProjectReference(Assembly assembly, Assembly reference, StringBuilder projectBuilder)
 		{
 			// If the current assembly is a Player project, we want to project-reference the corresponding Player project
 			var referenceName = m_AssemblyNameProvider.GetAssemblyName(assembly.outputPath, reference.name);
 			projectBuilder.Append(@"    <ProjectReference Include=""").Append(referenceName).Append(GetProjectExtension()).Append(@""" />").Append(k_WindowsNewline);
 		}
 
-		protected override void GetProjectFooter(StringBuilder footerBuilder)
+		internal override void GetProjectFooter(StringBuilder footerBuilder)
 		{
 			footerBuilder.Append("</Project>").Append(k_WindowsNewline);
 		}
