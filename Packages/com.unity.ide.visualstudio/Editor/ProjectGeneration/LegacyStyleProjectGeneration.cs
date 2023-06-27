@@ -30,7 +30,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 			//Header
 			headerBuilder.Append(@"<?xml version=""1.0"" encoding=""utf-8""?>").Append(k_WindowsNewline);
-			headerBuilder.Append(@"<Project ToolsVersion=""4.0"" DefaultTargets=""Build"" xmlns=""http://schemas.microsoft.com/developer/msbuild/2003"">").Append(k_WindowsNewline);
+			headerBuilder.Append($@"<Project ToolsVersion=""4.0"" DefaultTargets=""Build"" xmlns=""{MSBuildNamespaceUri}"">").Append(k_WindowsNewline);
 			headerBuilder.Append(@"  <!-- Generated file, do not modify, your changes will be overwritten (use AssetPostprocessor.OnGeneratedCSProject) -->").Append(k_WindowsNewline);
 			headerBuilder.Append(@"  <PropertyGroup>").Append(k_WindowsNewline);
 			headerBuilder.Append(@"    <LangVersion>").Append(properties.LangVersion).Append(@"</LangVersion>").Append(k_WindowsNewline);
@@ -68,7 +68,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			GetProjectHeaderAnalyzers(properties, headerBuilder);
 		}
 
-		protected override void AppendProjectReference(Assembly assembly, Assembly reference, StringBuilder projectBuilder)
+		internal override void AppendProjectReference(Assembly assembly, Assembly reference, StringBuilder projectBuilder)
 		{
 			// If the current assembly is a Player project, we want to project-reference the corresponding Player project
 			var referenceName = m_AssemblyNameProvider.GetAssemblyName(assembly.outputPath, reference.name);
@@ -79,7 +79,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			projectBuilder.Append("    </ProjectReference>").Append(k_WindowsNewline);
 		}
 
-		protected override void GetProjectFooter(StringBuilder footerBuilder)
+		internal override void GetProjectFooter(StringBuilder footerBuilder)
 		{
 			footerBuilder.Append(string.Join(k_WindowsNewline,
 				@"  <Import Project=""$(MSBuildToolsPath)\Microsoft.CSharp.targets"" />",
