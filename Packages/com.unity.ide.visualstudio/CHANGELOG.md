@@ -1,5 +1,25 @@
 # Code Editor Package for Visual Studio
 
+## [2.0.20] - 2023-06-27
+
+Integration:
+
+- Internal API refactoring.
+
+
+
+## [2.0.19] - 2023-06-14
+
+Integration:
+
+- Add support for Visual Studio Code.
+ 
+Project generation:
+
+- Add support for Sdk Style poject generation.
+- Fix an issue related to missing properties with 2021.3.
+
+
 ## [2.0.18] - 2023-03-17
 
 Integration:
