@@ -226,14 +226,13 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			File.WriteAllText(launchFile, content);
 		}
 
-		private static void CreateSettingsFile(string vscodeDirectory)
+		private void CreateSettingsFile(string vscodeDirectory)
 		{
 			var settingsFile = IOPath.Combine(vscodeDirectory, "settings.json");
 			if (File.Exists(settingsFile))
 				return;
 
-			const string content = @"{
-    ""files.exclude"":
+			const string excludes = @"    ""files.exclude"":
     {
         ""**/.DS_Store"":true,
         ""**/.git"":true,
@@ -290,8 +289,11 @@ namespace Microsoft.Unity.VisualStudio.Editor
         ""UserSettings/"":true,
         ""temp/"":true,
         ""Temp/"":true
-    },
-    ""omnisharp.enableRoslynAnalyzers"": true
+    }";
+
+			var content = @"{
+" + excludes + @",
+    ""dotnet.defaultSolution"": """ + IOPath.GetFileName(ProjectGenerator.SolutionFile()) + @"""
 }";
 
 			File.WriteAllText(settingsFile, content);
