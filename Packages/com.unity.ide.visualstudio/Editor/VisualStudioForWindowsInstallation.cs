@@ -230,7 +230,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 			const string arguments = "-prerelease -format json";
 
-			// We've seen issues with json parsing in utf8 mode and with specific code pages (like in Korea)
+			// We've seen issues with json parsing in utf8 mode and with specific non-UTF code pages like 949 (Korea)
 			// So try with utf8 first, then fallback to non utf8 in case of an issue
 			// See https://github.com/microsoft/vswhere/issues/264
 			try
