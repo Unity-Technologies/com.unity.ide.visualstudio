@@ -196,9 +196,11 @@ namespace Microsoft.Unity.VisualStudio.Editor
 				var vscodeDirectory = IOPath.Combine(projectDirectory.NormalizePathSeparators(), ".vscode");
 				Directory.CreateDirectory(vscodeDirectory);
 
-				CreateRecommendedExtensionsFile(vscodeDirectory);
-				CreateSettingsFile(vscodeDirectory);
-				CreateLaunchFile(vscodeDirectory);
+				var enablePatch = !File.Exists(IOPath.Combine(vscodeDirectory, ".vstupatchdisable"));
+
+				CreateRecommendedExtensionsFile(vscodeDirectory, enablePatch);
+				CreateSettingsFile(vscodeDirectory, enablePatch);
+				CreateLaunchFile(vscodeDirectory, enablePatch);
 			}
 			catch (IOException)
 			{
@@ -216,12 +218,14 @@ namespace Microsoft.Unity.VisualStudio.Editor
      ]
 }";
 
-		private static void CreateLaunchFile(string vscodeDirectory)
+		private static void CreateLaunchFile(string vscodeDirectory, bool enablePatch)
 		{
 			var launchFile = IOPath.Combine(vscodeDirectory, "launch.json");
 			if (File.Exists(launchFile))
 			{
-				PatchLaunchFile(launchFile);
+				if (enablePatch)
+					PatchLaunchFile(launchFile);
+
 				return;
 			}
 
@@ -281,72 +285,73 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			}
 		}
 
-		private void CreateSettingsFile(string vscodeDirectory)
+		private void CreateSettingsFile(string vscodeDirectory, bool enablePatch)
 		{
 			var settingsFile = IOPath.Combine(vscodeDirectory, "settings.json");
 			if (File.Exists(settingsFile))
 			{
-				PatchSettingsFile(settingsFile);
+				if (enablePatch)
+					PatchSettingsFile(settingsFile);
+
 				return;
 			}
 
-			const string excludes = @"    ""files.exclude"":
-    {
-        ""**/.DS_Store"":true,
-        ""**/.git"":true,
-        ""**/.vs"":true,
-        ""**/.gitmodules"":true,
-        ""**/.vsconfig"":true,
-        ""**/*.booproj"":true,
-        ""**/*.pidb"":true,
-        ""**/*.suo"":true,
-        ""**/*.user"":true,
-        ""**/*.userprefs"":true,
-        ""**/*.unityproj"":true,
-        ""**/*.dll"":true,
-        ""**/*.exe"":true,
-        ""**/*.pdf"":true,
-        ""**/*.mid"":true,
-        ""**/*.midi"":true,
-        ""**/*.wav"":true,
-        ""**/*.gif"":true,
-        ""**/*.ico"":true,
-        ""**/*.jpg"":true,
-        ""**/*.jpeg"":true,
-        ""**/*.png"":true,
-        ""**/*.psd"":true,
-        ""**/*.tga"":true,
-        ""**/*.tif"":true,
-        ""**/*.tiff"":true,
-        ""**/*.3ds"":true,
-        ""**/*.3DS"":true,
-        ""**/*.fbx"":true,
-        ""**/*.FBX"":true,
-        ""**/*.lxo"":true,
-        ""**/*.LXO"":true,
-        ""**/*.ma"":true,
-        ""**/*.MA"":true,
-        ""**/*.obj"":true,
-        ""**/*.OBJ"":true,
-        ""**/*.asset"":true,
-        ""**/*.cubemap"":true,
-        ""**/*.flare"":true,
-        ""**/*.mat"":true,
-        ""**/*.meta"":true,
-        ""**/*.prefab"":true,
-        ""**/*.unity"":true,
-        ""build/"":true,
-        ""Build/"":true,
-        ""Library/"":true,
-        ""library/"":true,
-        ""obj/"":true,
-        ""Obj/"":true,
-        ""Logs/"":true,
-        ""logs/"":true,
-        ""ProjectSettings/"":true,
-        ""UserSettings/"":true,
-        ""temp/"":true,
-        ""Temp/"":true
+			const string excludes = @"    ""files.exclude"": {
+        ""**/.DS_Store"": true,
+        ""**/.git"": true,
+        ""**/.vs"": true,
+        ""**/.gitmodules"": true,
+        ""**/.vsconfig"": true,
+        ""**/*.booproj"": true,
+        ""**/*.pidb"": true,
+        ""**/*.suo"": true,
+        ""**/*.user"": true,
+        ""**/*.userprefs"": true,
+        ""**/*.unityproj"": true,
+        ""**/*.dll"": true,
+        ""**/*.exe"": true,
+        ""**/*.pdf"": true,
+        ""**/*.mid"": true,
+        ""**/*.midi"": true,
+        ""**/*.wav"": true,
+        ""**/*.gif"": true,
+        ""**/*.ico"": true,
+        ""**/*.jpg"": true,
+        ""**/*.jpeg"": true,
+        ""**/*.png"": true,
+        ""**/*.psd"": true,
+        ""**/*.tga"": true,
+        ""**/*.tif"": true,
+        ""**/*.tiff"": true,
+        ""**/*.3ds"": true,
+        ""**/*.3DS"": true,
+        ""**/*.fbx"": true,
+        ""**/*.FBX"": true,
+        ""**/*.lxo"": true,
+        ""**/*.LXO"": true,
+        ""**/*.ma"": true,
+        ""**/*.MA"": true,
+        ""**/*.obj"": true,
+        ""**/*.OBJ"": true,
+        ""**/*.asset"": true,
+        ""**/*.cubemap"": true,
+        ""**/*.flare"": true,
+        ""**/*.mat"": true,
+        ""**/*.meta"": true,
+        ""**/*.prefab"": true,
+        ""**/*.unity"": true,
+        ""build/"": true,
+        ""Build/"": true,
+        ""Library/"": true,
+        ""library/"": true,
+        ""obj/"": true,
+        ""Obj/"": true,
+        ""Logs/"": true,
+        ""logs/"": true,
+        ""ProjectSettings/"": true,
+        ""UserSettings/"": true,
+        ""temp/"": true,
+        ""Temp/"": true
     }";
 
 			var content = @"{
@@ -418,13 +423,15 @@ namespace Microsoft.Unity.VisualStudio.Editor
 }
 ";
 
-		private static void CreateRecommendedExtensionsFile(string vscodeDirectory)
+		private static void CreateRecommendedExtensionsFile(string vscodeDirectory, bool enablePatch)
 		{
 			// see https://tattoocoder.com/recommending-vscode-extensions-within-your-open-source-projects/
 			var extensionFile = IOPath.Combine(vscodeDirectory, "extensions.json");
 			if (File.Exists(extensionFile))
 			{
-				PatchRecommendedExtensionsFile(extensionFile);
+				if (enablePatch)
+					PatchRecommendedExtensionsFile(extensionFile);
+
 				return;
 			}
 
