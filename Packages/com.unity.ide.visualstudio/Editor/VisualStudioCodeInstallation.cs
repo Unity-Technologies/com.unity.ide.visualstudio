@@ -10,9 +10,8 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using UnityEngine;
+using SimpleJSON;
 using IOPath = System.IO.Path;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Unity.VisualStudio.Editor
 {
@@ -170,7 +169,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		}
 
 #if UNITY_EDITOR_LINUX
-		[DllImport ("libc")]
+		[System.Runtime.InteropServices.DllImport ("libc")]
 		private static extern int readlink(string path, byte[] buffer, int buflen);
 
 		internal static string GetRealPath(string path)
@@ -240,39 +239,32 @@ namespace Microsoft.Unity.VisualStudio.Editor
 				const string typeKey = "type";
 
 				var content = File.ReadAllText(launchFile);
-				var launch = JObject.Parse(content);
+				var launch = JSONNode.Parse(content);
 
-				var configurations = (JArray)launch[configurationsKey];
+				var configurations = (JSONArray)launch[configurationsKey];
 				if (configurations == null)
 				{
-					configurations = new JArray();
+					configurations = new JSONArray();
 					launch.Add(configurationsKey, configurations);
 				}
 
 				var containsVstucEntry = false;
 				var patched = false;
 
-				foreach (var entry in configurations.ToArray())
+				foreach (var (_, entry) in configurations)
 				{
-					var type = entry[typeKey].Value<string>();
-					
-					switch (type)
+					var type = entry[typeKey].Value;
+					if (type == "vstuc")
 					{
-						case "unity":
-							entry.Remove();
-							patched = true;
-							break;
-
-						case "vstuc":
-							containsVstucEntry = true;
-							break;
+						containsVstucEntry = true;
+						break;
 					}
 				}
 
 				if (!containsVstucEntry)
 				{
-					var defaultContent = JObject.Parse(DefaultLaunchFileContent);
-					configurations.Add(defaultContent[configurationsKey].First());
+					var defaultContent = JSONNode.Parse(DefaultLaunchFileContent);
+					configurations.Add(defaultContent[configurationsKey][0]);
 					patched = true;
 				}
 
@@ -370,9 +362,9 @@ namespace Microsoft.Unity.VisualStudio.Editor
 				const string solutionKey = "dotnet.defaultSolution";
 
 				var content = File.ReadAllText(settingsFile);
-				var settings = JObject.Parse(content);
+				var settings = JSONNode.Parse(content);
 
-				var excludes = (JObject)settings[excludesKey];
+				var excludes = (JSONObject)settings[excludesKey];
 				if (excludes == null)
 					return;
 
@@ -380,22 +372,25 @@ namespace Microsoft.Unity.VisualStudio.Editor
 				var patched = false;
 
 				// Remove files.exclude for solution+project files in the project root
-				foreach (var exclude in excludes)
+				foreach (var (key, exclude) in excludes)
 				{
-					if (!exclude.Value.Value<bool>())
+					if (!bool.TryParse(exclude.Value, out var exc) || !exc)
 						continue;
 
-					if (Regex.IsMatch(exclude.Key, "^(\\*\\*[\\\\\\/])?\\*\\.(sln|csproj)$"))
+					if (key.EndsWith(".sln") || key.EndsWith(".csproj"))
 					{
-						patchList.Add(exclude.Key);
-						patched = true;
+						if (Regex.IsMatch(key, "^(\\*\\*[\\\\\\/])?\\*\\.(sln|csproj)$"))
+						{
+							patchList.Add(key);
+							patched = true;
+						}	
 					}
 				}
 
 				// Check default solution
 				var defaultSolution = settings[solutionKey];
 				var solutionFile = IOPath.GetFileName(ProjectGenerator.SolutionFile());
-				if (defaultSolution == null || defaultSolution.Value<string>() != solutionFile)
+				if (defaultSolution == null || defaultSolution.Value != solutionFile)
 				{
 					settings[solutionKey] = solutionFile;
 					patched = true;
@@ -445,18 +440,18 @@ namespace Microsoft.Unity.VisualStudio.Editor
 				const string recommendationsKey = "recommendations";
 
 				var content = File.ReadAllText(extensionFile);
-				var extensions = JObject.Parse(content);
+				var extensions = JSONNode.Parse(content);
 
-				var recommendations = (JArray)extensions[recommendationsKey];
+				var recommendations = (JSONArray)extensions[recommendationsKey];
 				if (recommendations == null)
 				{
-					recommendations = new JArray();
+					recommendations = new JSONArray();
 					extensions.Add(recommendationsKey, recommendations);
 				}
 
-				foreach(var entry in recommendations)
+				foreach(var (_, entry) in recommendations)
 				{
-					if (entry.Value<string>() == MicrosoftUnityExtensionId)
+					if (entry.Value == MicrosoftUnityExtensionId)
 						return;
 				}
 
@@ -469,19 +464,13 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			}
 		}
 
-		private static void WriteAllTextFromJObject(string file, JObject jobject)
+		private static void WriteAllTextFromJObject(string file, JSONNode node)
 		{
 			using (var fs = File.Open(file, FileMode.Create))
 			using (var sw = new StreamWriter(fs))
-			using (var jw = new JsonTextWriter(sw))
 			{
 				// Keep formatting/indent in sync with default contents
-				jw.Formatting = Formatting.Indented;
-				jw.IndentChar = ' ';
-				jw.Indentation = 4;
-
-				var serializer = new JsonSerializer();
-				serializer.Serialize(jw, jobject);
+				sw.Write(node.ToString(aIndent: 4));
 			}
 		}
 
