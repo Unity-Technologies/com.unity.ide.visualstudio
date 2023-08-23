@@ -251,9 +251,9 @@ namespace Microsoft.Unity.VisualStudio.Editor
 				var containsVstucEntry = false;
 				var patched = false;
 
-				foreach (var (_, entry) in configurations)
+				foreach (var entry in configurations)
 				{
-					var type = entry[typeKey].Value;
+					var type = entry.Value[typeKey].Value;
 					if (type == "vstuc")
 					{
 						containsVstucEntry = true;
@@ -372,16 +372,16 @@ namespace Microsoft.Unity.VisualStudio.Editor
 				var patched = false;
 
 				// Remove files.exclude for solution+project files in the project root
-				foreach (var (key, exclude) in excludes)
+				foreach (var exclude in excludes)
 				{
 					if (!bool.TryParse(exclude.Value, out var exc) || !exc)
 						continue;
 
-					if (key.EndsWith(".sln") || key.EndsWith(".csproj"))
+					if (exclude.Key.EndsWith(".sln") || exclude.Key.EndsWith(".csproj"))
 					{
-						if (Regex.IsMatch(key, "^(\\*\\*[\\\\\\/])?\\*\\.(sln|csproj)$"))
+						if (Regex.IsMatch(exclude.Key, "^(\\*\\*[\\\\\\/])?\\*\\.(sln|csproj)$"))
 						{
-							patchList.Add(key);
+							patchList.Add(exclude.Key);
 							patched = true;
 						}	
 					}
@@ -449,9 +449,9 @@ namespace Microsoft.Unity.VisualStudio.Editor
 					extensions.Add(recommendationsKey, recommendations);
 				}
 
-				foreach(var (_, entry) in recommendations)
+				foreach(var entry in recommendations)
 				{
-					if (entry.Value == MicrosoftUnityExtensionId)
+					if (entry.Value.Value == MicrosoftUnityExtensionId)
 						return;
 				}
 
