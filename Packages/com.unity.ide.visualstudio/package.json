@@ -6,7 +6,8 @@
   "unity": "2019.4",
   "unityRelease": "25f1",
   "dependencies": {
-    "com.unity.test-framework": "1.1.9"
+    "com.unity.test-framework": "1.1.9",
+    "com.unity.nuget.newtonsoft-json": "3.0.2"
   },
   "relatedPackages": {
     "com.unity.ide.visualstudio.tests": "2.0.20"
