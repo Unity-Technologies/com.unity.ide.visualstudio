@@ -11,8 +11,8 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using UnityEngine;
 using IOPath = System.IO.Path;
-using System.Runtime.InteropServices;
-using System.Text;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Unity.VisualStudio.Editor
 {
@@ -44,7 +44,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 				return null;
 
 			return Directory
-				.EnumerateDirectories(extensionsPath, "visualstudiotoolsforunity.vstuc*") // publisherid.extensionid
+				.EnumerateDirectories(extensionsPath, $"{MicrosoftUnityExtensionId}*") // publisherid.extensionid
 				.OrderByDescending(n => n)
 				.FirstOrDefault();
 		}
@@ -193,7 +193,6 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		{
 			try
 			{
-				// see https://tattoocoder.com/recommending-vscode-extensions-within-your-open-source-projects/
 				var vscodeDirectory = IOPath.Combine(projectDirectory.NormalizePathSeparators(), ".vscode");
 				Directory.CreateDirectory(vscodeDirectory);
 
@@ -206,31 +205,90 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			}			
 		}
 
-		private static void CreateLaunchFile(string vscodeDirectory)
-		{
-			var launchFile = IOPath.Combine(vscodeDirectory, "launch.json");
-			if (File.Exists(launchFile))
-				return;
-
-			const string content = @"{
+		private const string DefaultLaunchFileContent = @"{
     ""version"": ""0.2.0"",
     ""configurations"": [
         {
             ""name"": ""Attach to Unity"",
             ""type"": ""vstuc"",
-            ""request"": ""attach"",
+            ""request"": ""attach""
         }
      ]
 }";
 
-			File.WriteAllText(launchFile, content);
+		private static void CreateLaunchFile(string vscodeDirectory)
+		{
+			var launchFile = IOPath.Combine(vscodeDirectory, "launch.json");
+			if (File.Exists(launchFile))
+			{
+				PatchLaunchFile(launchFile);
+				return;
+			}
+
+			File.WriteAllText(launchFile, DefaultLaunchFileContent);
+		}
+
+		private static void PatchLaunchFile(string launchFile)
+		{
+			try
+			{
+				const string configurationsKey = "configurations";
+				const string typeKey = "type";
+
+				var content = File.ReadAllText(launchFile);
+				var launch = JObject.Parse(content);
+
+				var configurations = (JArray)launch[configurationsKey];
+				if (configurations == null)
+				{
+					configurations = new JArray();
+					launch.Add(configurationsKey, configurations);
+				}
+
+				var containsVstucEntry = false;
+				var patched = false;
+
+				foreach (var entry in configurations.ToArray())
+				{
+					var type = entry[typeKey].Value<string>();
+					
+					switch (type)
+					{
+						case "unity":
+							entry.Remove();
+							patched = true;
+							break;
+
+						case "vstuc":
+							containsVstucEntry = true;
+							break;
+					}
+				}
+
+				if (!containsVstucEntry)
+				{
+					var defaultContent = JObject.Parse(DefaultLaunchFileContent);
+					configurations.Add(defaultContent[configurationsKey].First());
+					patched = true;
+				}
+
+				if (patched)
+					WriteAllTextFromJObject(launchFile, launch);
+			}
+			catch (Exception)
+			{
+				// do not fail if we cannot patch the launch.json file
+			}
 		}
 
 		private void CreateSettingsFile(string vscodeDirectory)
 		{
 			var settingsFile = IOPath.Combine(vscodeDirectory, "settings.json");
 			if (File.Exists(settingsFile))
+			{
+				PatchSettingsFile(settingsFile);
 				return;
+			}
 
 			const string excludes = @"    ""files.exclude"":
     {
@@ -299,19 +357,125 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			File.WriteAllText(settingsFile, content);
 		}
 
-		private static void CreateRecommendedExtensionsFile(string vscodeDirectory)
+		private void PatchSettingsFile(string settingsFile)
 		{
-			var extensionFile = IOPath.Combine(vscodeDirectory, "extensions.json");
-			if (File.Exists(extensionFile))
-				return;
+			try
+			{
+				const string excludesKey = "files.exclude";
+				const string solutionKey = "dotnet.defaultSolution";
 
-			const string content = @"{
+				var content = File.ReadAllText(settingsFile);
+				var settings = JObject.Parse(content);
+
+				var excludes = (JObject)settings[excludesKey];
+				if (excludes == null)
+					return;
+
+				var patchList = new List<string>();
+				var patched = false;
+
+				// Remove files.exclude for solution files in the project root
+				foreach (var exclude in excludes)
+				{
+					if (!exclude.Value.Value<bool>())
+						continue;
+
+					if (Regex.IsMatch(exclude.Key, "^(\\*\\*[\\\\\\/])?\\*\\.sln$"))
+					{
+						patchList.Add(exclude.Key);
+						patched = true;
+					}
+				}
+
+				// Check default solution
+				var defaultSolution = settings[solutionKey];
+				var solutionFile = IOPath.GetFileName(ProjectGenerator.SolutionFile());
+				if (defaultSolution == null || defaultSolution.Value<string>() != solutionFile)
+				{
+					settings[solutionKey] = solutionFile;
+					patched = true;
+				}
+
+				if (patched)
+				{
+					foreach (var patch in patchList)
+						excludes.Remove(patch);
+
+					WriteAllTextFromJObject(settingsFile, settings);
+				}
+			}
+			catch (Exception)
+			{
+				// do not fail if we cannot patch the settings.json file
+			}
+		}
+
+		private const string MicrosoftUnityExtensionId = "visualstudiotoolsforunity.vstuc";
+		private const string DefaultRecommendedExtensionsContent = @"{
     ""recommendations"": [
-      ""visualstudiotoolsforunity.vstuc""
+      """+ MicrosoftUnityExtensionId + @"""
     ]
 }
 ";
-			File.WriteAllText(extensionFile, content);
+
+		private static void CreateRecommendedExtensionsFile(string vscodeDirectory)
+		{
+			// see https://tattoocoder.com/recommending-vscode-extensions-within-your-open-source-projects/
+			var extensionFile = IOPath.Combine(vscodeDirectory, "extensions.json");
+			if (File.Exists(extensionFile))
+			{
+				PatchRecommendedExtensionsFile(extensionFile);
+				return;
+			}
+
+			File.WriteAllText(extensionFile, DefaultRecommendedExtensionsContent);
+		}
+
+		private static void PatchRecommendedExtensionsFile(string extensionFile)
+		{
+			try
+			{
+				const string recommendationsKey = "recommendations";
+
+				var content = File.ReadAllText(extensionFile);
+				var extensions = JObject.Parse(content);
+
+				var recommendations = (JArray)extensions[recommendationsKey];
+				if (recommendations == null)
+				{
+					recommendations = new JArray();
+					extensions.Add(recommendationsKey, recommendations);
+				}
+
+				foreach(var entry in recommendations)
+				{
+					if (entry.Value<string>() == MicrosoftUnityExtensionId)
+						return;
+				}
+
+				recommendations.Add(MicrosoftUnityExtensionId);
+				WriteAllTextFromJObject(extensionFile, extensions);
+			}
+			catch (Exception)
+			{
+				// do not fail if we cannot patch the extensions.json file
+			}
+		}
+
+		private static void WriteAllTextFromJObject(string file, JObject jobject)
+		{
+			using (var fs = File.Open(file, FileMode.Create))
+			using (var sw = new StreamWriter(fs))
+			using (var jw = new JsonTextWriter(sw))
+			{
+				// Keep formatting/indent in sync with default contents
+				jw.Formatting = Formatting.Indented;
+				jw.IndentChar = ' ';
+				jw.Indentation = 4;
+
+				var serializer = new JsonSerializer();
+				serializer.Serialize(jw, jobject);
+			}
 		}
 
 		public override bool Open(string path, int line, int column, string solution)
