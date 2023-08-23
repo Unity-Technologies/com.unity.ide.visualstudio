@@ -374,13 +374,13 @@ namespace Microsoft.Unity.VisualStudio.Editor
 				var patchList = new List<string>();
 				var patched = false;
 
-				// Remove files.exclude for solution files in the project root
+				// Remove files.exclude for solution+project files in the project root
 				foreach (var exclude in excludes)
 				{
 					if (!exclude.Value.Value<bool>())
 						continue;
 
-					if (Regex.IsMatch(exclude.Key, "^(\\*\\*[\\\\\\/])?\\*\\.sln$"))
+					if (Regex.IsMatch(exclude.Key, "^(\\*\\*[\\\\\\/])?\\*\\.(sln|csproj)$"))
 					{
 						patchList.Add(exclude.Key);
 						patched = true;
