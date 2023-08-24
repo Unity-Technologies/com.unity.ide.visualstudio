@@ -241,35 +241,20 @@ namespace Microsoft.Unity.VisualStudio.Editor
 				var content = File.ReadAllText(launchFile);
 				var launch = JSONNode.Parse(content);
 
-				var configurations = (JSONArray)launch[configurationsKey];
+				var configurations = launch[configurationsKey] as JSONArray;
 				if (configurations == null)
 				{
 					configurations = new JSONArray();
 					launch.Add(configurationsKey, configurations);
 				}
 
-				var containsVstucEntry = false;
-				var patched = false;
+				if (configurations.Linq.Any(entry => entry.Value[typeKey].Value == "vstuc"))
+					return;
 
-				foreach (var entry in configurations)
-				{
-					var type = entry.Value[typeKey].Value;
-					if (type == "vstuc")
-					{
-						containsVstucEntry = true;
-						break;
-					}
-				}
+				var defaultContent = JSONNode.Parse(DefaultLaunchFileContent);
+				configurations.Add(defaultContent[configurationsKey][0]);
 
-				if (!containsVstucEntry)
-				{
-					var defaultContent = JSONNode.Parse(DefaultLaunchFileContent);
-					configurations.Add(defaultContent[configurationsKey][0]);
-					patched = true;
-				}
-
-				if (patched)
-					WriteAllTextFromJObject(launchFile, launch);
+				WriteAllTextFromJObject(launchFile, launch);
 			}
 			catch (Exception)
 			{
@@ -364,7 +349,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 				var content = File.ReadAllText(settingsFile);
 				var settings = JSONNode.Parse(content);
 
-				var excludes = (JSONObject)settings[excludesKey];
+				var excludes = settings[excludesKey] as JSONObject;
 				if (excludes == null)
 					return;
 
@@ -377,14 +362,16 @@ namespace Microsoft.Unity.VisualStudio.Editor
 					if (!bool.TryParse(exclude.Value, out var exc) || !exc)
 						continue;
 
-					if (exclude.Key.EndsWith(".sln") || exclude.Key.EndsWith(".csproj"))
-					{
-						if (Regex.IsMatch(exclude.Key, "^(\\*\\*[\\\\\\/])?\\*\\.(sln|csproj)$"))
-						{
-							patchList.Add(exclude.Key);
-							patched = true;
-						}	
-					}
+					var key = exclude.Key;
+
+					if (!key.EndsWith(".sln") && !key.EndsWith(".csproj"))
+						continue;
+
+					if (!Regex.IsMatch(key, "^(\\*\\*[\\\\\\/])?\\*\\.(sln|csproj)$"))
+						continue;
+
+					patchList.Add(key);
+					patched = true;
 				}
 
 				// Check default solution
@@ -396,13 +383,13 @@ namespace Microsoft.Unity.VisualStudio.Editor
 					patched = true;
 				}
 
-				if (patched)
-				{
-					foreach (var patch in patchList)
-						excludes.Remove(patch);
+				if (!patched)
+					return;
 
-					WriteAllTextFromJObject(settingsFile, settings);
-				}
+				foreach (var patch in patchList)
+					excludes.Remove(patch);
+
+				WriteAllTextFromJObject(settingsFile, settings);
 			}
 			catch (Exception)
 			{
@@ -442,18 +429,15 @@ namespace Microsoft.Unity.VisualStudio.Editor
 				var content = File.ReadAllText(extensionFile);
 				var extensions = JSONNode.Parse(content);
 
-				var recommendations = (JSONArray)extensions[recommendationsKey];
+				var recommendations = extensions[recommendationsKey] as JSONArray;
 				if (recommendations == null)
 				{
 					recommendations = new JSONArray();
 					extensions.Add(recommendationsKey, recommendations);
 				}
 
-				foreach(var entry in recommendations)
-				{
-					if (entry.Value.Value == MicrosoftUnityExtensionId)
-						return;
-				}
+				if (recommendations.Linq.Any(entry => entry.Value.Value == MicrosoftUnityExtensionId))
+					return;
 
 				recommendations.Add(MicrosoftUnityExtensionId);
 				WriteAllTextFromJObject(extensionFile, extensions);
