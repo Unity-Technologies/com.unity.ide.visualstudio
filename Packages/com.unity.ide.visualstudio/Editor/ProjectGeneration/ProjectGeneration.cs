@@ -771,7 +771,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			headerBuilder.Append(@"    <DefineConstants>").Append(string.Join(";", properties.Defines)).Append(@"</DefineConstants>").Append(k_WindowsNewline);
 			headerBuilder.Append(@"    <ErrorReport>prompt</ErrorReport>").Append(k_WindowsNewline);
 			headerBuilder.Append(@"    <WarningLevel>4</WarningLevel>").Append(k_WindowsNewline);
-			headerBuilder.Append(@"    <NoWarn>0169</NoWarn>").Append(k_WindowsNewline);
+			headerBuilder.Append(@"    <NoWarn>0169;USG0001</NoWarn>").Append(k_WindowsNewline);
 			headerBuilder.Append(@"    <AllowUnsafeBlocks>").Append(properties.Unsafe).Append(@"</AllowUnsafeBlocks>").Append(k_WindowsNewline);
 			headerBuilder.Append(@"  </PropertyGroup>").Append(k_WindowsNewline);
 			headerBuilder.Append(@"  <PropertyGroup Condition="" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' "">").Append(k_WindowsNewline);
@@ -780,7 +780,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			headerBuilder.Append(@"    <OutputPath>Temp\bin\Release\</OutputPath>").Append(k_WindowsNewline);
 			headerBuilder.Append(@"    <ErrorReport>prompt</ErrorReport>").Append(k_WindowsNewline);
 			headerBuilder.Append(@"    <WarningLevel>4</WarningLevel>").Append(k_WindowsNewline);
-			headerBuilder.Append(@"    <NoWarn>0169</NoWarn>").Append(k_WindowsNewline);
+			headerBuilder.Append(@"    <NoWarn>0169;USG0001</NoWarn>").Append(k_WindowsNewline);
 			headerBuilder.Append(@"    <AllowUnsafeBlocks>").Append(properties.Unsafe).Append(@"</AllowUnsafeBlocks>").Append(k_WindowsNewline);
 			headerBuilder.Append(@"  </PropertyGroup>").Append(k_WindowsNewline);
 		}
