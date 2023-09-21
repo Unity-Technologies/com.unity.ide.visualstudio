@@ -173,6 +173,7 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 					"    <ProjectTypeGuids>{E097FAD1-6243-4DAD-9C02-E9B9EFC3FFC1};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>",
 					"    <UnityProjectGenerator>Package</UnityProjectGenerator>",
 					$"    <UnityProjectGeneratorVersion>{packageVersion}</UnityProjectGeneratorVersion>",
+					"    <UnityProjectGeneratorStyle>Legacy</UnityProjectGeneratorStyle>",
 					$"    <UnityProjectType>{buildTarget}</UnityProjectType>",
 					$"    <UnityBuildTarget>{EditorUserBuildSettings.activeBuildTarget + ":" + (int)EditorUserBuildSettings.activeBuildTarget}</UnityBuildTarget>",
 					$"    <UnityVersion>{unityVersion}</UnityVersion>",
