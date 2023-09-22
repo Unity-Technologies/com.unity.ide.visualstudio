@@ -12,6 +12,8 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 	internal class LegacyStyleProjectGeneration : ProjectGeneration
 	{
+		internal override string StyleName => "Legacy";
+
 		public LegacyStyleProjectGeneration(string tempDirectory, IAssemblyNameProvider assemblyNameProvider, IFileIO fileIoProvider, IGUIDGenerator guidGenerator) : base(tempDirectory, assemblyNameProvider, fileIoProvider, guidGenerator)
 		{
 		}
