@@ -588,6 +588,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			var escapedFullPath = EscapedRelativePathFor(fullReference, out _);
 			projectBuilder.Append(@"    <Reference Include=""").Append(Path.GetFileNameWithoutExtension(escapedFullPath)).Append(@""">").Append(k_WindowsNewline);
 			projectBuilder.Append("      <HintPath>").Append(escapedFullPath).Append("</HintPath>").Append(k_WindowsNewline);
+			projectBuilder.Append("      <Private>False</Private>").Append(k_WindowsNewline);
 			projectBuilder.Append("    </Reference>").Append(k_WindowsNewline);
 		}
 
