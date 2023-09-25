@@ -600,7 +600,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 #if UNITY_EDITOR_WIN
 		private static readonly Regex InvalidCharactersRegexPattern = new Regex(@"\?|&|\*|""|<|>|\||#|%|\^|;", RegexOptions.Compiled);
 #else
-		private static readonly Regex InvalidCharactersRegexPattern = new Regex(@"\?|&|\*|""|<|>|\||#|%|\^|;|:"), RegexOptions.Compiled);
+		private static readonly Regex InvalidCharactersRegexPattern = new Regex(@"\?|&|\*|""|<|>|\||#|%|\^|;|:", RegexOptions.Compiled);
 #endif
 
 		public string SolutionFile()
