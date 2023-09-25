@@ -202,7 +202,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 				if (match == null || !match.Success)
 					continue;
 
-				yield return match.Groups.Last().Value;
+				yield return match.Groups[1].Value;
 				break;
 			}
 		}
