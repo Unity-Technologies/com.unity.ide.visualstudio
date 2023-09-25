@@ -103,8 +103,13 @@ namespace Microsoft.Unity.VisualStudio.Editor
 					manifestBase = IOPath.GetDirectoryName(manifestBase);
 				else if (VisualStudioEditor.IsOSX) // on Mac, editorPath is a directory
 					manifestBase = IOPath.Combine(manifestBase, "Contents");
-				else                               // on Linux, editorPath is a file, in a bin sub-directory
-					manifestBase = Directory.GetParent(manifestBase)?.Parent?.FullName;
+				else
+				{
+					// on Linux, editorPath is a file, in a bin sub-directory
+					var parent = Directory.GetParent(manifestBase);
+					// but we can link to [vscode]/code or [vscode]/bin/code
+					manifestBase = parent?.Name == "bin" ? parent.Parent?.FullName : parent?.FullName;
+				}                               
 
 				if (manifestBase == null)
 					return false;
@@ -156,15 +161,54 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			}
 			else
 			{
+				// Well known locations
 				candidates.Add("/usr/bin/code");
 				candidates.Add("/bin/code");
 				candidates.Add("/usr/local/bin/code");
+
+				// Preference ordered base directories relative to which desktop files should be searched
+				candidates.AddRange(GetXdgCandidates());
 			}
 
-			foreach (var candidate in candidates)
+			foreach (var candidate in candidates.Distinct())
 			{
 				if (TryDiscoverInstallation(candidate, out var installation))
 					yield return installation;
+			}
+		}
+
+		private static readonly Regex DesktopFileExecEntry = new Regex(@"Exec=(\S+)", RegexOptions.Singleline | RegexOptions.Compiled);
+
+		private static IEnumerable<string> GetXdgCandidates()
+		{
+			var envdirs = Environment.GetEnvironmentVariable("XDG_DATA_DIRS");
+			if (string.IsNullOrEmpty(envdirs))
+				yield break;
+
+			var dirs = envdirs.Split(':');
+			foreach(var dir in dirs)
+			{
+				Match match = null;
+
+				try
+				{
+					var desktopFile = IOPath.Combine(dir, "applications/code.desktop");
+					if (!File.Exists(desktopFile))
+						continue;
+				
+					var content = File.ReadAllText(desktopFile);
+					match = DesktopFileExecEntry.Match(content);
+				}
+				catch
+				{
+					// do not fail if we cannot read desktop file
+				}
+
+				if (match == null || !match.Success)
+					continue;
+
+				yield return match.Groups[1].Value;
+				break;
 			}
 		}
 
