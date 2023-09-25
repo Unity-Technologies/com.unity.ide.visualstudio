@@ -3,6 +3,8 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+#if UNITY_EDITOR_OSX
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -178,3 +180,5 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		}
 	}
 }
+
+#endif
