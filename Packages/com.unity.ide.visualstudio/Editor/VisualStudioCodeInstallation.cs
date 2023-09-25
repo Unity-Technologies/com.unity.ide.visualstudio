@@ -66,13 +66,13 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 		private static bool IsCandidateForDiscovery(string path)
 		{
-			if (VisualStudioEditor.IsOSX)
-				return Directory.Exists(path) && Regex.IsMatch(path, ".*Code.*.app$", RegexOptions.IgnoreCase);
-
-			if (VisualStudioEditor.IsWindows)
-				return File.Exists(path) && Regex.IsMatch(path, ".*Code.*.exe$", RegexOptions.IgnoreCase);
-
+#if UNITY_EDITOR_OSX
+			return Directory.Exists(path) && Regex.IsMatch(path, ".*Code.*.app$", RegexOptions.IgnoreCase);
+#elif UNITY_EDITOR_WIN
+			return File.Exists(path) && Regex.IsMatch(path, ".*Code.*.exe$", RegexOptions.IgnoreCase);
+#else
 			return File.Exists(path) && path.EndsWith("code", StringComparison.OrdinalIgnoreCase);
+#endif
 		}
 
 		[Serializable]
@@ -99,22 +99,23 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			{
 				var manifestBase = GetRealPath(editorPath);
 
-				if (VisualStudioEditor.IsWindows)  // on Windows, editorPath is a file, resources as subdirectory
-					manifestBase = IOPath.GetDirectoryName(manifestBase);
-				else if (VisualStudioEditor.IsOSX) // on Mac, editorPath is a directory
-					manifestBase = IOPath.Combine(manifestBase, "Contents");
-				else
-				{
-					// on Linux, editorPath is a file, in a bin sub-directory
-					var parent = Directory.GetParent(manifestBase);
-					// but we can link to [vscode]/code or [vscode]/bin/code
-					manifestBase = parent?.Name == "bin" ? parent.Parent?.FullName : parent?.FullName;
-				}                               
+#if UNITY_EDITOR_WIN
+				// on Windows, editorPath is a file, resources as subdirectory
+				manifestBase = IOPath.GetDirectoryName(manifestBase);
+#elif UNITY_EDITOR_OSX
+				// on Mac, editorPath is a directory
+				manifestBase = IOPath.Combine(manifestBase, "Contents");
+#else
+				// on Linux, editorPath is a file, in a bin sub-directory
+				var parent = Directory.GetParent(manifestBase);
+				// but we can link to [vscode]/code or [vscode]/bin/code
+				manifestBase = parent?.Name == "bin" ? parent.Parent?.FullName : parent?.FullName;
+#endif
 
 				if (manifestBase == null)
 					return false;
 
-				var manifestFullPath = IOPath.Combine(manifestBase, @"resources", "app", "package.json");
+				var manifestFullPath = IOPath.Combine(manifestBase, "resources", "app", "package.json");
 				if (File.Exists(manifestFullPath))
 				{
 					var manifest = JsonUtility.FromJson<VisualStudioCodeManifest>(File.ReadAllText(manifestFullPath));
@@ -143,32 +144,27 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		{
 			var candidates = new List<string>();
 
-			if (VisualStudioEditor.IsWindows)
-			{
-				var localAppPath = IOPath.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Programs");
-				var programFiles = IOPath.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles));
+#if UNITY_EDITOR_WIN
+			var localAppPath = IOPath.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Programs");
+			var programFiles = IOPath.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles));
 
-				foreach (var basePath in new[] {localAppPath, programFiles})
-				{
-					candidates.Add(IOPath.Combine(basePath, "Microsoft VS Code", "Code.exe"));
-					candidates.Add(IOPath.Combine(basePath, "Microsoft VS Code Insiders", "Code - Insiders.exe"));
-				}
-			}
-			else if (VisualStudioEditor.IsOSX)
+			foreach (var basePath in new[] {localAppPath, programFiles})
 			{
-				var appPath = IOPath.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles));
-				candidates.AddRange(Directory.EnumerateDirectories(appPath, "Visual Studio Code*.app"));
+				candidates.Add(IOPath.Combine(basePath, "Microsoft VS Code", "Code.exe"));
+				candidates.Add(IOPath.Combine(basePath, "Microsoft VS Code Insiders", "Code - Insiders.exe"));
 			}
-			else
-			{
-				// Well known locations
-				candidates.Add("/usr/bin/code");
-				candidates.Add("/bin/code");
-				candidates.Add("/usr/local/bin/code");
+#elif UNITY_EDITOR_OSX
+			var appPath = IOPath.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles));
+			candidates.AddRange(Directory.EnumerateDirectories(appPath, "Visual Studio Code*.app"));
+#elif UNITY_EDITOR_LINUX
+			// Well known locations
+			candidates.Add("/usr/bin/code");
+			candidates.Add("/bin/code");
+			candidates.Add("/usr/local/bin/code");
 
-				// Preference ordered base directories relative to which desktop files should be searched
-				candidates.AddRange(GetXdgCandidates());
-			}
+			// Preference ordered base directories relative to which desktop files should be searched
+			candidates.AddRange(GetXdgCandidates());
+#endif
 
 			foreach (var candidate in candidates.Distinct())
 			{
@@ -177,6 +173,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			}
 		}
 
+#if UNITY_EDITOR_LINUX
 		private static readonly Regex DesktopFileExecEntry = new Regex(@"Exec=(\S+)", RegexOptions.Singleline | RegexOptions.Compiled);
 
 		private static IEnumerable<string> GetXdgCandidates()
@@ -212,7 +209,6 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			}
 		}
 
-#if UNITY_EDITOR_LINUX
 		[System.Runtime.InteropServices.DllImport ("libc")]
 		private static extern int readlink(string path, byte[] buffer, int buflen);
 
@@ -519,13 +515,14 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 		private static ProcessStartInfo ProcessStartInfoFor(string application, string arguments)
 		{
-			if (!VisualStudioEditor.IsOSX)
-				return ProcessRunner.ProcessStartInfoFor(application, arguments, redirect: false);
-
+#if UNITY_EDITOR_OSX
 			// wrap with built-in OSX open feature
 			arguments = $"-n \"{application}\" --args {arguments}";
 			application = "open";
 			return ProcessRunner.ProcessStartInfoFor(application, arguments, redirect:false, shell: true);
+#else
+			return ProcessRunner.ProcessStartInfoFor(application, arguments, redirect: false);
+#endif
 		}
 
 		public static void Initialize()
