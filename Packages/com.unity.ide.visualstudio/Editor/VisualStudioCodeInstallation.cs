@@ -176,7 +176,8 @@ namespace Microsoft.Unity.VisualStudio.Editor
 #if UNITY_EDITOR_LINUX
 		private static readonly Regex DesktopFileExecEntry = new Regex(@"Exec=(\S+)", RegexOptions.Singleline | RegexOptions.Compiled);
 
-		private static IEnumerable<string> GetXdgCandidates() {
+		private static IEnumerable<string> GetXdgCandidates()
+		{
 			var envdirs = Environment.GetEnvironmentVariable("XDG_DATA_DIRS");
 			if (string.IsNullOrEmpty(envdirs))
 				yield break;
@@ -186,14 +187,17 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			{
 				Match match = null;
 
-				try {
+				try
+				{
 					var desktopFile = IOPath.Combine(dir, "applications/code.desktop");
 					if (!File.Exists(desktopFile))
 						continue;
 				
 					var content = File.ReadAllText(desktopFile);
 					match = DesktopFileExecEntry.Match(content);
-				} catch {
+				}
+				catch
+				{
 					// do not fail if we cannot read desktop file
 				}
 
