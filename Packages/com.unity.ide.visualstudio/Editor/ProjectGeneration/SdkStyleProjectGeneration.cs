@@ -111,7 +111,6 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 		internal static void GetCapabilityBlock(StringBuilder footerBuilder, string import, string attribute, string[] capabilities)
 		{
-			// Unsupported capabilities
 			footerBuilder.Append($@"  <Import Project=""{import}"" Sdk=""Microsoft.NET.Sdk"" />").Append(k_WindowsNewline);
 			footerBuilder.Append(@"  <ItemGroup>").Append(k_WindowsNewline);
 			foreach (var capability in capabilities)
