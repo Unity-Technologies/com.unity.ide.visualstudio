@@ -189,16 +189,12 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 				try
 				{
-					foreach (var desktopFile in new[] {"code.desktop", "code_code.desktop"})
-					{
-						var desktopPath = IOPath.Combine(dir, "applications", desktopFile);
-						if (!File.Exists(desktopPath))
-							continue;
+					var desktopFile = IOPath.Combine(dir, "applications/code.desktop");
+					if (!File.Exists(desktopFile))
+						continue;
 				
-						var content = File.ReadAllText(desktopPath);
-						match = DesktopFileExecEntry.Match(content);
-						break;
-					}
+					var content = File.ReadAllText(desktopFile);
+					match = DesktopFileExecEntry.Match(content);
 				}
 				catch
 				{
