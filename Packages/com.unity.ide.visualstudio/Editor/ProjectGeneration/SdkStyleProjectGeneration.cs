@@ -30,25 +30,23 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		{
 		}
 
-		internal enum SupportedCapability
+		internal static readonly string[] SupportedCapabilities = new string[]
 		{
-			Unity
+			"Unity",
 		}
-		internal static readonly string[] SupportedCapabilities = Enum.GetNames(typeof(SupportedCapability));
 
-		internal enum UnsupportedCapability
+		internal static readonly string[] UnsupportedCapabilities = new string[]
 		{
-		    LaunchProfiles,
-			SharedProjectReferences,
-			ReferenceManagerSharedProjects,
-			ProjectReferences,
-			ReferenceManagerProjects,
-			COMReferences,
-			ReferenceManagerCOM,
-			AssemblyReferences,
-			ReferenceManagerAssemblies
+			"LaunchProfiles",
+			"SharedProjectReferences",
+			"ReferenceManagerSharedProjects",
+			"ProjectReferences",
+			"ReferenceManagerProjects",
+			"COMReferences",
+			"ReferenceManagerCOM",
+			"AssemblyReferences",
+			"ReferenceManagerAssemblies",
 		}
-		internal static readonly string[] UnsupportedCapabilities = Enum.GetNames(typeof(UnsupportedCapability));
 
 		internal override void GetProjectHeader(ProjectProperties properties, out StringBuilder headerBuilder)
 		{
@@ -119,6 +117,5 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			}
 			footerBuilder.Append(@"  </ItemGroup>").Append(k_WindowsNewline);
 		}
-
 	}
 }
