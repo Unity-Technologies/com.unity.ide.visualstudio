@@ -33,7 +33,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		internal static readonly string[] SupportedCapabilities = new string[]
 		{
 			"Unity",
-		}
+		};
 
 		internal static readonly string[] UnsupportedCapabilities = new string[]
 		{
@@ -46,7 +46,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			"ReferenceManagerCOM",
 			"AssemblyReferences",
 			"ReferenceManagerAssemblies",
-		}
+		};
 
 		internal override void GetProjectHeader(ProjectProperties properties, out StringBuilder headerBuilder)
 		{
