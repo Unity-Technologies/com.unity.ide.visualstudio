@@ -61,15 +61,18 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			return CompilationPipeline.GetAssemblyNameFromScriptPath(path);
 		}
 
+		internal static readonly string AssemblyOutput = @"Temp\bin\Debug\".NormalizePathSeparators();
+		internal static readonly string PlayerAssemblyOutput = @"Temp\bin\Debug\Player\".NormalizePathSeparators();
+
 		public IEnumerable<Assembly> GetAssemblies(Func<string, bool> shouldFileBePartOfSolution)
 		{
-			IEnumerable<Assembly> assemblies = GetAssembliesByType(AssembliesType.Editor, shouldFileBePartOfSolution, @"Temp\bin\Debug\");
+			IEnumerable<Assembly> assemblies = GetAssembliesByType(AssembliesType.Editor, shouldFileBePartOfSolution, AssemblyOutput);
 
 			if (!ProjectGenerationFlag.HasFlag(ProjectGenerationFlag.PlayerAssemblies))
 			{
 				return assemblies;
 			}
-			var playerAssemblies = GetAssembliesByType(AssembliesType.Player, shouldFileBePartOfSolution, @"Temp\bin\Debug\Player\");
+			var playerAssemblies = GetAssembliesByType(AssembliesType.Player, shouldFileBePartOfSolution, PlayerAssemblyOutput);
 			return assemblies.Concat(playerAssemblies);
 		}
 
@@ -208,7 +211,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 		public string GetAssemblyName(string assemblyOutputPath, string assemblyName)
 		{
-			return assemblyOutputPath.EndsWith(@"\Player\", StringComparison.Ordinal) ? assemblyName + ".Player" : assemblyName;
+			return assemblyOutputPath.EndsWith(@"\Player\".NormalizePathSeparators(), StringComparison.Ordinal) ? assemblyName + ".Player" : assemblyName;
 		}
 	}
 }
