@@ -55,6 +55,14 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			headerBuilder.Append(@"<Project ToolsVersion=""Current"">").Append(k_WindowsNewline);
 			headerBuilder.Append(@"  <!-- Generated file, do not modify, your changes will be overwritten (use AssetPostprocessor.OnGeneratedCSProject) -->").Append(k_WindowsNewline);
 
+			// Prevent circular dependency issues see https://github.com/microsoft/vscode-dotnettools/issues/401
+			// We need a dedicated subfolder for each project in obj, else depending on the build order, nuget cache files could be overwritten
+			// We need to do this before common.props, else we'll have a MSB3539 The value of the property "BaseIntermediateOutputPath" was modified after it was used by MSBuild
+			headerBuilder.Append(@"  <PropertyGroup>").Append(k_WindowsNewline);
+			headerBuilder.Append(@"    <BaseIntermediateOutputPath>Temp/obj/$(Configuration)/$(MSBuildProjectName)</BaseIntermediateOutputPath>").Append(k_WindowsNewline);
+			headerBuilder.Append(@"    <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>").Append(k_WindowsNewline);
+			headerBuilder.Append(@"  </PropertyGroup>").Append(k_WindowsNewline);
+
 			// Supported capabilities
 			GetCapabilityBlock(headerBuilder, "Sdk.props", "Include", SupportedCapabilities);
 		
