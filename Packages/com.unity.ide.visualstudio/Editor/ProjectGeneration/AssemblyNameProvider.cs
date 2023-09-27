@@ -211,7 +211,10 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 		public string GetAssemblyName(string assemblyOutputPath, string assemblyName)
 		{
-			return assemblyOutputPath.EndsWith(@"\Player\".NormalizePathSeparators(), StringComparison.Ordinal) ? assemblyName + ".Player" : assemblyName;
+			if (assemblyOutputPath == PlayerAssemblyOutput)
+				return assemblyName + ".Player";
+
+			return assemblyName;
 		}
 	}
 }
