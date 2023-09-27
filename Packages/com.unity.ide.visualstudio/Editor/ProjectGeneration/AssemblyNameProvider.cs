@@ -63,13 +63,13 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 		public IEnumerable<Assembly> GetAssemblies(Func<string, bool> shouldFileBePartOfSolution)
 		{
-			IEnumerable<Assembly> assemblies = GetAssembliesByType(AssembliesType.Editor, shouldFileBePartOfSolution, @"Temp\Bin\Debug\");
+			IEnumerable<Assembly> assemblies = GetAssembliesByType(AssembliesType.Editor, shouldFileBePartOfSolution, @"Temp\bin\Debug\");
 
 			if (!ProjectGenerationFlag.HasFlag(ProjectGenerationFlag.PlayerAssemblies))
 			{
 				return assemblies;
 			}
-			var playerAssemblies = GetAssembliesByType(AssembliesType.Player, shouldFileBePartOfSolution, @"Temp\Bin\Debug\Player\");
+			var playerAssemblies = GetAssembliesByType(AssembliesType.Player, shouldFileBePartOfSolution, @"Temp\bin\Debug\Player\");
 			return assemblies.Concat(playerAssemblies);
 		}
 
@@ -98,7 +98,8 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 		public string GetCompileOutputPath(string assemblyName)
 		{
-			return assemblyName.EndsWith(".Player", StringComparison.Ordinal) ? @"Temp\Bin\Debug\Player\" : @"Temp\Bin\Debug\";
+			// We need to keep this one for API surface check (AssemblyNameProvider is public), but not used anymore
+			throw new NotImplementedException();
 		}
 
 		public IEnumerable<string> GetAllAssetPaths()
