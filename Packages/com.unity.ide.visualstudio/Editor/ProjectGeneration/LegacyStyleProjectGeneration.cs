@@ -84,7 +84,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		internal override void GetProjectFooter(StringBuilder footerBuilder)
 		{
 			footerBuilder.Append(string.Join(k_WindowsNewline,
-				@"  <Import Project=""$(MSBuildToolsPath)\Microsoft.CSharp.targets"" />",
+				$"  <Import Project=\"{@"$(MSBuildToolsPath)\Microsoft.CSharp.targets".NormalizePathSeparators()}\" />",
 				@"  <Target Name=""GenerateTargetFrameworkMonikerAttribute"" />",
 				@"  <!-- To modify your build process, add your task inside one of the targets below and uncomment it.",
 				@"       Other similar extension points exist, see Microsoft.Common.targets.",
