@@ -4,6 +4,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+using System;
 using System.IO;
 using System.Text;
 using UnityEditor.Compilation;
@@ -29,12 +30,34 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		{
 		}
 
+		internal static readonly string[] SupportedCapabilities = new string[]
+		{
+			"Unity",
+		};
+
+		internal static readonly string[] UnsupportedCapabilities = new string[]
+		{
+			"LaunchProfiles",
+			"SharedProjectReferences",
+			"ReferenceManagerSharedProjects",
+			"ProjectReferences",
+			"ReferenceManagerProjects",
+			"COMReferences",
+			"ReferenceManagerCOM",
+			"AssemblyReferences",
+			"ReferenceManagerAssemblies",
+		};
+
 		internal override void GetProjectHeader(ProjectProperties properties, out StringBuilder headerBuilder)
 		{
 			headerBuilder = new StringBuilder();
 
-			headerBuilder.Append(@"<Project ToolsVersion=""Current"" Sdk=""Microsoft.NET.Sdk"">").Append(k_WindowsNewline);
+			headerBuilder.Append(@"<Project ToolsVersion=""Current"">").Append(k_WindowsNewline);
 			headerBuilder.Append(@"  <!-- Generated file, do not modify, your changes will be overwritten (use AssetPostprocessor.OnGeneratedCSProject) -->").Append(k_WindowsNewline);
+
+			// Supported capabilities
+			GetCapabilityBlock(headerBuilder, "Sdk.props", "Include", SupportedCapabilities);
+		
 			headerBuilder.Append(@"  <PropertyGroup>").Append(k_WindowsNewline);
 			headerBuilder.Append(@"    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>").Append(k_WindowsNewline);
 			headerBuilder.Append(@"    <EnableDefaultItems>false</EnableDefaultItems>").Append(k_WindowsNewline);
@@ -78,7 +101,21 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 		internal override void GetProjectFooter(StringBuilder footerBuilder)
 		{
+			// Unsupported capabilities
+			GetCapabilityBlock(footerBuilder, "Sdk.targets", "Remove", UnsupportedCapabilities);
+
 			footerBuilder.Append("</Project>").Append(k_WindowsNewline);
+		}
+
+		internal static void GetCapabilityBlock(StringBuilder footerBuilder, string import, string attribute, string[] capabilities)
+		{
+			footerBuilder.Append($@"  <Import Project=""{import}"" Sdk=""Microsoft.NET.Sdk"" />").Append(k_WindowsNewline);
+			footerBuilder.Append(@"  <ItemGroup>").Append(k_WindowsNewline);
+			foreach (var capability in capabilities)
+			{
+				footerBuilder.Append($@"    <ProjectCapability {attribute}=""{capability}"" />").Append(k_WindowsNewline);
+			}
+			footerBuilder.Append(@"  </ItemGroup>").Append(k_WindowsNewline);
 		}
 	}
 }
