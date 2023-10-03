@@ -150,16 +150,16 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 					$"    <DefineConstants></DefineConstants>",
 					"    <ErrorReport>prompt</ErrorReport>",
 					"    <WarningLevel>4</WarningLevel>",
-					"    <NoWarn>0169</NoWarn>",
+					"    <NoWarn>0169;USG0001</NoWarn>",
 					"    <AllowUnsafeBlocks>False</AllowUnsafeBlocks>",
 					"  </PropertyGroup>",
 					"  <PropertyGroup Condition=\" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' \">",
 					"    <DebugType>pdbonly</DebugType>",
 					"    <Optimize>true</Optimize>",
-					"    <OutputPath>Temp\\bin\\Release\\</OutputPath>",
+					$"    <OutputPath>{@"Temp\bin\Release\".NormalizePathSeparators()}</OutputPath>",
 					"    <ErrorReport>prompt</ErrorReport>",
 					"    <WarningLevel>4</WarningLevel>",
-					"    <NoWarn>0169</NoWarn>",
+					"    <NoWarn>0169;USG0001</NoWarn>",
 					"    <AllowUnsafeBlocks>False</AllowUnsafeBlocks>",
 					"  </PropertyGroup>",
 					"  <PropertyGroup>",
@@ -173,6 +173,7 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 					"    <ProjectTypeGuids>{E097FAD1-6243-4DAD-9C02-E9B9EFC3FFC1};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>",
 					"    <UnityProjectGenerator>Package</UnityProjectGenerator>",
 					$"    <UnityProjectGeneratorVersion>{packageVersion}</UnityProjectGeneratorVersion>",
+					"    <UnityProjectGeneratorStyle>Legacy</UnityProjectGeneratorStyle>",
 					$"    <UnityProjectType>{buildTarget}</UnityProjectType>",
 					$"    <UnityBuildTarget>{EditorUserBuildSettings.activeBuildTarget + ":" + (int)EditorUserBuildSettings.activeBuildTarget}</UnityBuildTarget>",
 					$"    <UnityVersion>{unityVersion}</UnityVersion>",
@@ -182,7 +183,7 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 					"  </ItemGroup>",
 					"  <ItemGroup>",
 					"  </ItemGroup>",
-					"  <Import Project=\"$(MSBuildToolsPath)\\Microsoft.CSharp.targets\" />",
+					$"  <Import Project=\"{@"$(MSBuildToolsPath)\Microsoft.CSharp.targets".NormalizePathSeparators()}\" />",
 					"  <Target Name=\"GenerateTargetFrameworkMonikerAttribute\" />",
 					"  <!-- To modify your build process, add your task inside one of the targets below and uncomment it.",
 					"       Other similar extension points exist, see Microsoft.Common.targets.",
@@ -906,7 +907,7 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 				XmlDocument scriptProject = XMLUtilities.FromText(csprojFileContents);
 				XMLUtilities.AssertCompileItemsMatchExactly(scriptProject, new[] { "file.cs" });
 				XMLUtilities.AssertNonCompileItemsMatchExactly(scriptProject, new string[0]);
-				Assert.IsTrue(csprojFileContents.MatchesRegex($"<Reference Include=\"reference\">\\W*<HintPath>{referenceDll}\\W*</HintPath>\\W*</Reference>"));
+				Assert.IsTrue(csprojFileContents.MatchesRegex($"<Reference Include=\"reference\">\\W*<HintPath>{referenceDll}\\W*</HintPath>\\W*<Private>False</Private>\\W*</Reference>"));
 			}
 
 			[Test]
@@ -921,7 +922,7 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 				synchronizer.Sync();
 
 				var csprojFileContents = m_Builder.ReadProjectFile(m_Builder.Assembly);
-				Assert.IsTrue(csprojFileContents.MatchesRegex($"<Reference Include=\"Goodbye\">\\W*<HintPath>{Regex.Escape(fullPathReferences[0].ReplaceDirectorySeparators())}\\W*</HintPath>\\W*</Reference>"));
+				Assert.IsTrue(csprojFileContents.MatchesRegex($"<Reference Include=\"Goodbye\">\\W*<HintPath>{Regex.Escape(fullPathReferences[0].ReplaceDirectorySeparators())}\\W*</HintPath>\\W*<Private>False</Private>\\W*</Reference>"));
 			}
 
 			[Test]
@@ -950,8 +951,8 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 
 				var csprojFileContents = m_Builder.ReadProjectFile(m_Builder.Assembly);
 
-				Assert.IsTrue(csprojFileContents.MatchesRegex("<Reference Include=\"Hello\">\\W*<HintPath>Hello.dll</HintPath>\\W*</Reference>"));
-				Assert.IsTrue(csprojFileContents.MatchesRegex("<Reference Include=\"MyPlugin\">\\W*<HintPath>MyPlugin.dll</HintPath>\\W*</Reference>"));
+				Assert.IsTrue(csprojFileContents.MatchesRegex("<Reference Include=\"Hello\">\\W*<HintPath>Hello.dll</HintPath>\\W*<Private>False</Private>\\W*</Reference>"));
+				Assert.IsTrue(csprojFileContents.MatchesRegex("<Reference Include=\"MyPlugin\">\\W*<HintPath>MyPlugin.dll</HintPath>\\W*<Private>False</Private>\\W*</Reference>"));
 			}
 
 			[Test]
@@ -988,8 +989,8 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 				var csprojFileContents = m_Builder.ReadProjectFile(m_Builder.Assembly);
 				Assert.That(csprojFileContents, Does.Not.Match($@"<ProjectReference Include=""{assemblyReferences[0].name}\.csproj"">[\S\s]*?</ProjectReference>"));
 				Assert.That(csprojFileContents, Does.Not.Match($@"<ProjectReference Include=""{assemblyReferences[1].name}\.csproj"">[\S\s]*?</ProjectReference>"));
-				Assert.That(csprojFileContents, Does.Match($"<Reference Include=\"{assemblyReferences[0].name}\">\\W*<HintPath>{Regex.Escape(assemblyReferences[0].outputPath.ReplaceDirectorySeparators())}</HintPath>\\W*</Reference>"));
-				Assert.That(csprojFileContents, Does.Match($"<Reference Include=\"{assemblyReferences[1].name}\">\\W*<HintPath>{Regex.Escape(assemblyReferences[1].outputPath.ReplaceDirectorySeparators())}</HintPath>\\W*</Reference>"));
+				Assert.That(csprojFileContents, Does.Match($"<Reference Include=\"{assemblyReferences[0].name}\">\\W*<HintPath>{Regex.Escape(assemblyReferences[0].outputPath.ReplaceDirectorySeparators())}</HintPath>\\W*<Private>False</Private>\\W*</Reference>"));
+				Assert.That(csprojFileContents, Does.Match($"<Reference Include=\"{assemblyReferences[1].name}\">\\W*<HintPath>{Regex.Escape(assemblyReferences[1].outputPath.ReplaceDirectorySeparators())}</HintPath>\\W*<Private>False</Private>\\W*</Reference>"));
 			}
 
 			[Test]
@@ -1005,8 +1006,8 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 				synchronizer.Sync();
 
 				var csprojFileContents = m_Builder.ReadProjectFile(m_Builder.Assembly);
-				Assert.IsTrue(csprojFileContents.MatchesRegex($"<Reference Include=\"Hello\">\\W*<HintPath>{Regex.Escape(compiledAssemblyReferences[0])}</HintPath>\\W*</Reference>"));
-				Assert.IsTrue(csprojFileContents.MatchesRegex($"<Reference Include=\"MyPlugin\">\\W*<HintPath>{Regex.Escape(compiledAssemblyReferences[1])}</HintPath>\\W*</Reference>"));
+				Assert.IsTrue(csprojFileContents.MatchesRegex($"<Reference Include=\"Hello\">\\W*<HintPath>{Regex.Escape(compiledAssemblyReferences[0])}</HintPath>\\W*<Private>False</Private>\\W*</Reference>"));
+				Assert.IsTrue(csprojFileContents.MatchesRegex($"<Reference Include=\"MyPlugin\">\\W*<HintPath>{Regex.Escape(compiledAssemblyReferences[1])}</HintPath>\\W*<Private>False</Private>\\W*</Reference>"));
 			}
 
 			[Test]
@@ -1018,7 +1019,7 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 				synchronizer.Sync();
 
 				var csprojFileContents = m_Builder.ReadProjectFile(m_Builder.Assembly);
-				Assert.IsFalse(csprojFileContents.MatchesRegex($"<Reference Include=\"{projectAssembly.name}\">\\W*<HintPath>{Regex.Escape(projectAssembly.outputPath.ReplaceDirectorySeparators())}</HintPath>\\W*</Reference>"));
+				Assert.IsFalse(csprojFileContents.MatchesRegex($"<Reference Include=\"{projectAssembly.name}\">\\W*<HintPath>{Regex.Escape(projectAssembly.outputPath.ReplaceDirectorySeparators())}</HintPath>\\W*<Private>False</Private>\\W*</Reference>"));
 			}
 
 			[Test]
