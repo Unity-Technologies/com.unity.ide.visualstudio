@@ -373,6 +373,10 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 			var content = @"{
 " + excludes + @",
+    ""explorer.fileNesting.enabled"": true,
+    ""explorer.fileNesting.patterns"": {
+        ""*.sln"": ""*.csproj"",
+    },
     ""dotnet.defaultSolution"": """ + IOPath.GetFileName(ProjectGenerator.SolutionFile()) + @"""
 }";
 
