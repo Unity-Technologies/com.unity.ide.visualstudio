@@ -14,7 +14,6 @@ Project generation:
 - Add Unity capability to SDK-Style projects.
 - Prevent circular dependency errors with SDK-Style projects.
 
-
 ## [2.0.21] - 2023-09-05
 
 Integration:
