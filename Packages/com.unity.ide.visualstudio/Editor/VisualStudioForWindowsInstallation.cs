@@ -27,6 +27,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		private static readonly VersionPair[] WindowsVersionTable =
 		{
 			// VisualStudio 2022
+			new VersionPair(17,8, /* => */ 12,0),
 			new VersionPair(17,4, /* => */ 11,0),
 			new VersionPair(17,0, /* => */ 10,0),
 

@@ -31,7 +31,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		{
 			get
 			{
-				return new Version(11, 0);
+				return new Version(12, 0);
 			}
 		}
 
