@@ -7,7 +7,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using SR = System.Reflection;
 using System.Security;
 using System.Security.Cryptography;
 using System.Text;
@@ -416,18 +415,9 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			SyncFileIfNotChanged(path, newContents);
 		}
 
-		private static IEnumerable<SR.MethodInfo> GetPostProcessorCallbacks(string name)
-		{
-			return TypeCache
-				.GetTypesDerivedFrom<AssetPostprocessor>()
-				.Where(t => t.Assembly.GetName().Name != KnownAssemblies.Bridge) // never call into the bridge if loaded with the package
-				.Select(t => t.GetMethod(name, SR.BindingFlags.Public | SR.BindingFlags.NonPublic | SR.BindingFlags.Static))
-				.Where(m => m != null);
-		}
-
 		static void OnGeneratedCSProjectFiles()
 		{
-			foreach (var method in GetPostProcessorCallbacks(nameof(OnGeneratedCSProjectFiles)))
+			foreach (var method in TypeCacheHelper.GetPostProcessorCallbacks(nameof(OnGeneratedCSProjectFiles)))
 			{
 				method.Invoke(null, Array.Empty<object>());
 			}
@@ -437,7 +427,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		{
 			bool result = false;
 
-			foreach (var method in GetPostProcessorCallbacks(nameof(OnPreGeneratingCSProjectFiles)))
+			foreach (var method in TypeCacheHelper.GetPostProcessorCallbacks(nameof(OnPreGeneratingCSProjectFiles)))
 			{
 				var retValue = method.Invoke(null, Array.Empty<object>());
 				if (method.ReturnType == typeof(bool))
@@ -451,7 +441,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 		private static string InvokeAssetPostProcessorGenerationCallbacks(string name, string path, string content)
 		{
-			foreach (var method in GetPostProcessorCallbacks(name))
+			foreach (var method in TypeCacheHelper.GetPostProcessorCallbacks(name))
 			{
 				var args = new[] { path, content };
 				var returnValue = method.Invoke(null, args);

@@ -4,8 +4,8 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+using System;
 using System.Collections.Generic;
-using UnityEditor;
 
 namespace Microsoft.Unity.VisualStudio.Editor
 {
@@ -27,10 +27,28 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 		public static IGenerator GetInstance(GeneratorStyle style)
 		{
+			var overridenStyleString = OnSelectingCSProjectStyle();
+			if (overridenStyleString != null && Enum.TryParse<GeneratorStyle>(overridenStyleString, out var overridenStyle))
+				style = overridenStyle;
+
 			if (_generators.TryGetValue(style, out var result))
 				return result;
 
-			throw new System.ArgumentException("Unknown generator style");
+			throw new ArgumentException("Unknown generator style");
+		}
+
+		private static string OnSelectingCSProjectStyle()
+		{
+			foreach (var method in TypeCacheHelper.GetPostProcessorCallbacks(nameof(OnSelectingCSProjectStyle)))
+			{
+				object retValue = method.Invoke(null, Array.Empty<object>());
+				if (method.ReturnType != typeof(string))
+					continue;
+
+				return retValue as string;
+			}
+
+			return null;
 		}
 	}
 }
