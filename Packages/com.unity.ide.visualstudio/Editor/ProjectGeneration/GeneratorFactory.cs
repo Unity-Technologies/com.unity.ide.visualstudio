@@ -27,9 +27,9 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 		public static IGenerator GetInstance(GeneratorStyle style)
 		{
-			var overridenStyleString = OnSelectingCSProjectStyle();
-			if (overridenStyleString != null && Enum.TryParse<GeneratorStyle>(overridenStyleString, out var overridenStyle))
-				style = overridenStyle;
+			var forceStyleString = OnSelectingCSProjectStyle();
+			if (forceStyleString != null && Enum.TryParse<GeneratorStyle>(forceStyleString, out var forceStyle))
+				style = forceStyle;
 
 			if (_generators.TryGetValue(style, out var result))
 				return result;
