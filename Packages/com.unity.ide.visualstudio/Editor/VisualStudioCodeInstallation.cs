@@ -17,7 +17,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 {
 	internal class VisualStudioCodeInstallation : VisualStudioInstallation
 	{
-		private static readonly IGenerator _generator = new DynamicGeneration(GeneratorStyle.SDK);
+		private static readonly IGenerator _generator = GeneratorFactory.GetInstance(GeneratorStyle.SDK);
 
 		public override bool SupportsAnalyzers
 		{

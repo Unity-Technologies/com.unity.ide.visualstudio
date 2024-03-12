@@ -121,11 +121,6 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			if (!TryGetVisualStudioInstallationForPath(CodeEditor.CurrentEditorInstallation, true, out var installation))
 				return;
 
-			var generation = installation.ProjectGenerator as DynamicGeneration;
-			if (generation == null)
-				return;
-			
-			generation.CurrentStyle = generation.CurrentStyle; // force sync generator after new installation selection
 			var package = UnityEditor.PackageManager.PackageInfo.FindForAssembly(GetType().Assembly);
 
 			var style = new GUIStyle
@@ -149,28 +144,6 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			SettingsButton(ProjectGenerationFlag.PlayerAssemblies, "Player projects", "For each player project generate an additional csproj with the name 'project-player.csproj'", installation);
 			RegenerateProjectFiles(installation);
 			EditorGUI.indentLevel--;
-
-			ProjectStyleSettings(generation);
-		}
-
-		private static void ProjectStyleSettings(DynamicGeneration generation)
-		{
-			EditorGUILayout.Space();
-
-			var currentStyleIndex = (int)generation.CurrentStyle;
-			var preferredStyle = generation.PreferredStyle;
-
-			var options = new string[]
-			{
-				// Keep in sync with GeneratorStyle
-				$"Automatic ({preferredStyle})",
-				"Force SDK Style",
-				"Force Legacy Style"
-			};
-			var selected = EditorGUILayout.Popup("Project generation style", currentStyleIndex, options);
-
-			if (selected != currentStyleIndex)
-				generation.CurrentStyle = (GeneratorStyle)selected;
 		}
 
 		private static void RegenerateProjectFiles(IVisualStudioInstallation installation)

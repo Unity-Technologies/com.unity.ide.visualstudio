@@ -87,7 +87,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			SetupProjectSupportedExtensions();
 		}
 
-		internal virtual GeneratorStyle Style => GeneratorStyle.Automatic;
+		internal virtual GeneratorStyle Style => GeneratorStyle.Legacy;
 
 		/// <summary>
 		/// Syncs the scripting solution if any affected files are relevant.
