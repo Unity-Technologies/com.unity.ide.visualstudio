@@ -14,7 +14,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 {
 	internal class SdkStyleProjectGeneration : ProjectGeneration
 	{
-		internal override string StyleName => "SDK";
+		internal override GeneratorStyle Style => GeneratorStyle.SDK;
 
 		internal class SdkStyleAssemblyNameProvider : AssemblyNameProvider
 		{
