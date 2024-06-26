@@ -1,0 +1,21 @@
+# For more information about the available options please visit: http://go/backstage (VPN required)
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  annotations:
+    github.com/project-slug: Unity-Technologies/com.unity.ide.visualstudio
+  name: com.unity.ide.visualstudio
+  description: "Mirror of com.unity.ide.visualstudio"
+  labels:
+    costcenter: "5020"
+  tags:
+    - planned-public
+    - enterprise
+  links:
+    - url: https://unity.slack.com/messages/CPPQ0SZE3/
+      title: "#ext-visual-studio-package"
+      icon: chat
+spec:
+  type: unity-package
+  lifecycle: production
+  owner: Unity-Technologies/scripting
