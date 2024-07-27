@@ -151,31 +151,39 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			{
 				return false;
 			}
+
 			var packageInfo = FindForAssetPath(path);
 			if (packageInfo == null)
 			{
 				return false;
 			}
-			var packageSource = packageInfo.source;
+
+			var flag = ProjectGenerationFlagFromPackageSource(packageInfo.source);
+
+			return flag != ProjectGenerationFlag.None && !ProjectGenerationFlag.HasFlag(flag);
+		}
+
+		private static ProjectGenerationFlag ProjectGenerationFlagFromPackageSource(PackageSource packageSource)
+		{
 			switch (packageSource)
 			{
 				case PackageSource.Embedded:
-					return !ProjectGenerationFlag.HasFlag(ProjectGenerationFlag.Embedded);
+					return ProjectGenerationFlag.Embedded;
 				case PackageSource.Registry:
-					return !ProjectGenerationFlag.HasFlag(ProjectGenerationFlag.Registry);
+					return ProjectGenerationFlag.Registry;
 				case PackageSource.BuiltIn:
-					return !ProjectGenerationFlag.HasFlag(ProjectGenerationFlag.BuiltIn);
+					return ProjectGenerationFlag.BuiltIn;
 				case PackageSource.Unknown:
-					return !ProjectGenerationFlag.HasFlag(ProjectGenerationFlag.Unknown);
+					return ProjectGenerationFlag.Unknown;
 				case PackageSource.Local:
-					return !ProjectGenerationFlag.HasFlag(ProjectGenerationFlag.Local);
+					return ProjectGenerationFlag.Local;
 				case PackageSource.Git:
-					return !ProjectGenerationFlag.HasFlag(ProjectGenerationFlag.Git);
+					return ProjectGenerationFlag.Git;
 				case PackageSource.LocalTarball:
-					return !ProjectGenerationFlag.HasFlag(ProjectGenerationFlag.LocalTarBall);
+					return ProjectGenerationFlag.LocalTarBall;
+				default:
+					return ProjectGenerationFlag.None;
 			}
-
-			return false;
 		}
 
 		public ResponseFileData ParseResponseFile(string responseFilePath, string projectDirectory, string[] systemReferenceDirectories)
