@@ -79,7 +79,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		public ProjectGeneration(string tempDirectory, IAssemblyNameProvider assemblyNameProvider, IFileIO fileIoProvider, IGUIDGenerator guidGenerator)
 		{
 			ProjectDirectory = FileUtility.NormalizeWindowsToUnix(tempDirectory);
-			m_ProjectName = Path.GetFileName(ProjectDirectory);
+			m_ProjectName = string.IsNullOrEmpty(PlayerSettings.productName) ? Path.GetFileName(ProjectDirectory) : PlayerSettings.productName;
 			m_AssemblyNameProvider = assemblyNameProvider;
 			m_FileIOProvider = fileIoProvider;
 			m_GUIDGenerator = guidGenerator;
@@ -640,7 +640,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 				var key = argument
 					.Substring(1, index - 1)
 					.Trim();
-				
+
 				if (!names.Contains(key))
 					continue;
 

@@ -56,13 +56,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 			return GetAnalyzers(vstuPath); }
 
-		public override IGenerator ProjectGenerator
-		{
-			get
-			{
-				return _generator;
-			}
-		}
+		public override IGenerator ProjectGenerator => _generator;
 
 		private static bool IsCandidateForDiscovery(string path)
 		{
@@ -192,7 +186,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 					var desktopFile = IOPath.Combine(dir, "applications/code.desktop");
 					if (!File.Exists(desktopFile))
 						continue;
-				
+
 					var content = File.ReadAllText(desktopFile);
 					match = DesktopFileExecEntry.Match(content);
 				}
@@ -243,7 +237,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			}
 			catch (IOException)
 			{
-			}			
+			}
 		}
 
 		private const string DefaultLaunchFileContent = @"{
@@ -302,99 +296,136 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			}
 		}
 
+		static int Patch(JSONObject jobj,string key,bool value)
+		{
+			if(jobj.GetValueOrDefault(key,null) is JSONNode node && node.IsBoolean)
+				return 0;
+
+			jobj[key] = value;
+			return 1;
+		}
+
 		private void CreateSettingsFile(string vscodeDirectory, bool enablePatch)
 		{
 			var settingsFile = IOPath.Combine(vscodeDirectory, "settings.json");
-			if (File.Exists(settingsFile))
+			JSONObject settings = null;
+			try
 			{
-				if (enablePatch)
-					PatchSettingsFile(settingsFile);
+				if (File.Exists(settingsFile))
+				{
+					if (!enablePatch)
+						return;
 
-				return;
+					var content = File.ReadAllText(settingsFile);
+					settings = JSONNode.Parse(content) as JSONObject;
+				}
+			}
+			catch
+			{
+
 			}
 
-			const string excludes = @"    ""files.exclude"": {
-        ""**/.DS_Store"": true,
-        ""**/.git"": true,
-        ""**/.vs"": true,
-        ""**/.gitmodules"": true,
-        ""**/.vsconfig"": true,
-        ""**/*.booproj"": true,
-        ""**/*.pidb"": true,
-        ""**/*.suo"": true,
-        ""**/*.user"": true,
-        ""**/*.userprefs"": true,
-        ""**/*.unityproj"": true,
-        ""**/*.dll"": true,
-        ""**/*.exe"": true,
-        ""**/*.pdf"": true,
-        ""**/*.mid"": true,
-        ""**/*.midi"": true,
-        ""**/*.wav"": true,
-        ""**/*.gif"": true,
-        ""**/*.ico"": true,
-        ""**/*.jpg"": true,
-        ""**/*.jpeg"": true,
-        ""**/*.png"": true,
-        ""**/*.psd"": true,
-        ""**/*.tga"": true,
-        ""**/*.tif"": true,
-        ""**/*.tiff"": true,
-        ""**/*.3ds"": true,
-        ""**/*.3DS"": true,
-        ""**/*.fbx"": true,
-        ""**/*.FBX"": true,
-        ""**/*.lxo"": true,
-        ""**/*.LXO"": true,
-        ""**/*.ma"": true,
-        ""**/*.MA"": true,
-        ""**/*.obj"": true,
-        ""**/*.OBJ"": true,
-        ""**/*.asset"": true,
-        ""**/*.cubemap"": true,
-        ""**/*.flare"": true,
-        ""**/*.mat"": true,
-        ""**/*.meta"": true,
-        ""**/*.prefab"": true,
-        ""**/*.unity"": true,
-        ""build/"": true,
-        ""Build/"": true,
-        ""Library/"": true,
-        ""library/"": true,
-        ""obj/"": true,
-        ""Obj/"": true,
-        ""Logs/"": true,
-        ""logs/"": true,
-        ""ProjectSettings/"": true,
-        ""UserSettings/"": true,
-        ""temp/"": true,
-        ""Temp/"": true
-    }";
+			string[] commonHiddenFolderExclude = new [] {
+				".DS_Store",
+				".git",
+				".vs",
+				".gitmodules",
+				".vsconfig",
+			};
 
-			var content = @"{
-" + excludes + @",
-    ""dotnet.defaultSolution"": """ + IOPath.GetFileName(ProjectGenerator.SolutionFile()) + @"""
-}";
+			string[] commonFileExtensionsExclude = new []{
+				"booproj",
+				"pidb",
+				"suo",
+				"user",
+				"userprefs",
+				"unityproj",
+				"dll",
+				"exe",
+				"pdf",
+			};
 
-			File.WriteAllText(settingsFile, content);
-		}
+			string[] binaryFileExtensionsExclude = new []{
+				"mid",
+				"midi",
+				"wav",
+				"gif",
+				"ico",
+				"jpg",
+				"jpeg",
+				"png",
+				"psd",
+				"tga",
+				"tif",
+				"tiff",
+				"3ds",
+				"3DS",
+				"fbx",
+				"FBX",
+				"lxo",
+				"LXO",
+				"ma",
+				"MA",
+				"obj",
+				"OBJ",
+				"cubemap",
+				"flare",
+			};
 
-		private void PatchSettingsFile(string settingsFile)
-		{
+			string[] unityFileExtensionsExclude = new []{
+				"asset",
+				"mat",
+				"meta",
+				"prefab",
+				"unity",
+			};
+
+			string[] unityFoldersExclude = new [] {
+				"Build",
+				"Library",
+				"Obj",
+				"Logs",
+				"ProjectSettings",
+				"UserSettings",
+				"Temp"
+			};
+
 			try
 			{
 				const string excludesKey = "files.exclude";
 				const string solutionKey = "dotnet.defaultSolution";
 
-				var content = File.ReadAllText(settingsFile);
-				var settings = JSONNode.Parse(content);
+				if(settings == null)
+					settings = new JSONObject();
 
 				var excludes = settings[excludesKey] as JSONObject;
 				if (excludes == null)
-					return;
+					settings[excludesKey] = excludes = new JSONObject();
+
+				int patched = 0;
+
+				foreach(string key in commonHiddenFolderExclude)
+					patched += Patch(excludes,"**/" + key,true);
+
+				foreach(string key in commonFileExtensionsExclude)
+					patched += Patch(excludes,"**/*." + key,true);
+
+				foreach(string key in binaryFileExtensionsExclude)
+					patched += Patch(excludes,"**/*." + key,true);
+
+				foreach(string key in unityFileExtensionsExclude)
+					patched += Patch(excludes,"**/*." + key,true);
+
+				foreach(string key in unityFoldersExclude)
+				{
+					string lower = key.ToLower();
+					if(key != lower)
+						patched += Patch(excludes,lower + "/",excludes.GetValueOrDefault(key + "/",true));
+
+					patched += Patch(excludes,key + "/",true);
+				}
 
 				var patchList = new List<string>();
-				var patched = false;
 
 				// Remove files.exclude for solution+project files in the project root
 				foreach (var exclude in excludes)
@@ -411,7 +442,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 						continue;
 
 					patchList.Add(key);
-					patched = true;
+					patched++;
 				}
 
 				// Check default solution
@@ -420,20 +451,23 @@ namespace Microsoft.Unity.VisualStudio.Editor
 				if (defaultSolution == null || defaultSolution.Value != solutionFile)
 				{
 					settings[solutionKey] = solutionFile;
-					patched = true;
+					patched++;
 				}
 
-				if (!patched)
+				if (patched < 1)
 					return;
 
 				foreach (var patch in patchList)
 					excludes.Remove(patch);
 
 				WriteAllTextFromJObject(settingsFile, settings);
+
+				UnityEngine.Debug.Log("patch counter : " + patched);
 			}
-			catch (Exception)
+			catch (Exception e)
 			{
 				// do not fail if we cannot patch the settings.json file
+				UnityEngine.Debug.LogException(e);
 			}
 		}
 
@@ -506,7 +540,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			var directory = IOPath.GetDirectoryName(solution);
 			var application = Path;
 
-			ProcessRunner.Start(string.IsNullOrEmpty(path) ? 
+			ProcessRunner.Start(string.IsNullOrEmpty(path) ?
 				ProcessStartInfoFor(application, $"\"{directory}\"") :
 				ProcessStartInfoFor(application, $"\"{directory}\" -g \"{path}\":{line}:{column}"));
 
