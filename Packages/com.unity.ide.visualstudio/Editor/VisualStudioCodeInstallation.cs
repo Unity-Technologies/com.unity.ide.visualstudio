@@ -504,17 +504,30 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 		public override bool Open(string path, int line, int column, string solution)
 		{
+			var application = Path;
+
 			line = Math.Max(1, line);
 			column = Math.Max(0, column);
 
 			var directory = IOPath.GetDirectoryName(solution);
-			var application = Path;
+			var workspace = TryFindWorkspace(directory);
 
-			ProcessRunner.Start(string.IsNullOrEmpty(path) ? 
-				ProcessStartInfoFor(application, $"\"{directory}\"") :
-				ProcessStartInfoFor(application, $"\"{directory}\" -g \"{path}\":{line}:{column}"));
+			var target = workspace ?? directory;
+
+			ProcessRunner.Start(string.IsNullOrEmpty(path)
+				? ProcessStartInfoFor(application, $"\"{target}\"")
+				: ProcessStartInfoFor(application, $"\"{target}\" -g \"{path}\":{line}:{column}"));
 
 			return true;
+		}
+
+		private static string TryFindWorkspace(string directory)
+		{
+			var files = Directory.GetFiles(directory, "*.code-workspace", SearchOption.TopDirectoryOnly);
+			if (files.Length == 0 && files.Length > 1)
+				return null;
+
+			return files[0];
 		}
 
 		private static ProcessStartInfo ProcessStartInfoFor(string application, string arguments)
