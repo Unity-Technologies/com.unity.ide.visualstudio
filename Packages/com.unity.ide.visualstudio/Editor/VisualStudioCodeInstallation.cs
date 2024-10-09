@@ -524,7 +524,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		private static string TryFindWorkspace(string directory)
 		{
 			var files = Directory.GetFiles(directory, "*.code-workspace", SearchOption.TopDirectoryOnly);
-			if (files.Length == 0 && files.Length > 1)
+			if (files.Length == 0 || files.Length > 1)
 				return null;
 
 			return files[0];
