@@ -228,7 +228,27 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			if (!IsProjectGeneratedFor(path, generator, out var missingFlag))
 				Debug.LogWarning($"You are trying to open {path} outside a generated project. This might cause problems with IntelliSense and debugging. To avoid this, you can change your .csproj preferences in Edit > Preferences > External Tools and enable {GetProjectGenerationFlagDescription(missingFlag)} generation.");
 
-			var solution = GetOrGenerateSolutionFile(generator);
+			if (!generator.HasSolutionBeenGenerated())
+			{
+				// If no solution has been generated, run a sync before opening the solution
+				generator.Sync();
+				return OpenFromInstallation(installation, path, line, column);
+			}
+			else
+			{
+				// Else chances are high that the solution is up-to-date, proactively open the solution for better latency
+				var result = OpenFromInstallation(installation, path, line, column);
+				
+				// But run a sync to make sure everything is up-to-date. Best case we'll do nothing (apart from checking compilation objects), worst case VS will reload touched projects.
+				generator.Sync();
+
+				return result;
+			}
+		}
+
+		private static bool OpenFromInstallation(IVisualStudioInstallation installation, string path, int line, int column)
+		{
+			var solution = installation.ProjectGenerator.SolutionFile();
 			return installation.Open(path, line, column, solution);
 		}
 
@@ -290,12 +310,6 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			// Return false if we found a source not flagged for generation
 			missingFlag = flag;
 			return false;
-		}
-
-		private static string GetOrGenerateSolutionFile(IGenerator generator)
-		{
-			generator.Sync();
-			return generator.SolutionFile();
 		}
 	}
 }
