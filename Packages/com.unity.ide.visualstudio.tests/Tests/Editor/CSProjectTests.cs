@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Xml;
+using SR = System.Reflection;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEditor.Compilation;
@@ -118,9 +119,12 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 				var projectType = ProjectTypeOf(m_Builder.Assembly.name);
 				var buildTarget = projectType + ":" + (int)projectType;
 				var unityVersion = Application.unityVersion;
+				SR.PropertyInfo tuanjieVersionPropertyInfo = typeof(Application).GetProperty("tuanjieVersion", SR.BindingFlags.Public | SR.BindingFlags.Static);
+				object tuanjieVersionPropertyValue = tuanjieVersionPropertyInfo != null ? tuanjieVersionPropertyInfo.GetValue(null, null) : null;
+				var tuanjieVersion = tuanjieVersionPropertyValue != null ? tuanjieVersionPropertyValue.ToString() : string.Empty;
 				var packageVersion = UnityEditor.PackageManager.PackageInfo.FindForAssembly(typeof(AssemblyNameProvider).Assembly).version;
 
-				var content = new[]
+				var contentPart0 = new[]
 				{
 					"<?xml version=\"1.0\" encoding=\"utf-8\"?>",
 					"<Project ToolsVersion=\"4.0\" DefaultTargets=\"Build\" xmlns=\"http://schemas.microsoft.com/developer/msbuild/2003\">",
@@ -176,7 +180,16 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 					"    <UnityProjectGeneratorStyle>Legacy</UnityProjectGeneratorStyle>",
 					$"    <UnityProjectType>{buildTarget}</UnityProjectType>",
 					$"    <UnityBuildTarget>{EditorUserBuildSettings.activeBuildTarget + ":" + (int)EditorUserBuildSettings.activeBuildTarget}</UnityBuildTarget>",
-					$"    <UnityVersion>{unityVersion}</UnityVersion>",
+					$"    <UnityVersion>{unityVersion}</UnityVersion>"
+				};
+
+				var contentPart1 = new[]
+				{
+					$"    <TuanjieVersion>{tuanjieVersion}</TuanjieVersion>"
+				};
+
+				var contentPart2 = new[]
+				{
 					"  </PropertyGroup>",
 					"  <ItemGroup>",
 					"    <Compile Include=\"test.cs\" />",
@@ -195,7 +208,7 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 					"</Project>",
 					""
 				};
-
+				var content = string.IsNullOrEmpty(tuanjieVersion) ? contentPart0.Concat(contentPart2).ToArray() : contentPart0.Concat(contentPart1).Concat(contentPart2).ToArray();
 				StringAssert.AreEqualIgnoringCase(string.Join("\r\n", content), csprojContent);
 			}
 		}

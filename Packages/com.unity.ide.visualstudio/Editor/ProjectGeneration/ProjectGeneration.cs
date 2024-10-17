@@ -718,6 +718,9 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		{
 			var projectType = ProjectTypeOf(assembly.name);
 
+			SR.PropertyInfo tuanjieVersionPropertyInfo = typeof(Application).GetProperty("tuanjieVersion", SR.BindingFlags.Public | SR.BindingFlags.Static);
+			object tuanjieVersionPropertyValue = tuanjieVersionPropertyInfo != null ? tuanjieVersionPropertyInfo.GetValue(null, null) : null;
+
 			var projectProperties = new ProjectProperties
 			{
 				ProjectGuid = ProjectGuid(assembly),
@@ -732,6 +735,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 				FlavoringProjectType = projectType + ":" + (int)projectType,
 				FlavoringBuildTarget = EditorUserBuildSettings.activeBuildTarget + ":" + (int)EditorUserBuildSettings.activeBuildTarget,
 				FlavoringUnityVersion = Application.unityVersion,
+				FlavoringTuanjieVersion = tuanjieVersionPropertyValue != null ? tuanjieVersionPropertyValue.ToString() : string.Empty,
 				FlavoringPackageVersion = VisualStudioIntegration.PackageVersion(),
 			};
 
@@ -847,6 +851,10 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			headerBuilder.Append(@"    <UnityProjectType>").Append(properties.FlavoringProjectType).Append(@"</UnityProjectType>").Append(k_WindowsNewline);
 			headerBuilder.Append(@"    <UnityBuildTarget>").Append(properties.FlavoringBuildTarget).Append(@"</UnityBuildTarget>").Append(k_WindowsNewline);
 			headerBuilder.Append(@"    <UnityVersion>").Append(properties.FlavoringUnityVersion).Append(@"</UnityVersion>").Append(k_WindowsNewline);
+			if (!string.IsNullOrEmpty(properties.FlavoringTuanjieVersion))
+			{
+				headerBuilder.Append(@"    <TuanjieVersion>").Append(properties.FlavoringTuanjieVersion).Append(@"</TuanjieVersion>").Append(k_WindowsNewline);
+			}
 			headerBuilder.Append(@"  </PropertyGroup>").Append(k_WindowsNewline);
 		}
 
