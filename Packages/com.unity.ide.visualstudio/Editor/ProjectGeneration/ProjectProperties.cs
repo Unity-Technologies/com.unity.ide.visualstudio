@@ -25,6 +25,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		public string FlavoringProjectType { get; set; } = string.Empty;
 		public string FlavoringBuildTarget { get; set; } = string.Empty;
 		public string FlavoringUnityVersion { get; set; } = string.Empty;
+		public string FlavoringTuanjieVersion { get; set; } = string.Empty;
 		public string FlavoringPackageVersion { get; set; } = string.Empty;
 	}
 }
