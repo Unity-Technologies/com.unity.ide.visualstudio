@@ -40,7 +40,6 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			"LaunchProfiles",
 			"SharedProjectReferences",
 			"ReferenceManagerSharedProjects",
-			"ProjectReferences",
 			"ReferenceManagerProjects",
 			"COMReferences",
 			"ReferenceManagerCOM",
@@ -61,7 +60,9 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			headerBuilder.Append(@"  <PropertyGroup>").Append(k_WindowsNewline);
 			headerBuilder.Append($"    <BaseIntermediateOutputPath>{@"Temp\obj\$(MSBuildProjectName)".NormalizePathSeparators()}</BaseIntermediateOutputPath>").Append(k_WindowsNewline);
 			headerBuilder.Append(@"    <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>").Append(k_WindowsNewline);
-			headerBuilder.Append(@"    <OutputPath>").Append(properties.OutputPath).Append(@"</OutputPath>").Append(k_WindowsNewline);
+			headerBuilder.Append(@"    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>").Append(k_WindowsNewline);
+			headerBuilder.Append(@"    <UseCommonOutputDirectory>true</UseCommonOutputDirectory>").Append(k_WindowsNewline);
+			headerBuilder.Append($"    <OutputPath>").Append(properties.OutputPath.NormalizePathSeparators()).Append(@"</OutputPath>").Append(k_WindowsNewline);
 			headerBuilder.Append(@"  </PropertyGroup>").Append(k_WindowsNewline);
 
 			// Supported capabilities
@@ -100,7 +101,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		{
 			// If the current assembly is a Player project, we want to project-reference the corresponding Player project
 			var referenceName = m_AssemblyNameProvider.GetAssemblyName(assembly.outputPath, reference.name);
-			projectBuilder.Append(@"    <ProjectReference Include=""").Append(referenceName).Append(GetProjectExtension()).Append(@""" />").Append(k_WindowsNewline);
+			projectBuilder.Append(@"    <ProjectReference Include=""$(MSBuildThisFileDirectory)").Append(referenceName).Append(GetProjectExtension()).Append(@""" />").Append(k_WindowsNewline);
 		}
 
 		internal override void GetProjectFooter(StringBuilder footerBuilder)
