@@ -144,7 +144,7 @@ namespace Microsoft.Unity.VisualStudio.Editor.Tests
 					"  </PropertyGroup>",
 					"  <PropertyGroup>",
 					"    <NoWarn>0169;USG0001</NoWarn>",
-					$"    <DefineConstants></DefineConstants>",
+					"    <DefineConstants></DefineConstants>",
 					"    <AllowUnsafeBlocks>False</AllowUnsafeBlocks>",
 					"  </PropertyGroup>",
 					"  <PropertyGroup Condition=\" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' \">",
