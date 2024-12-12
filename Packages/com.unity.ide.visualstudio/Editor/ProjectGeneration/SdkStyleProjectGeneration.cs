@@ -101,7 +101,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		{
 			// If the current assembly is a Player project, we want to project-reference the corresponding Player project
 			var referenceName = m_AssemblyNameProvider.GetAssemblyName(assembly.outputPath, reference.name);
-			projectBuilder.Append(@"    <ProjectReference Include=""$(MSBuildThisFileDirectory)").Append(referenceName).Append(GetProjectExtension()).Append(@""" />").Append(k_WindowsNewline);
+			projectBuilder.Append(@"    <ProjectReference Include=""").Append(referenceName).Append(GetProjectExtension()).Append(@""" />").Append(k_WindowsNewline);
 		}
 
 		internal override void GetProjectFooter(StringBuilder footerBuilder)
