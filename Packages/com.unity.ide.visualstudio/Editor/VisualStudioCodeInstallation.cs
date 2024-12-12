@@ -373,6 +373,12 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 			var content = @"{
 " + excludes + @",
+    ""file.associations"": {
+        ""*.asset"": ""yaml"",
+        ""*.meta"": ""yaml"",
+        ""*.prefab"": ""yaml"",
+        ""*.unity"": ""yaml"",
+    },
     ""explorer.fileNesting.enabled"": true,
     ""explorer.fileNesting.patterns"": {
         ""*.sln"": ""*.csproj"",
