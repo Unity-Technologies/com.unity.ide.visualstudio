@@ -59,6 +59,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 		HashSet<string> m_ProjectSupportedExtensions = new HashSet<string>();
 		HashSet<string> m_BuiltinSupportedExtensions = new HashSet<string>();
+		HashSet<string> m_DefaultSupportedExtensions = new HashSet<string>(new string[] { "dll", "asmdef", "additionalfile" });
 
 		readonly string m_ProjectName;
 		internal readonly IAssemblyNameProvider m_AssemblyNameProvider;
@@ -239,10 +240,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			extensionWithoutDot = GetExtensionWithoutDot(path);
 
 			// Dll's are not scripts but still need to be included
-			if (extensionWithoutDot == "dll")
-				return true;
-
-			if (extensionWithoutDot == "asmdef")
+			if (m_DefaultSupportedExtensions.Contains(extensionWithoutDot))
 				return true;
 
 			if (m_BuiltinSupportedExtensions.Contains(extensionWithoutDot))
