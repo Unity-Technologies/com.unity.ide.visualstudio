@@ -1,5 +1,19 @@
 # Code Editor Package for Visual Studio
 
+## [2.0.22] - 2023-10-03
+
+Integration:
+
+- Add support for `XDG_DATA_DIRS` and `.desktop` files on Linux for `VS Code` discovery.
+- Use compile-time platform-specifics instead of using runtime conditions.
+
+Project generation:
+
+- Suppress `USG0001` warnings.
+- Mark referenced assemblies as private (to not copy extra files to output directory when building).
+- Add Unity capability to SDK-Style projects.
+- Prevent circular dependency errors with SDK-Style projects.
+
 ## [2.0.21] - 2023-09-05
 
 Integration:
