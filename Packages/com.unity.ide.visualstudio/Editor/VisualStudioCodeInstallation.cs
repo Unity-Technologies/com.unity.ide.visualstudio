@@ -373,7 +373,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 			var content = @"{
 " + excludes + @",
-    ""file.associations"": {
+    ""files.associations"": {
         ""*.asset"": ""yaml"",
         ""*.meta"": ""yaml"",
         ""*.prefab"": ""yaml"",
