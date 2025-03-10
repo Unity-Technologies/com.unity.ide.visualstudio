@@ -222,8 +222,14 @@ namespace Microsoft.Unity.VisualStudio.Editor.Messaging
 
 		public void Dispose()
 		{
-			_disposed = true;
-			_socket.Close();
+			try
+			{
+				_disposed = true;
+				_socket.Close();
+			}
+			catch
+			{
+			}
 		}
 	}
 }
