@@ -55,17 +55,13 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			@"        {{{0}}}.Release|Any CPU.ActiveCfg = Release|Any CPU",
 			@"        {{{0}}}.Release|Any CPU.Build.0 = Release|Any CPU").Replace("    ", "\t");
 
-		static readonly string[] k_ReimportSyncExtensions = { ".dll", ".asmdef" };
 
-		HashSet<string> m_ProjectSupportedExtensions = new HashSet<string>();
-		HashSet<string> m_BuiltinSupportedExtensions = new HashSet<string>();
-		HashSet<string> m_DefaultSupportedExtensions = new HashSet<string>(new string[] { "dll", "asmdef", "additionalfile" });
+		HashSet<string> _supportedExtensions;
 
 		readonly string m_ProjectName;
 		internal readonly IAssemblyNameProvider m_AssemblyNameProvider;
 		readonly IFileIO m_FileIOProvider;
 		readonly IGUIDGenerator m_GUIDGenerator;
-		bool m_ShouldGenerateAll;
 		IVisualStudioInstallation m_CurrentInstallation;
 
 		public ProjectGeneration() : this(Directory.GetParent(Application.dataPath).FullName)
@@ -162,7 +158,9 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 		private static bool ShouldSyncOnReimportedAsset(string asset)
 		{
-			return k_ReimportSyncExtensions.Contains(new FileInfo(asset).Extension);
+			// ".dll", ".asmdef"
+			var extension = new FileInfo(asset).Extension;
+			return extension == ".dll" || extension == ".asmdef";
 		}
 
 		private void RefreshCurrentInstallation()
@@ -203,8 +201,22 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 		private void SetupProjectSupportedExtensions()
 		{
-			m_ProjectSupportedExtensions = new HashSet<string>(m_AssemblyNameProvider.ProjectSupportedExtensions);
-			m_BuiltinSupportedExtensions = new HashSet<string>(EditorSettings.projectGenerationBuiltinExtensions);
+			_supportedExtensions = new HashSet<string>
+			{
+				"dll",
+				"asmdef",
+				"additionalfile"
+			};
+
+			foreach (var extension in m_AssemblyNameProvider.ProjectSupportedExtensions)
+			{
+				_supportedExtensions.Add(extension);
+			}
+
+			foreach (var extension in EditorSettings.projectGenerationBuiltinExtensions)
+			{
+				_supportedExtensions.Add(extension);
+			}
 		}
 
 		private bool ShouldFileBePartOfSolution(string file)
@@ -238,20 +250,9 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		private bool IsSupportedFile(string path, out string extensionWithoutDot)
 		{
 			extensionWithoutDot = GetExtensionWithoutDot(path);
-
-			// Dll's are not scripts but still need to be included
-			if (m_DefaultSupportedExtensions.Contains(extensionWithoutDot))
-				return true;
-
-			if (m_BuiltinSupportedExtensions.Contains(extensionWithoutDot))
-				return true;
-
-			if (m_ProjectSupportedExtensions.Contains(extensionWithoutDot))
-				return true;
-
-			return false;
+			// dlls and other configured files are not scripts but still need to be included
+			return _supportedExtensions.Contains(extensionWithoutDot);
 		}
-
 
 		private static ScriptingLanguage ScriptingLanguageFor(Assembly assembly)
 		{
