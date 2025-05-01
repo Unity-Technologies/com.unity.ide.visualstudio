@@ -40,23 +40,6 @@ build_cpp_win:
         - "Packages/com.unity.ide.visualstudio/Editor/COMIntegration/Release/COMIntegration.exe"  
 
 
-build_native_mac:
-  name: Build Apple Event Integration
-  agent:
-    type: Unity::VM::osx
-    image: test-platform/macos-10.15:stable
-    flavor: b1.large
-    config:
-      env_vars:
-        - PATH=/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/opt/X11/bin
-  commands:
-    - .scripts/build-appleeventintegration.sh
-  artifacts:
-    appleeventintegration:
-      paths:
-        - "Packages/com.unity.ide.visualstudio/Editor/Plugins/AppleEventIntegration.bundle/**"  
-
-
 pack:
   name: Pack
   agent:
@@ -72,7 +55,6 @@ pack:
         - "**/upm-ci~/packages/**/*"
   dependencies:
   - .yamato/CI.yml#build_cpp_win
-  - .yamato/CI.yml#build_native_mac
 
 
 commit_ci_release:
