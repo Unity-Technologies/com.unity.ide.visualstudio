@@ -6,7 +6,7 @@
 # How to contribute (for everyone)
 
 - Please create a PR against the latest `version-x.y.z` branch.
-- In the [`.scripts`](.scripts) folder, you should find how to build IDE integrations with VS and VS for Mac. Make sure to remove all build artifacts if needed, given we do not want Unity to import unwanted files. You can find as well extra notes regarding building the MacOS part [here](Packages/com.unity.ide.visualstudio/Editor/AppleEventIntegration~/howtobuild.txt), and the Windows part [here](https://github.cds.internal.unity3d.com/unity/com.unity.ide.visualstudio/blob/next/master/Packages/com.unity.ide.visualstudio/Editor/COMIntegration/COMIntegration~/howtobuild.txt).
+- In the [`.scripts`](.scripts) folder, you should find how to build IDE integrations with VS and VS for Mac. Make sure to remove all build artifacts if needed, given we do not want Unity to import unwanted files. You can find as well extra notes regarding building the Windows specific part [here](https://github.cds.internal.unity3d.com/unity/com.unity.ide.visualstudio/blob/next/master/Packages/com.unity.ide.visualstudio/Editor/COMIntegration/COMIntegration~/howtobuild.txt).
 - Please add Microsoft folks on all PRs.
 
 # How to publish new version (for Microsoft)
