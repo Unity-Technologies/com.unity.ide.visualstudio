@@ -821,26 +821,6 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		{
 		}
 
-		private static string GetSolutionText()
-		{
-			return string.Join(k_WindowsNewline,
-			@"",
-			@"Microsoft Visual Studio Solution File, Format Version {0}",
-			@"# Visual Studio {1}",
-			@"{2}",
-			@"Global",
-			@"    GlobalSection(SolutionConfigurationPlatforms) = preSolution",
-			@"        Debug|Any CPU = Debug|Any CPU",
-			@"        Release|Any CPU = Release|Any CPU",
-			@"    EndGlobalSection",
-			@"    GlobalSection(ProjectConfigurationPlatforms) = postSolution",
-			@"{3}",
-			@"    EndGlobalSection",
-			@"{4}",
-			@"EndGlobal",
-			@"").Replace("    ", "\t");
-		}
-
 		private void SyncSolution(IEnumerable<Assembly> assemblies)
 		{
 			if (InvalidCharactersRegexPattern.IsMatch(ProjectDirectory))
@@ -883,7 +863,24 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			var configurableProjects = projects.Where(p => !p.IsSolutionFolderProjectFactory());
 			string projectConfigurationsText = string.Join(k_WindowsNewline, configurableProjects.Select(p => GetProjectActiveConfigurations(p.ProjectGuid)).ToArray());
 
-			return string.Format(GetSolutionText(), fileversion, vsversion, projectEntriesText, projectConfigurationsText, propertiesText);
+			const string solutionText = 
+				"" + k_WindowsNewline
+				+ "Microsoft Visual Studio Solution File, Format Version {0}" + k_WindowsNewline
+				+ "# Visual Studio {1}" + k_WindowsNewline
+				+ "{2}" + k_WindowsNewline
+				+ "Global" + k_WindowsNewline
+				+ "\tGlobalSection(SolutionConfigurationPlatforms) = preSolution" + k_WindowsNewline
+				+ "\t\tDebug|Any CPU = Debug|Any CPU" + k_WindowsNewline
+				+ "\t\tRelease|Any CPU = Release|Any CPU" + k_WindowsNewline
+				+ "\tEndGlobalSection" + k_WindowsNewline
+				+ "\tGlobalSection(ProjectConfigurationPlatforms) = postSolution" + k_WindowsNewline
+				+ "{3}" + k_WindowsNewline
+				+ "\tEndGlobalSection" + k_WindowsNewline
+				+ "{4}" + k_WindowsNewline
+				+ "EndGlobal" + k_WindowsNewline
+				+ "";
+
+			return string.Format(solutionText, fileversion, vsversion, projectEntriesText, projectConfigurationsText, propertiesText);
 		}
 
 		private static IEnumerable<Assembly> RelevantAssembliesForMode(IEnumerable<Assembly> assemblies)
