@@ -49,13 +49,6 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 		const string m_SolutionProjectEntryTemplate = @"Project(""{{{0}}}"") = ""{1}"", ""{2}"", ""{{{3}}}""{4}EndProject";
 
-		readonly string m_SolutionProjectConfigurationTemplate = string.Join(k_WindowsNewline,
-			@"        {{{0}}}.Debug|Any CPU.ActiveCfg = Debug|Any CPU",
-			@"        {{{0}}}.Debug|Any CPU.Build.0 = Debug|Any CPU",
-			@"        {{{0}}}.Release|Any CPU.ActiveCfg = Release|Any CPU",
-			@"        {{{0}}}.Release|Any CPU.Build.0 = Release|Any CPU").Replace("    ", "\t");
-
-
 		HashSet<string> _supportedExtensions;
 
 		readonly string m_ProjectName;
@@ -967,8 +960,14 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		/// </summary>
 		private string GetProjectActiveConfigurations(string projectGuid)
 		{
+			const string solutionProjectConfigurationTemplate =
+				"\t\t{{{0}}}.Debug|Any CPU.ActiveCfg = Debug|Any CPU" + k_WindowsNewline
+				+ "\t\t{{{0}}}.Debug|Any CPU.Build.0 = Debug|Any CPU" + k_WindowsNewline
+				+ "\t\t{{{0}}}.Release|Any CPU.ActiveCfg = Release|Any CPU" + k_WindowsNewline
+				+ "\t\t{{{0}}}.Release|Any CPU.Build.0 = Release|Any CPU";
+
 			return string.Format(
-				m_SolutionProjectConfigurationTemplate,
+				solutionProjectConfigurationTemplate,
 				projectGuid);
 		}
 
