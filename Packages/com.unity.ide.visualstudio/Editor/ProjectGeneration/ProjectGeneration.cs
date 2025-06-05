@@ -49,23 +49,12 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 		const string m_SolutionProjectEntryTemplate = @"Project(""{{{0}}}"") = ""{1}"", ""{2}"", ""{{{3}}}""{4}EndProject";
 
-		readonly string m_SolutionProjectConfigurationTemplate = string.Join(k_WindowsNewline,
-			@"        {{{0}}}.Debug|Any CPU.ActiveCfg = Debug|Any CPU",
-			@"        {{{0}}}.Debug|Any CPU.Build.0 = Debug|Any CPU",
-			@"        {{{0}}}.Release|Any CPU.ActiveCfg = Release|Any CPU",
-			@"        {{{0}}}.Release|Any CPU.Build.0 = Release|Any CPU").Replace("    ", "\t");
-
-		static readonly string[] k_ReimportSyncExtensions = { ".dll", ".asmdef" };
-
-		HashSet<string> m_ProjectSupportedExtensions = new HashSet<string>();
-		HashSet<string> m_BuiltinSupportedExtensions = new HashSet<string>();
-		HashSet<string> m_DefaultSupportedExtensions = new HashSet<string>(new string[] { "dll", "asmdef", "additionalfile" });
+		HashSet<string> _supportedExtensions;
 
 		readonly string m_ProjectName;
 		internal readonly IAssemblyNameProvider m_AssemblyNameProvider;
 		readonly IFileIO m_FileIOProvider;
 		readonly IGUIDGenerator m_GUIDGenerator;
-		bool m_ShouldGenerateAll;
 		IVisualStudioInstallation m_CurrentInstallation;
 
 		public ProjectGeneration() : this(Directory.GetParent(Application.dataPath).FullName)
@@ -162,7 +151,9 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 		private static bool ShouldSyncOnReimportedAsset(string asset)
 		{
-			return k_ReimportSyncExtensions.Contains(new FileInfo(asset).Extension);
+			// ".dll", ".asmdef"
+			var extension = new FileInfo(asset).Extension;
+			return extension == ".dll" || extension == ".asmdef";
 		}
 
 		private void RefreshCurrentInstallation()
@@ -203,8 +194,22 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 		private void SetupProjectSupportedExtensions()
 		{
-			m_ProjectSupportedExtensions = new HashSet<string>(m_AssemblyNameProvider.ProjectSupportedExtensions);
-			m_BuiltinSupportedExtensions = new HashSet<string>(EditorSettings.projectGenerationBuiltinExtensions);
+			_supportedExtensions = new HashSet<string>
+			{
+				"dll",
+				"asmdef",
+				"additionalfile"
+			};
+
+			foreach (var extension in m_AssemblyNameProvider.ProjectSupportedExtensions)
+			{
+				_supportedExtensions.Add(extension);
+			}
+
+			foreach (var extension in EditorSettings.projectGenerationBuiltinExtensions)
+			{
+				_supportedExtensions.Add(extension);
+			}
 		}
 
 		private bool ShouldFileBePartOfSolution(string file)
@@ -238,20 +243,9 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		private bool IsSupportedFile(string path, out string extensionWithoutDot)
 		{
 			extensionWithoutDot = GetExtensionWithoutDot(path);
-
-			// Dll's are not scripts but still need to be included
-			if (m_DefaultSupportedExtensions.Contains(extensionWithoutDot))
-				return true;
-
-			if (m_BuiltinSupportedExtensions.Contains(extensionWithoutDot))
-				return true;
-
-			if (m_ProjectSupportedExtensions.Contains(extensionWithoutDot))
-				return true;
-
-			return false;
+			// dlls and other configured files are not scripts but still need to be included
+			return _supportedExtensions.Contains(extensionWithoutDot);
 		}
-
 
 		private static ScriptingLanguage ScriptingLanguageFor(Assembly assembly)
 		{
@@ -827,26 +821,6 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		{
 		}
 
-		private static string GetSolutionText()
-		{
-			return string.Join(k_WindowsNewline,
-			@"",
-			@"Microsoft Visual Studio Solution File, Format Version {0}",
-			@"# Visual Studio {1}",
-			@"{2}",
-			@"Global",
-			@"    GlobalSection(SolutionConfigurationPlatforms) = preSolution",
-			@"        Debug|Any CPU = Debug|Any CPU",
-			@"        Release|Any CPU = Release|Any CPU",
-			@"    EndGlobalSection",
-			@"    GlobalSection(ProjectConfigurationPlatforms) = postSolution",
-			@"{3}",
-			@"    EndGlobalSection",
-			@"{4}",
-			@"EndGlobal",
-			@"").Replace("    ", "\t");
-		}
-
 		private void SyncSolution(IEnumerable<Assembly> assemblies)
 		{
 			if (InvalidCharactersRegexPattern.IsMatch(ProjectDirectory))
@@ -889,7 +863,24 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			var configurableProjects = projects.Where(p => !p.IsSolutionFolderProjectFactory());
 			string projectConfigurationsText = string.Join(k_WindowsNewline, configurableProjects.Select(p => GetProjectActiveConfigurations(p.ProjectGuid)).ToArray());
 
-			return string.Format(GetSolutionText(), fileversion, vsversion, projectEntriesText, projectConfigurationsText, propertiesText);
+			const string solutionText = 
+				"" + k_WindowsNewline
+				+ "Microsoft Visual Studio Solution File, Format Version {0}" + k_WindowsNewline
+				+ "# Visual Studio {1}" + k_WindowsNewline
+				+ "{2}" + k_WindowsNewline
+				+ "Global" + k_WindowsNewline
+				+ "\tGlobalSection(SolutionConfigurationPlatforms) = preSolution" + k_WindowsNewline
+				+ "\t\tDebug|Any CPU = Debug|Any CPU" + k_WindowsNewline
+				+ "\t\tRelease|Any CPU = Release|Any CPU" + k_WindowsNewline
+				+ "\tEndGlobalSection" + k_WindowsNewline
+				+ "\tGlobalSection(ProjectConfigurationPlatforms) = postSolution" + k_WindowsNewline
+				+ "{3}" + k_WindowsNewline
+				+ "\tEndGlobalSection" + k_WindowsNewline
+				+ "{4}" + k_WindowsNewline
+				+ "EndGlobal" + k_WindowsNewline
+				+ "";
+
+			return string.Format(solutionText, fileversion, vsversion, projectEntriesText, projectConfigurationsText, propertiesText);
 		}
 
 		private static IEnumerable<Assembly> RelevantAssembliesForMode(IEnumerable<Assembly> assemblies)
@@ -966,8 +957,14 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		/// </summary>
 		private string GetProjectActiveConfigurations(string projectGuid)
 		{
+			const string solutionProjectConfigurationTemplate =
+				"\t\t{{{0}}}.Debug|Any CPU.ActiveCfg = Debug|Any CPU" + k_WindowsNewline
+				+ "\t\t{{{0}}}.Debug|Any CPU.Build.0 = Debug|Any CPU" + k_WindowsNewline
+				+ "\t\t{{{0}}}.Release|Any CPU.ActiveCfg = Release|Any CPU" + k_WindowsNewline
+				+ "\t\t{{{0}}}.Release|Any CPU.Build.0 = Release|Any CPU";
+
 			return string.Format(
-				m_SolutionProjectConfigurationTemplate,
+				solutionProjectConfigurationTemplate,
 				projectGuid);
 		}
 
