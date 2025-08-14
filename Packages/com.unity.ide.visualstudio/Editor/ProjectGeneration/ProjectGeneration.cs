@@ -132,7 +132,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 					SyncProject(assembly,
 						allAssetProjectParts,
-						responseFilesData: ParseResponseFileData(assembly).ToArray());
+						ParseResponseFileData(assembly));
 				}
 
 				return true;
@@ -283,11 +283,11 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			{
 				SyncProject(assembly,
 					allAssetProjectParts,
-					responseFilesData: ParseResponseFileData(assembly).ToArray());
+					ParseResponseFileData(assembly));
 			}
 		}
 
-		private IEnumerable<ResponseFileData> ParseResponseFileData(Assembly assembly)
+		private ResponseFileData[] ParseResponseFileData(Assembly assembly)
 		{
 			var systemReferenceDirectories = CompilationPipeline.GetSystemAssemblyDirectories(assembly.compilerOptions.ApiCompatibilityLevel);
 
@@ -309,7 +309,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 					}
 			}
 
-			return responseFilesData.Select(x => x.Value);
+			return responseFilesData.Select(x => x.Value).ToArray();
 		}
 
 		private Dictionary<string, string> GenerateAllAssetProjectParts()
@@ -383,11 +383,11 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		private void SyncProject(
 			Assembly assembly,
 			Dictionary<string, string> allAssetsProjectParts,
-			ResponseFileData[] responseFilesData)
+			ResponseFileData[] responseFileData)
 		{
 			SyncProjectFileIfNotChanged(
 				ProjectFile(assembly),
-				ProjectText(assembly, allAssetsProjectParts, responseFilesData));
+				ProjectText(assembly, allAssetsProjectParts, responseFileData));
 		}
 
 		private void SyncProjectFileIfNotChanged(string path, string newContents)
@@ -476,9 +476,9 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 		private string ProjectText(Assembly assembly,
 			Dictionary<string, string> allAssetsProjectParts,
-			ResponseFileData[] responseFilesData)
+			ResponseFileData[] responseFileData)
 		{
-			ProjectHeader(assembly, responseFilesData, out StringBuilder projectBuilder);
+			ProjectHeader(assembly, responseFileData, out StringBuilder projectBuilder);
 
 			var references = new List<string>();
 
@@ -513,7 +513,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 			projectBuilder.Append(@"  <ItemGroup>").Append(k_WindowsNewline);
 
-			var responseRefs = responseFilesData.SelectMany(x => x.FullPathReferences.Select(r => r));
+			var responseRefs = responseFileData.SelectMany(x => x.FullPathReferences.Select(r => r));
 			var internalAssemblyReferences = assembly.assemblyReferences
 				.Where(i => !i.sourceFiles.Any(ShouldFileBePartOfSolution)).Select(i => i.outputPath);
 			var allReferences =
@@ -595,8 +595,12 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			return Path.Combine(ProjectDirectory.NormalizePathSeparators(), $"{InvalidCharactersRegexPattern.Replace(m_ProjectName, "_")}.sln");
 		}
 
-		internal string GetLangVersion(Assembly assembly)
+		internal string GetLangVersion(Assembly assembly, ResponseFileData[] responseFileData)
 		{
+			var langVersion = GetOtherArguments(responseFileData, "langversion").FirstOrDefault();
+			if (!string.IsNullOrEmpty(langVersion))
+				return langVersion;
+
 			var targetLanguageVersion = "latest"; // danger: latest is not the same absolute value depending on the VS version.
 			if (m_CurrentInstallation != null)
 			{
@@ -610,9 +614,9 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			return targetLanguageVersion;
 		}
 
-		private static IEnumerable<string> GetOtherArguments(ResponseFileData[] responseFilesData, HashSet<string> names)
+		private static IEnumerable<string> GetOtherArguments(ResponseFileData[] responseFileData, string name)
 		{
-			var lines = responseFilesData
+			var lines = responseFileData
 				.SelectMany(x => x.OtherArguments)
 				.Where(l => !string.IsNullOrEmpty(l))
 				.Select(l => l.Trim())
@@ -628,7 +632,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 					.Substring(1, index - 1)
 					.Trim();
 				
-				if (!names.Contains(key))
+				if (name != key)
 					continue;
 
 				if (argument.Length <= index)
@@ -640,7 +644,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			}
 		}
 
-		private void SetAnalyzerAndSourceGeneratorProperties(Assembly assembly, ResponseFileData[] responseFilesData, ProjectProperties properties)
+		private void SetAnalyzerAndSourceGeneratorProperties(Assembly assembly, ResponseFileData[] responseFileData, ProjectProperties properties)
 		{
 			if (m_CurrentInstallation == null || !m_CurrentInstallation.SupportsAnalyzers)
 				return;
@@ -672,8 +676,9 @@ namespace Microsoft.Unity.VisualStudio.Editor
 #endif
 
 			// Analyzers and additional files provided by csc.rsp
-			analyzers.AddRange(GetOtherArguments(responseFilesData, new HashSet<string>(new[] { "analyzer", "a" })));
-			additionalFilePaths.AddRange(GetOtherArguments(responseFilesData, new HashSet<string>(new[] { "additionalfile" })));
+			analyzers.AddRange(GetOtherArguments(responseFileData, "analyzer"));
+			analyzers.AddRange(GetOtherArguments(responseFileData, "a"));
+			additionalFilePaths.AddRange(GetOtherArguments(responseFileData, "additionalfile"));
 
 			properties.RulesetPath = ToNormalizedPath(rulesetPath);
 			properties.Analyzers = ToNormalizedPaths(analyzers);
@@ -699,7 +704,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 		private void ProjectHeader(
 			Assembly assembly,
-			ResponseFileData[] responseFilesData,
+			ResponseFileData[] responseFileData,
 			out StringBuilder headerBuilder
 		)
 		{
@@ -708,13 +713,13 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			var projectProperties = new ProjectProperties
 			{
 				ProjectGuid = ProjectGuid(assembly),
-				LangVersion = GetLangVersion(assembly),
+				LangVersion = GetLangVersion(assembly, responseFileData),
 				AssemblyName = assembly.name,
 				RootNamespace = GetRootNamespace(assembly),
 				OutputPath = assembly.outputPath,
 				// RSP alterable
-				Defines = assembly.defines.Concat(responseFilesData.SelectMany(x => x.Defines)).Distinct().ToArray(),
-				Unsafe = assembly.compilerOptions.AllowUnsafeCode | responseFilesData.Any(x => x.Unsafe),
+				Defines = assembly.defines.Concat(responseFileData.SelectMany(x => x.Defines)).Distinct().ToArray(),
+				Unsafe = assembly.compilerOptions.AllowUnsafeCode | responseFileData.Any(x => x.Unsafe),
 				// VSTU Flavoring
 				FlavoringProjectType = projectType + ":" + (int)projectType,
 				FlavoringBuildTarget = EditorUserBuildSettings.activeBuildTarget + ":" + (int)EditorUserBuildSettings.activeBuildTarget,
@@ -722,7 +727,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 				FlavoringPackageVersion = VisualStudioIntegration.PackageVersion(),
 			};
 
-			SetAnalyzerAndSourceGeneratorProperties(assembly, responseFilesData, projectProperties);
+			SetAnalyzerAndSourceGeneratorProperties(assembly, responseFileData, projectProperties);
 
 			GetProjectHeader(projectProperties, out headerBuilder);
 		}
