@@ -40,28 +40,11 @@ build_cpp_win:
         - "Packages/com.unity.ide.visualstudio/Editor/COMIntegration/Release/COMIntegration.exe"  
 
 
-build_native_mac:
-  name: Build Apple Event Integration
-  agent:
-    type: Unity::VM::osx
-    image: test-platform/macos-10.15:stable
-    flavor: b1.large
-    config:
-      env_vars:
-        - PATH=/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/opt/X11/bin
-  commands:
-    - .scripts/build-appleeventintegration.sh
-  artifacts:
-    appleeventintegration:
-      paths:
-        - "Packages/com.unity.ide.visualstudio/Editor/Plugins/AppleEventIntegration.bundle/**"  
-
-
 pack:
   name: Pack
   agent:
     type: Unity::VM
-    image: package-ci/win10:stable
+    image: package-ci/win10:v4
     flavor: b1.large
   commands:
     - npm install upm-ci-utils@latest -g --registry https://artifactory.prd.cds.internal.unity3d.com/artifactory/api/npm/upm-npm
@@ -72,7 +55,6 @@ pack:
         - "**/upm-ci~/packages/**/*"
   dependencies:
   - .yamato/CI.yml#build_cpp_win
-  - .yamato/CI.yml#build_native_mac
 
 
 commit_ci_release:
@@ -119,11 +101,6 @@ run_vetting_test_project_{{ editor.version }}:
     PATH: /home/bokken/bin:/home/bokken/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/sbin:/home/bokken/.npm-global/bin::/home/bokken/npm-global/bin
     DISPLAY: ":0"
   commands:
-{% if platform.name == "linux" -%}
-    - pip install unity-downloader-cli --index-url https://artifactory.prd.it.unity3d.com/artifactory/api/pypi/pypi/simple --upgrade --user
-{% else -%}
-    - pip install unity-downloader-cli --index-url https://artifactory.prd.it.unity3d.com/artifactory/api/pypi/pypi/simple --upgrade
-{% endif -%}
     - npm config set prefix '~/npm-global'
     - npm install upm-ci-utils@latest -g --registry https://artifactory.prd.cds.internal.unity3d.com/artifactory/api/npm/upm-npm
     - unity-downloader-cli -u {{editor.version}} -c editor --fast --wait --published-only
@@ -152,11 +129,6 @@ run_feature_test_project_{{ platform.name }}_{{ editor.version }}:
     DISPLAY: ":0"
   {% endif %}
   commands:
-{% if platform.name == "linux" -%}
-    - pip install unity-downloader-cli --index-url https://artifactory.prd.it.unity3d.com/artifactory/api/pypi/pypi/simple --upgrade --user
-{% else -%}
-    - pip install unity-downloader-cli --index-url https://artifactory.prd.it.unity3d.com/artifactory/api/pypi/pypi/simple --upgrade
-{% endif -%}
     - {{ platform.envsetup }}
     - unity-downloader-cli -u {{editor.version}} -c editor -c linux -c macos -c windows --fast --wait --published-only
     - npm install upm-ci-utils@latest -g --registry https://artifactory.prd.cds.internal.unity3d.com/artifactory/api/npm/upm-npm
