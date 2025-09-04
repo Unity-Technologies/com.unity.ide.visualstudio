@@ -29,9 +29,6 @@ namespace Microsoft.Unity.VisualStudio.Editor
 #if UNITY_EDITOR_WIN
 				if (VisualStudioForWindowsInstallation.TryDiscoverInstallation(editorPath, out installation))
 					return true;
-#elif UNITY_EDITOR_OSX
-				if (VisualStudioForMacInstallation.TryDiscoverInstallation(editorPath, out installation))
-					return true;
 #endif
 				if (VisualStudioCodeInstallation.TryDiscoverInstallation(editorPath, out installation))
 					return true;
